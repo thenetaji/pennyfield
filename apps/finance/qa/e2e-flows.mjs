@@ -224,8 +224,12 @@ export async function openAccounts(page) {
 /** Back from Accounts to Home (out of Settings). */
 export async function closeAccounts(page) {
   await page.goBack();
+  // Accounts opens over Settings; Done closes Settings back to Home.
   const done = page.locator('[aria-label="Done"]:visible').first();
-  if (await done.isVisible().catch(() => false)) await done.tap();
+  await done
+    .waitFor({ timeout: 5000 })
+    .then(() => done.tap())
+    .catch(() => undefined);
   await expectText(page, "Recent");
 }
 
@@ -666,9 +670,10 @@ export const flows = [
       const rows = (await labelsOf(page)).filter((l) =>
         /^(Rent|House help), /.test(l),
       );
-      assert.equal(
-        rows.length,
-        2,
+      // House help is paid more than once in some months; both payees must be there.
+      assert.ok(
+        rows.some((l) => l.startsWith("Rent, ")) &&
+          rows.some((l) => l.startsWith("House help, ")),
         `expected Rent and House help rows, got ${rows.join(" | ")}`,
       );
     },
@@ -681,10 +686,13 @@ export const flows = [
       await tapText(page, "Merchants");
       await expectText(page, "Swiggy");
       // One row per merchant: Swiggy's several payments are combined, not listed day by day.
-      assert.equal(
-        (await body(page)).match(/\bSwiggy\b/g)?.length,
-        1,
-        "Swiggy should appear once in the merchant view",
+      const rows = (await labelsOf(page)).filter((l) =>
+        /^Swiggy, .*, \d+ times?, average /.test(l),
+      );
+      assert.equal(rows.length, 1, `one Swiggy row: ${rows.join(" | ")}`);
+      assert.ok(
+        Number(rows[0].match(/, (\d+) times?, /)[1]) > 1,
+        "Swiggy's payments should be combined",
       );
       await goClient(page, "/search");
       await page.locator('input[aria-label="Search"]').fill("swiggy");
