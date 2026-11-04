@@ -1,8 +1,21 @@
 import { and, between, eq, inArray } from "drizzle-orm";
 import type { DetailedLine, InsightsScope } from "@/lib/insights";
+
 import { transactionSplits, transactions } from "../schema";
 import { scopeConditions } from "./reports";
 import type { Db } from "../types";
+
+export interface RawAnalyzerLine {
+  transactionId: string;
+  title: string;
+  accountId: string;
+  categoryId: string | null;
+  dateKey: string;
+  occurredAt: number;
+  amount: number;
+  currency: string;
+  recurringRuleId: string | null;
+}
 
 /** Like `spendLines`, plus the transaction id, title and account for merchant and account breakdowns. */
 export function detailedLines(
@@ -60,4 +73,50 @@ export function detailedLines(
     lines.push({ ...row, kind: row.kind });
   }
   return lines;
+}
+
+/** Expense lines (splits expanded) with the time and recurring link the spend analyzer reads. */
+export function analyzerLines(
+  db: Db,
+  range: { from: string; to: string },
+): RawAnalyzerLine[] {
+  const columns = {
+    transactionId: transactions.id,
+    title: transactions.title,
+    accountId: transactions.accountId,
+    dateKey: transactions.dateKey,
+    occurredAt: transactions.occurredAt,
+    currency: transactions.currency,
+    recurringRuleId: transactions.recurringRuleId,
+  };
+  const inRange = between(transactions.dateKey, range.from, range.to);
+  const plain = db
+    .select({
+      ...columns,
+      categoryId: transactions.categoryId,
+      amount: transactions.amount,
+    })
+    .from(transactions)
+    .where(
+      and(
+        inRange,
+        eq(transactions.kind, "expense"),
+        eq(transactions.isSplit, false),
+      ),
+    )
+    .all();
+  const split = db
+    .select({
+      ...columns,
+      categoryId: transactionSplits.categoryId,
+      amount: transactionSplits.amount,
+    })
+    .from(transactionSplits)
+    .innerJoin(
+      transactions,
+      eq(transactionSplits.transactionId, transactions.id),
+    )
+    .where(and(inRange, eq(transactions.kind, "expense")))
+    .all();
+  return [...plain, ...split];
 }

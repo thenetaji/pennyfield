@@ -2,6 +2,7 @@ import { keyToLocalMs } from "@studio/dates";
 import {
   addSplitLine,
   autoReceives,
+  budgetHint,
   buildRuleInput,
   buildTransactionInput,
   collapsedCategory,
@@ -444,5 +445,50 @@ describe("lending drafts", () => {
     ]);
     expect(toggleId(["a"], "b")).toEqual(["a", "b"]);
     expect(toggleId(["a", "b"], "a")).toEqual(["b"]);
+  });
+});
+
+describe("budgetHint", () => {
+  const budget = (
+    name: string,
+    scope: string,
+    remaining: number,
+    categoryIds: string[] = [],
+    currency = "INR",
+  ) => ({ budget: { name, scope, currency, categoryIds }, remaining });
+  const budgets = [
+    budget("Monthly spending", "all", 50000),
+    budget("Food", "categories", 1200, ["food"]),
+    budget("Treats", "categories", 300, ["food", "fun"]),
+    budget("Travel", "categories", 9000, ["travel"], "USD"),
+  ];
+
+  it("uses the tightest category budget covering the expense", () => {
+    expect(
+      budgetHint(budgets, { categoryId: "food", currency: "INR", amount: 500 }),
+    ).toEqual({ name: "Treats", left: 300, after: -200 });
+  });
+
+  it("falls back to the all-spending budget", () => {
+    expect(
+      budgetHint(budgets, {
+        categoryId: "rent",
+        currency: "INR",
+        amount: 1000,
+      }),
+    ).toEqual({ name: "Monthly spending", left: 50000, after: 49000 });
+  });
+
+  it("never mixes currencies", () => {
+    expect(
+      budgetHint(budgets, {
+        categoryId: "travel",
+        currency: "USD",
+        amount: 100,
+      }),
+    ).toEqual({ name: "Travel", left: 9000, after: 8900 });
+    expect(
+      budgetHint(budgets, { categoryId: "food", currency: "EUR", amount: 1 }),
+    ).toBeNull();
   });
 });

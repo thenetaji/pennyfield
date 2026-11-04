@@ -2,6 +2,27 @@
 
 All notable changes to Finance. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.5.0] - 2026-11-04
+
+### Added
+- Spend analyzer in Insights for the current month: a month-end forecast (what you have spent, bills still due and your everyday pace, against your budget), categories running well above or below their usual level by this day of the month, your patterns over the last three months (busiest weekday, time of day, typical payment) and repeat payments that are not set up yet, which you can track as recurring in one tap.
+- Home shows what is left across your accounts, under the spending figures, with each account's balance. Tap it for Accounts. It can be moved or hidden in Settings → Home screen.
+- Adding an expense shows what is left in its budget after it, or how far it goes over.
+
+### Changed
+- Home leads with spending: what you spent this month is the big number, with your pace against the budget or last month, the spending curve and a strip for today, your daily average and what is left of the budget (or what you earned, without one).
+- A new app icon: a silver receipt with a gold total on graphite, with matching dark, tinted and Android themed versions.
+- Settings is easier to scan: colour tiles like iOS Settings, a summary of your entries, accounts and categories, clearer groups, and notes on what the month start and your data choices do.
+- Activity puts the month's spent, earned and net above the monthly chart, with a key for the bars and lines, and lists each day as its own card.
+- Insights keeps Spent, Earned or Both next to the account and tag filters, in one row.
+- A friendlier first screen before your first transaction.
+
+### Fixed
+- Tapping a bar or point on a chart no longer deselects it a moment later. The selection stays until you tap it again or tap elsewhere, and resets when you change period.
+
+### Removed
+- The alternate Rupee app icon.
+
 ## [0.3.1] - 2026-10-27
 
 ### Changed

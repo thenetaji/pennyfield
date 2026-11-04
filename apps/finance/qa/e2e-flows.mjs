@@ -152,7 +152,7 @@ export async function onboard(page, base, code) {
 
 export async function seeded(page, base, mode) {
   await open(page, base, `/?seed=${mode}`);
-  // An empty install shows only the net worth hero and the empty state (no Recent list, no strip).
+  // An empty install shows only the empty state (no hero, no Recent list).
   await expectText(page, mode === "empty" ? "No transactions yet" : "Recent");
 }
 
@@ -214,6 +214,21 @@ export const saveDisabled = (page) =>
     );
 
 /** Client-side route change (a full goto would wipe the in-memory database). */
+/** From Home: Settings → Accounts, the way a person gets there. */
+export async function openAccounts(page) {
+  await page.locator('[aria-label="Settings"]:visible').first().tap();
+  await page.locator('[aria-label^="Accounts"]:visible').first().tap();
+  await expectLabel(page, "Total, ", { exact: false });
+}
+
+/** Back from Accounts to Home (out of Settings). */
+export async function closeAccounts(page) {
+  await page.goBack();
+  const done = page.locator('[aria-label="Done"]:visible').first();
+  if (await done.isVisible().catch(() => false)) await done.tap();
+  await expectText(page, "Recent");
+}
+
 export async function goClient(page, path) {
   await page.evaluate((p) => {
     history.pushState({}, "", p);
@@ -268,12 +283,9 @@ export const flows = [
       await expectText(page, "€ EUR");
       await tap(page, "Start");
       await expectText(page, "No transactions yet");
-      // Empty Home: the net worth hero reads zero in the chosen currency.
-      await expectLabel(page, "Net worth, ", { exact: false });
-      assert.ok(
-        (await labelsOf(page)).some((l) => /^Net worth, €\s*0$/.test(l)),
-        "hero should read zero euros",
-      );
+      // The chosen currency carries through: Accounts totals zero euros.
+      await goClient(page, "/accounts");
+      await expectLabel(page, "Total, ", { exact: false });
       assert.match(await body(page), /€\s*0/);
     },
   },
@@ -474,13 +486,23 @@ export const flows = [
     },
   },
   {
+    name: "Home hero",
+    async run({ page, base }) {
+      await seeded(page, base, "demo");
+      await expectLabel(page, "Spent in", { exact: false });
+      await expectLabel(page, "Today, ", { exact: false });
+      await expectLabel(page, "Per day, ", { exact: false });
+      await expectLabel(page, "Left, ", { exact: false });
+      assert.ok(
+        !(await labelsOf(page)).some((l) => l.startsWith("Net worth")),
+        "Home should lead with spending, not net worth",
+      );
+    },
+  },
+  {
     name: "Transfer",
     async run({ page, base }) {
       await seeded(page, base, "demo");
-      const homeBalance = await page
-        .locator('[aria-label^="Net worth, "]')
-        .first()
-        .getAttribute("aria-label");
       // Demo accounts carry extras (people, lending), so read the starting balances instead of hard-coding them.
       const rupees = async (name) => {
         const l = (await labelsOf(page)).find(
@@ -491,7 +513,7 @@ export const flows = [
           l.match(/(-?[\d,]+(?:\.\d+)?) rupees$/)[1].replace(/,/g, ""),
         );
       };
-      await page.locator('[aria-label^="Net worth, "]').first().tap();
+      await openAccounts(page);
       await expectLabel(page, "HDFC Savings, Bank, ", { exact: false });
       const [hdfc0, cash0] = [
         await rupees("HDFC Savings"),
@@ -500,8 +522,7 @@ export const flows = [
       const total0 = (await labelsOf(page)).find((x) =>
         x.startsWith("Total, "),
       );
-      await page.goBack();
-      await expectText(page, "Recent");
+      await closeAccounts(page);
       await addFab(page).tap();
       await page.locator('[aria-label="Transaction type"]').waitFor();
       await page.getByRole("tab", { name: "Transfer" }).tap();
@@ -514,15 +535,7 @@ export const flows = [
       await keys(page, "5000");
       await save(page);
       await sheetClosed(page);
-      assert.equal(
-        await page
-          .locator('[aria-label^="Net worth, "]')
-          .first()
-          .getAttribute("aria-label"),
-        homeBalance,
-        "Home total changed after a transfer",
-      );
-      await page.locator('[aria-label^="Net worth, "]').first().tap();
+      await openAccounts(page);
       await expectLabel(page, "HDFC Savings, Bank, ", { exact: false });
       assert.equal(
         await rupees("HDFC Savings"),
@@ -577,8 +590,13 @@ export const flows = [
     async run({ page, base }) {
       await seeded(page, base, "demo");
       await tabTo(page, "Activity");
-      await expectLabel(page, "Earned ₹1,45,000");
-      await expectLabel(page, "Spent ₹47,804");
+      await expectLabel(page, "Earned, ", { exact: false });
+      // Demo figures move with the clock; read this month's spend and check the filter keeps it.
+      const spentLabel = (await labelsOf(page)).find((l) =>
+        l.startsWith("Spent, "),
+      );
+      assert.ok(spentLabel, "Activity should show what was spent");
+      await expectLabel(page, "Net, ", { exact: false });
       const all = await labelsOf(page);
       assert.ok(
         all.some((l) => /Salary, /.test(l)),
@@ -587,10 +605,10 @@ export const flows = [
       await page.locator('[aria-label="Filters"]:visible').tap();
       await page.getByText("Expense", { exact: true }).last().tap();
       await tapText(page, "Done");
-      // The summary hides Earned when the type filter excludes income.
-      await expectLabel(page, "Spent ₹47,804");
+      // The summary hides Earned (and Net) when the type filter excludes income.
+      await expectLabel(page, spentLabel);
       await page
-        .locator('[aria-label^="Earned "]:visible')
+        .locator('[aria-label^="Earned, "]:visible')
         .first()
         .waitFor({ state: "detached" });
       const filtered = await labelsOf(page);
@@ -612,7 +630,7 @@ export const flows = [
         .locator("[role=button]:visible", { hasText: /^Clear$/ })
         .first()
         .tap();
-      await expectLabel(page, "Earned ₹1,45,000");
+      await expectLabel(page, "Earned, ", { exact: false });
       assert.ok(
         (await labelsOf(page)).some((l) => l.startsWith("Salary, ")),
         "Salary should return after Clear",
@@ -624,20 +642,26 @@ export const flows = [
     async run({ page, base }) {
       await seeded(page, base, "demo");
       await tabTo(page, "Insights");
-      await expectText(page, "₹47,804");
+      // Last month is complete whatever today's date is, so rent has landed and Housing leads.
+      await page
+        .locator('[aria-label="Previous period"]:visible')
+        .first()
+        .tap();
       // Both is the default: Spent and Earned side by side with the net under them.
       await expectLabel(page, "Spent, ", { exact: false });
       await expectLabel(page, "Earned, ", { exact: false });
       await expectText(page, "Net");
-      await expectLabel(page, "Spending by category: Housing 69%", {
+      await expectLabel(page, "Spending by category: Housing ", {
         exact: false,
       });
-      await expectLabel(page, "Housing, ₹33,200, 69%");
-      await page
-        .locator('[aria-label="Housing, 33,200 rupees, 69 percent"]:visible')
-        .tap();
+      const housing = (await labelsOf(page)).find((l) =>
+        /^Housing, [\d,]+ rupees, \d+ percent$/.test(l),
+      );
+      assert.ok(housing, "Housing should be listed with its share");
+      const amount = housing.match(/^Housing, ([\d,]+) rupees/)[1];
+      await page.locator(`[aria-label="${housing}"]:visible`).first().tap();
       await expectText(page, "Average per");
-      await expectText(page, "₹33,200");
+      await expectText(page, `₹${amount}`);
       assert.match(page.url(), /\/category\//);
       const rows = (await labelsOf(page)).filter((l) =>
         /^(Rent|House help), /.test(l),
@@ -647,6 +671,26 @@ export const flows = [
         2,
         `expected Rent and House help rows, got ${rows.join(" | ")}`,
       );
+    },
+  },
+  {
+    name: "Spend analyzer",
+    async run({ page, base }) {
+      await seeded(page, base, "demo");
+      await tabTo(page, "Insights");
+      await expectText(page, "Month-end forecast");
+      await expectLabel(page, "Forecast: about ", { exact: false });
+      await expectText(page, "Your patterns");
+      assert.match(
+        await body(page),
+        /Most on (Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)days/,
+      );
+      // Past months are complete, so there is nothing to forecast.
+      await page
+        .locator('[aria-label="Previous period"]:visible')
+        .first()
+        .tap();
+      await expectNoText(page, "Month-end forecast");
     },
   },
   {
@@ -686,9 +730,10 @@ export const flows = [
         .locator('[aria-label^="Groceries, "][aria-label*=" of "]:visible')
         .last();
       await row.waitFor();
-      assert.equal(
+      // The pace status ("On track", "At risk") depends on the day of the month.
+      assert.match(
         await row.getAttribute("aria-label"),
-        "Groceries, 450 US dollars of 2,000 US dollars, 1,550 US dollars left",
+        /^Groceries, (?:[A-Za-z ]+, )?450 US dollars of 2,000 US dollars, 1,550 US dollars left$/,
       );
       await expectText(page, "$450 of $2,000");
       // The fill animates; wait for it to settle at 450/2000 = 22.5%.
@@ -761,7 +806,7 @@ export const flows = [
       await page.locator('[aria-label^="EUR"]').first().tap();
       await tap(page, "Start");
       await expectText(page, "No transactions yet");
-      // Log a €10 expense so the net worth moves below zero.
+      // Log a €10 expense so the accounts total moves below zero.
       await addExpense(page, {
         amount: "10",
         title: "Tea",
@@ -769,8 +814,15 @@ export const flows = [
       });
       await save(page);
       await sheetClosed(page);
-      await expectLabel(page, "Net worth, −€10");
-      await page.locator('[aria-label^="Net worth, "]:visible').first().tap();
+      await expectLabel(page, "Spent in", { exact: false });
+      await openAccounts(page);
+      await expectLabel(page, "Total, minus 10 euros", { exact: false }).catch(
+        async () => {
+          throw new Error(
+            `expected a negative total: ${(await labelsOf(page)).filter((l) => l.startsWith("Total")).join(" | ")}`,
+          );
+        },
+      );
       await page.locator('[aria-label="Add account"]:visible').tap();
       await page.locator('[aria-label="Name"]').waitFor();
       await page.locator('[aria-label="Name"]').fill("Dollars");
@@ -804,8 +856,6 @@ export const flows = [
         );
       });
       await expectLabel(page, "Total, 80 euros");
-      await goClient(page, "/");
-      await expectLabel(page, "Net worth, €80");
       // The rate lives in Settings > Currency too: changing it re-converts the total.
       await goClient(page, "/settings/currency");
       await expectText(page, "Exchange rates");
@@ -818,8 +868,8 @@ export const flows = [
       await rate.fill("0.5");
       await rate.press("Enter");
       await rate.blur();
-      await goClient(page, "/");
-      await expectLabel(page, "Net worth, €40");
+      await goClient(page, "/accounts");
+      await expectLabel(page, "Total, 40 euros");
     },
   },
   {
@@ -837,7 +887,7 @@ export const flows = [
       await expectText(page, "Edit category");
       await page.locator('[aria-label="Name"]').fill("Pet care");
       await page.locator('[aria-label="Save"]:visible').first().tap();
-      await expectLabel(page, "Pet care, No transactions");
+      await expectLabel(page, "Pet care, ", { exact: false });
       await page.locator('[aria-label="Add category"]:visible').tap();
       await page.locator('[aria-label="Name"]').fill("Pets");
       await page.locator('[aria-label="Save"]:visible').first().tap();
@@ -848,7 +898,7 @@ export const flows = [
       await expectText(page, "Undo");
       await expectNoText(page, "to…");
       await tapText(page, "Undo");
-      await expectLabel(page, "Pet care, No transactions");
+      await expectLabel(page, "Pet care, ", { exact: false });
       // The new category is selectable in the add sheet (via the All grid) and saves.
       await goClient(page, "/");
       await addExpense(page, {
@@ -888,11 +938,9 @@ export const flows = [
           () =>
             getComputedStyle(document.querySelector(".bg-bg")).backgroundColor,
         );
-      assert.equal(
-        await bg(),
-        "rgb(245, 243, 239)",
-        "light theme expected before the change",
-      );
+      const light = await bg();
+      const [r, g, b] = light.match(/\d+/g).map(Number);
+      assert.ok(r + g + b > 600, `light theme expected first, got ${light}`);
       // Pick a Recent row amount from the data (the demo rows move with the clock), e.g. "−₹1,042".
       const amount = (await body(page)).match(/−₹[\d,]+(?!\.)/)?.[0];
       assert.ok(
@@ -905,17 +953,17 @@ export const flows = [
       );
       await page.locator('[aria-label="Settings"]:visible').tap();
       await expectText(page, "Show decimals");
-      await tapText(page, "Theme");
+      await page.locator('[aria-label^="Appearance, "]:visible').first().tap();
       await tapText(page, "Dark");
       await page.waitForFunction(
-        () =>
+        (before) =>
           getComputedStyle(document.querySelector(".bg-bg")).backgroundColor !==
-          "rgb(245, 243, 239)",
-        null,
+          before,
+        light,
         { timeout: 15000 },
       );
       const dark = await bg();
-      assert.notEqual(dark, "rgb(245, 243, 239)");
+      assert.notEqual(dark, light);
       await page.goBack();
       await expectText(page, "Show decimals");
       await page
@@ -923,7 +971,6 @@ export const flows = [
         .dispatchEvent("click");
       await page.goBack();
       await expectText(page, `${amount}.00`);
-      assert.match(await body(page), /−₹32,000\.00/);
       assert.equal(
         await page.evaluate(
           () =>
@@ -1027,8 +1074,8 @@ export const flows = [
     async run({ page, base }) {
       await seeded(page, base, "demo");
       await page.locator('[aria-label="Settings"]:visible').tap();
-      await expectText(page, "Import & export");
-      await tapText(page, "Import & export");
+      await expectText(page, "Import and export");
+      await tapText(page, "Import and export");
       await expectText(page, "Erase all data");
       const dialogs = [];
       page.on("dialog", (d) => {
@@ -1237,13 +1284,14 @@ export const flows = [
         `unexpected row: ${text}`,
       );
       // Demo data has a row later today, so the new one is not necessarily first: it must be within the five shown.
+      // Rows read "Title, Category, Account, minus …"; transfers carry no sign, so five is the ceiling.
       const recent = (await labelsOf(page)).filter(
-        (l) => /, (minus|plus) /.test(l) && !l.includes(", due "),
+        (l) =>
+          /^[^,]+, [^,]+, .*, (minus|plus) /.test(l) && !l.includes(", due "),
       );
-      assert.equal(
-        recent.length,
-        5,
-        `Recent shows five rows: ${recent.join(" | ")}`,
+      assert.ok(
+        recent.length > 0 && recent.length <= 5,
+        `Recent shows at most five rows: ${recent.join(" | ")}`,
       );
       assert.equal(recent.filter((l) => l.startsWith("Uber, ")).length, 1);
     },

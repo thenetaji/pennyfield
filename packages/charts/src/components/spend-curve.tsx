@@ -35,7 +35,6 @@ import {
   FloatingLabel,
   useChartWidth,
   useScrubGesture,
-  useSelectionTimeout,
 } from "./chart-kit";
 import { useChartFont } from "./use-chart-font";
 
@@ -114,7 +113,6 @@ function SpendCurve({
   const font = useChartFont(11, "medium");
   const labelFont = useChartFont(12, "semibold");
   const [selected, setSelected] = React.useState<number | null>(null);
-  useSelectionTimeout(selected, setSelected);
   const tint = color ?? colors.accent;
   const total = LANE + height + AXIS;
   const top = LANE + 4;

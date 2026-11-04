@@ -2,7 +2,7 @@
   "expo": {
     "name": "Finance",
     "slug": "cadence",
-    "version": "0.3.1",
+    "version": "0.5.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "cadence",
@@ -62,24 +62,7 @@
       ],
       "expo-localization",
       "@react-native-community/datetimepicker",
-      "@studio/config/plugins/with-scene-lifecycle",
-      [
-        "expo-alternate-app-icons",
-        [
-          {
-            "name": "Rupee",
-            "ios": {
-              "light": "./assets/images/icon-rupee.png",
-              "dark": "./assets/images/icon-rupee-dark.png",
-              "tinted": "./assets/images/icon-rupee-tinted.png"
-            },
-            "android": {
-              "foregroundImage": "./assets/images/android-icon-rupee-foreground.png",
-              "backgroundColor": "#121214"
-            }
-          }
-        ]
-      ]
+      "@studio/config/plugins/with-scene-lifecycle"
     ],
     "experiments": {
       "typedRoutes": true,

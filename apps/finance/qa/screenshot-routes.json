@@ -8,6 +8,7 @@
   {"name": "activity-chart", "path": "/activity?seed=demo"},
   {"name": "insights-empty", "path": "/insights?seed=empty", "waitFor": "Spent", "height": 1100},
   {"name": "insights", "path": "/insights?seed=demo", "waitFor": "Spent"},
+  {"name": "insights-analyzer", "path": "/insights?seed=demo", "waitFor": "Month-end forecast", "fullPage": true},
   {"name": "insights-full", "path": "/insights?seed=demo&offset=-1", "waitFor": "Spent", "height": 1700},
   {"name": "insights-long", "path": "/insights?seed=demo&offset=-1", "waitFor": "Spent", "fullPage": true},
   {"name": "insights-week", "path": "/insights?seed=demo&period=week", "waitFor": "Spent"},

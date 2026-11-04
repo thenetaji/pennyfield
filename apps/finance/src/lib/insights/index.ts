@@ -4,3 +4,4 @@ export * from "./extras";
 export * from "./cashflow";
 export * from "./breakdown";
 export * from "./running";
+export * from "./analyzer";

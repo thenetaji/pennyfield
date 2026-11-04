@@ -25,6 +25,7 @@ export * from "./useImportExport";
 export * from "./useFrequentTitles";
 export * from "./useHomeSpend";
 export * from "./useInsightsExtras";
+export * from "./useAnalyzer";
 export * from "./useQuickAdd";
 export * from "./useTags";
 export * from "./usePeople";

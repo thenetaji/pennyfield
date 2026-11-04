@@ -2,13 +2,7 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import * as React from "react";
 import { View } from "react-native";
 
-import {
-  barLeft,
-  barRight,
-  HeaderButton,
-  EmptyState,
-  SummaryStrip,
-} from "@studio/ui";
+import { barLeft, barRight, HeaderButton, EmptyState } from "@studio/ui";
 import { CalendarView } from "@/features/calendar/calendar-view";
 import { monthOf, shiftMonth } from "@/features/calendar/grid";
 
@@ -131,6 +125,26 @@ export default function Activity() {
           },
         ]
       : []),
+    ...(showSpent && showEarned
+      ? [
+          {
+            label: "Net",
+            value: formatMoney(
+              totals.earned - totals.spent,
+              money.displayCurrency,
+              {
+                locale: money.locale,
+                sign: "auto",
+                decimals,
+              },
+            ),
+            tone:
+              totals.earned - totals.spent < 0
+                ? ("expense" as const)
+                : undefined,
+          },
+        ]
+      : []),
   ];
 
   // Calendar mode: its own calendar-month state; the list keeps its period choice untouched.
@@ -218,13 +232,9 @@ export default function Activity() {
           setChoice(picked.from === months[0]?.from ? null : picked.from)
         }
         locale={money.locale}
+        stats={items.length > 0 && !transferOnly ? summary : []}
       />
       <FilterChips />
-      {items.length > 0 && !transferOnly && summary.length > 0 ? (
-        <View className="px-4">
-          <SummaryStrip items={summary} />
-        </View>
-      ) : null}
     </View>
   );
 

@@ -26,7 +26,6 @@ import {
   FloatingLabel,
   useChartWidth,
   useScrubGesture,
-  useSelectionTimeout,
 } from "./chart-kit";
 import { useChartFont } from "./use-chart-font";
 
@@ -121,7 +120,6 @@ function TideBars({
   const [width, onLayout] = useChartWidth();
   const labelFont = useChartFont(12, "semibold");
   const [selected, setSelected] = React.useState<number | null>(null);
-  useSelectionTimeout(selected, setSelected);
   const count = bars.length;
   const shown = selected !== null && selected < count ? selected : null;
   const gesture = useScrubGesture({

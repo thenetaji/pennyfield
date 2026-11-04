@@ -27,7 +27,6 @@ import {
   useChartWidth,
   useGrow,
   useScrubGesture,
-  useSelectionTimeout,
 } from "./chart-kit";
 import { useHeld } from "./use-held";
 import { useChartFont } from "./use-chart-font";
@@ -170,7 +169,6 @@ function TrendLine({
     formatMoney(value, currency, { compact: true, locale });
   const selected =
     selectedIndex !== null && selectedIndex < count ? selectedIndex : null;
-  useSelectionTimeout(selected, onSelect);
   const heldIndex = useHeld(selected);
   const text = selected !== null ? formatLabel(selected) : "";
   const marker =

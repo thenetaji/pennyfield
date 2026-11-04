@@ -15,10 +15,6 @@ import {
   appIconDark,
   appIconTinted,
   favicon,
-  rupeeAndroidForeground,
-  rupeeIcon,
-  rupeeIconDark,
-  rupeeIconTinted,
 } from "./mark.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -37,19 +33,6 @@ const outputs = [
     opaque: true,
   },
   { name: "favicon", svg: favicon(), size: 196, opaque: true },
-  { name: "icon-rupee", svg: rupeeIcon(), size: 1024, opaque: true },
-  { name: "icon-rupee-dark", svg: rupeeIconDark(), size: 1024 },
-  {
-    name: "icon-rupee-tinted",
-    svg: rupeeIconTinted(),
-    size: 1024,
-    opaque: true,
-  },
-  {
-    name: "android-icon-rupee-foreground",
-    svg: rupeeAndroidForeground(),
-    size: 1024,
-  },
 ];
 
 /** Drops the alpha channel with ImageMagick when it is installed; Chromium screenshots are always RGBA. */

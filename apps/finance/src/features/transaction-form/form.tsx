@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useShallow } from "zustand/react/shallow";
+import { toDateKey } from "@studio/dates";
 
 import {
   AmountReadout,
@@ -25,6 +26,7 @@ import { AppIcon } from "@studio/icons";
 import { useActions } from "@/data/actions";
 import {
   useAccounts,
+  useBudgets,
   useCategories,
   usePeople,
   useRateLookup,
@@ -55,6 +57,7 @@ import { applyDevPreset } from "@/features/transaction-form/dev-preset";
 import {
   addSplitLine,
   autoReceives,
+  budgetHint,
   buildRuleInput,
   buildTransactionInput,
   collapsedCategory,
@@ -257,6 +260,20 @@ function TransactionForm({
   const person = people.find((p) => p.id === draft.personId);
   const draftTags = allTags.filter((t) => draft.tagIds.includes(t.id));
   const crossCurrency = isTransfer && fromCurrency !== toCurrency;
+  const budgets = useBudgets(
+    draft.occurredAt ? toDateKey(draft.occurredAt) : todayKey,
+  );
+  const hint =
+    mode === "new" &&
+    draft.kind === "expense" &&
+    !draft.splits &&
+    draft.amount > 0
+      ? budgetHint(budgets, {
+          categoryId: draft.categoryId,
+          currency: fromCurrency,
+          amount: draft.amount,
+        })
+      : null;
 
   const contextFor = (d: Draft): SaveContext => {
     const from = accountOf(d.accountId)?.currency ?? fromCurrency;
@@ -383,8 +400,7 @@ function TransactionForm({
             d.kind === "transfer"
           )
             actions.settings.set("last_kind", d.kind);
-          if (d.accountId)
-            actions.settings.set("last_account_id", d.accountId);
+          if (d.accountId) actions.settings.set("last_account_id", d.accountId);
         }
         if (params.ruleId) actions.recurring.skip(params.ruleId);
       }
@@ -739,6 +755,20 @@ function TransactionForm({
                 accessibilityLabel={`Amount, ${formatMoneyForSpeech(draft.amount, fromCurrency, { sign: "none" })}`}
               />
             </View>
+            {hint && !inputFocus ? (
+              <Text
+                variant="footnote"
+                tone={hint.after < 0 ? "warning" : "secondary"}
+                numeric
+                numberOfLines={1}
+                className="mt-1 px-6 text-center"
+                accessibilityLiveRegion="polite"
+              >
+                {hint.after < 0
+                  ? `${formatMoney(-hint.after, fromCurrency, { sign: "none", decimals: 0 })} over ${hint.name} after this`
+                  : `${formatMoney(hint.after, fromCurrency, { sign: "none", decimals: 0 })} left in ${hint.name} after this`}
+              </Text>
+            ) : null}
             {crossCurrency ? (
               <View style={{ opacity: receivesFocused ? 1 : 0.7 }}>
                 <AmountReadout

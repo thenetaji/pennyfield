@@ -1,10 +1,11 @@
 import { FlashList } from "@shopify/flash-list";
 import * as React from "react";
-import type { StyleProp, ViewStyle } from "react-native";
+import { View, type StyleProp, type ViewStyle } from "react-native";
 
 import { DaySectionHeader } from "@studio/ui";
 import type { TransactionListItem } from "@/data/hooks";
 import { EntryTracker } from "@studio/motion";
+import { useTokens } from "@studio/theme";
 
 import { buildDayEntries, headerIndices, type ListEntry } from "./day-groups";
 import { TransactionListRow } from "./transaction-list-row";
@@ -19,6 +20,8 @@ type TransactionDayListProps = {
   contentContainerStyle?: StyleProp<ViewStyle>;
   keyboardDismissMode?: "none" | "on-drag" | "interactive";
 };
+
+const RADIUS = 18;
 
 const keyOf = (entry: ListEntry) => entry.key;
 const typeOf = (entry: ListEntry) => entry.type;
@@ -49,19 +52,36 @@ function TransactionDayList({
   const [tracker] = React.useState(() => new EntryTracker());
   React.useMemo(() => tracker.sync(items.map((i) => i.id)), [tracker, items]);
   const sticky = React.useMemo(() => headerIndices(entries), [entries]);
+  const { colors } = useTokens();
   const renderItem = React.useCallback(
     ({ item }: { item: ListEntry }) =>
       item.type === "header" ? (
-        <DaySectionHeader label={item.label} total={item.total} />
+        <DaySectionHeader label={item.label} total={item.total} inset />
       ) : (
-        <TransactionListRow
-          item={item.item}
-          context={context}
-          separator={!item.last}
-          tracker={tracker}
-        />
+        <View
+          className="mx-4 overflow-hidden"
+          style={{
+            borderColor: colors.border,
+            borderLeftWidth: 1,
+            borderRightWidth: 1,
+            borderTopWidth: item.first ? 1 : 0,
+            borderBottomWidth: item.last ? 1 : 0,
+            borderTopLeftRadius: item.first ? RADIUS : 0,
+            borderTopRightRadius: item.first ? RADIUS : 0,
+            borderBottomLeftRadius: item.last ? RADIUS : 0,
+            borderBottomRightRadius: item.last ? RADIUS : 0,
+            borderCurve: "continuous",
+          }}
+        >
+          <TransactionListRow
+            item={item.item}
+            context={context}
+            separator={!item.last}
+            tracker={tracker}
+          />
+        </View>
       ),
-    [context, tracker],
+    [context, tracker, colors.border],
   );
   return (
     <FlashList
