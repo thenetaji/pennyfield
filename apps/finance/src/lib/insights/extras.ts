@@ -23,9 +23,45 @@ type Kind = FlatLine["kind"];
 const within = (line: FlatLine, range: Range) =>
   line.dateKey >= range.from && line.dateKey <= range.to;
 
-/** Lower-cased, trimmed, single-spaced: "  Swiggy  " and "swiggy" are the same merchant. */
-export const normaliseTitle = (title: string): string =>
-  title.trim().replace(/\s+/g, " ").toLowerCase();
+/** Words that say nothing about who was paid: company forms, web suffixes, payment rails. */
+const NOISE = new Set([
+  "api",
+  "co",
+  "com",
+  "in",
+  "inc",
+  "io",
+  "limited",
+  "llc",
+  "llp",
+  "ltd",
+  "net",
+  "online",
+  "org",
+  "payment",
+  "payments",
+  "private",
+  "pvt",
+  "the",
+  "upi",
+  "www",
+]);
+
+/**
+ * The merchant a title names, so spellings of one payee group together: "TikHub", "TIKHUB API",
+ * "tikhub.io" and "Tikhub Pvt Ltd" are all "tikhub". Case, accents, punctuation, company forms and order or
+ * reference numbers are dropped; a title made only of such words keeps its plain lower-cased form.
+ */
+export function normaliseTitle(title: string): string {
+  const plain = title.trim().replace(/\s+/g, " ").toLowerCase();
+  const words = plain
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .split(" ")
+    .filter((w) => w !== "" && !NOISE.has(w) && !/^[#*]?\d{4,}$/.test(w));
+  return words.length > 0 ? words.join(" ") : plain;
+}
 
 /** Integer share 0-100 of `part` in `whole`. */
 const share = (part: number, whole: number): number =>

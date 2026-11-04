@@ -8,12 +8,14 @@ import type { InsightsScope } from "@/lib/insights";
 type ScopeBarProps = {
   scope: InsightsScope;
   onChange: (scope: InsightsScope) => void;
+  /** Shown first in the same row (the Spent / Earned / Both menu). */
+  leading?: React.ReactNode;
 };
 
 type Picking = "account" | "tag" | null;
 
-/** `All accounts ▾` `All tags ▾`: narrows every Insights figure to one account and/or one tag. */
-function ScopeBar({ scope, onChange }: ScopeBarProps) {
+/** `Both ▾` `All accounts ▾` `All tags ▾`: what to show, narrowed to one account and/or one tag. */
+function ScopeBar({ scope, onChange, leading }: ScopeBarProps) {
   const accounts = useAccounts({ includeArchived: true });
   const tags = useTags();
   const [picking, setPicking] = React.useState<Picking>(null);
@@ -21,15 +23,16 @@ function ScopeBar({ scope, onChange }: ScopeBarProps) {
   const account = accounts.find((a) => a.id === scope.accountId);
   const tag = tags.find((t) => t.id === scope.tagId);
   // Nothing to narrow: one account and no tags.
-  if (accounts.length < 2 && tags.length === 0) return null;
+  if (accounts.length < 2 && tags.length === 0 && !leading) return null;
 
   return (
     <>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerClassName="gap-2 px-4 pt-2"
+        contentContainerClassName="items-center gap-2 px-4 pt-2"
       >
+        {leading}
         {accounts.length > 1 ? (
           <Chip
             label={account?.name ?? "All accounts"}

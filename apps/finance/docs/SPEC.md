@@ -129,19 +129,18 @@ Top to bottom: large title "Set up", currency row (prefilled from `expo-localiza
 
 ### 3.2 Home (`/(tabs)/index`)
 
-Purpose: answer "where am I this month" in one glance.
+Purpose: answer "how much have I spent this month, and am I on pace" in one glance. Net worth is not on Home; it lives in Accounts and Insights.
 
 Top to bottom:
 
-1. Header: title "Home" (large title, collapses on scroll), trailing `gearshape` icon button → `/settings`.
-2. **Balance card** (surface, radius 14): label "Balance", hero amount (net of all non-archived accounts in display currency), below it a horizontal scroll of account chips (`name · amount`, max 6, then "All accounts"). Tap card → `/accounts`.
-3. **This month** block: two columns, "Spent" and "Earned", each amount in title2; under them a 1-line hairline progress of overall budget if one exists ("₹12,400 of ₹30,000 · 18 days left"). Tap → Insights tab with month period.
-4. **Upcoming** (only if any recurring is due within 7 days): section header "Upcoming" with trailing "All" → `/recurring`. Up to 3 rows; row trailing shows the due date instead of time. Swipe right → "Post now"; swipe left → "Skip".
-5. **Recent**: section header "Recent" with trailing "All" → Activity tab. Last 8 transactions, standard rows.
+1. Top bar: time-aware greeting, hide-amounts eye and settings circle → `/settings`.
+2. **Spending hero**: "Spent in <Month>" label (menu: This month or All time), the total in the display style (currency symbol smaller; long-press toggles hide amounts), a pill with the gap to the budget pace (or to last month at the same day when there is no all-spending budget), then the spend curve (solid so far, dotted reference to the month end). All time swaps the curve for monthly bars.
+3. **Strip** (this month only): Today, Per day (average per elapsed day) and Left of the all-spending budget (Over when past it), or Earned when there is no budget.
+4. Reorderable sections from `home_layout` (Settings → Home screen): quick add, pocket money, budgets, upcoming bills, top categories, recent, spending heatmap. Each appears only when it has something to show.
 
-States: empty (no transactions): balance card shows the opening balance; "This month" shows ₹0 both; Recent shows one line "No transactions yet" + button "Add transaction". Long lists: fixed to 8 rows. Very large amounts: hero amount scales down to 28 pt via `adjustsFontSizeToFit` with `numberOfLines=1`; above 7 integer digits it abbreviates (§5.9).
+States: empty (no transactions): only the first-run empty state, titled "No transactions yet", with "Add transaction". Very large amounts: the hero scales down to fit on one line; above 7 integer digits it abbreviates (§5.9).
 
-Interactions: tapping a row pushes detail. Hero amount animates with a count-up (400 ms) on first appear only. Haptics: none on this screen except the + button.
+Interactions: tapping a row pushes detail. Hero numbers roll in on first appear only.
 
 ### 3.3 Activity (`/(tabs)/activity`)
 

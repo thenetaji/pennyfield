@@ -26,7 +26,9 @@ import {
 } from "@studio/ui";
 import { Donut, DonutLegend } from "@studio/charts/components";
 import {
+  useAnalyzer,
   useBreakdown,
+  useBudgets,
   useInsightLines,
   useInsights,
   useSettings,
@@ -49,6 +51,7 @@ import {
 } from "@/lib/insights";
 import type { BreakdownSlice } from "@/data/hooks";
 
+import { AnalyzerSection } from "./analyzer-section";
 import { BothHero } from "./both-hero";
 import { BreakdownList } from "./breakdown-list";
 import {
@@ -366,6 +369,23 @@ export default function InsightsScreen() {
       else if (event.translationX > 60) step(-1);
     });
 
+  const analyzer = useAnalyzer(periodSettings);
+  const budgets = useBudgets();
+  const overall = budgets.find(
+    (b) =>
+      b.budget.scope === "all" &&
+      b.budget.period === "monthly" &&
+      b.budget.currency === currency,
+  );
+  const overallBudget = overall ? Math.max(0, overall.available) : 0;
+  const showAnalyzer =
+    view.kind !== "income" &&
+    period.type === "month" &&
+    today >= period.from &&
+    today <= period.to &&
+    !scope.accountId &&
+    !scope.tagId;
+
   const decimals = money.showDecimals ? undefined : 0;
   const total = formatMoney(insights.total, currency, {
     locale: money.locale,
@@ -388,12 +408,15 @@ export default function InsightsScreen() {
           onEditCustom={editCustom}
           onJumpToCurrent={jumpToCurrent}
         />
-        <ScopeBar scope={scope} onChange={changeScope} />
+        <ScopeBar
+          scope={scope}
+          onChange={changeScope}
+          leading={<KindMenu kind={view.kind} onChange={changeKind} />}
+        />
         <Animated.View style={fadeStyle}>
           <GestureDetector gesture={swipe}>
             <View collapsable={false}>
-              <View className="px-4 pb-1 pt-3">
-                <KindMenu kind={view.kind} onChange={changeKind} />
+              <View className="px-4 pb-1 pt-4">
                 {both ? (
                   <BothHero
                     spent={spending.total}
@@ -404,6 +427,9 @@ export default function InsightsScreen() {
                   />
                 ) : (
                   <View className="pt-1">
+                    <Text variant="subhead" tone="secondary">
+                      {kind === "income" ? "Earned" : "Spent"}
+                    </Text>
                     <Amount
                       value={total}
                       variant="hero"
@@ -446,6 +472,17 @@ export default function InsightsScreen() {
                   ) : null}
                 </View>
               </View>
+              {showAnalyzer ? (
+                <Stagger index={1}>
+                  <AnalyzerSection
+                    analyzer={analyzer}
+                    budget={overallBudget}
+                    weekStart={periodSettings.weekStart}
+                    locale={money.locale}
+                    showDecimals={money.showDecimals}
+                  />
+                </Stagger>
+              ) : null}
               <Stagger index={1}>
                 <SectionHeader title={breakdownTitle(by, kind)} />
                 <Card className="mx-4 items-center px-0 pb-2 pt-3">

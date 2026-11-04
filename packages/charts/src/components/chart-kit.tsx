@@ -20,7 +20,7 @@ import {
 import { Gesture } from "react-native-gesture-handler";
 import { type LayoutChangeEvent } from "react-native";
 
-import { clampLabelX, SELECTION_CLEAR_MS } from "../lib";
+import { clampLabelX } from "../lib";
 import { haptic, durations, useTokens } from "@studio/theme";
 import { motion } from "@studio/motion";
 
@@ -202,16 +202,4 @@ export function adjustableProps(
       onSelect(Math.min(count - 1, Math.max(0, base + step)));
     },
   };
-}
-
-/** Clears a selection once its floating label has faded; every new selection restarts the wait. */
-export function useSelectionTimeout(
-  selected: number | null,
-  onSelect: (index: number | null) => void,
-) {
-  React.useEffect(() => {
-    if (selected === null) return;
-    const timer = setTimeout(() => onSelect(null), SELECTION_CLEAR_MS);
-    return () => clearTimeout(timer);
-  }, [selected, onSelect]);
 }

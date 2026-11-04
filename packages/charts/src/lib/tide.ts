@@ -163,6 +163,3 @@ export function tideBarCenter(
 ): number {
   return count <= 0 ? 0 : ((index + 0.5) / count) * width;
 }
-
-/** Selection that survives only until the read-out has faded: ms from the last change to clearing it. */
-export const SELECTION_CLEAR_MS = 1800;

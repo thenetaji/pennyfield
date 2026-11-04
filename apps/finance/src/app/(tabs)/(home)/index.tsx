@@ -17,11 +17,10 @@ import {
   useTodayKey,
   useUpcoming,
 } from "@/data/hooks";
-import { totalInDisplay } from "@/features/accounts/model";
 import { CalendarEntryCard } from "@/features/calendar/entry";
 import { SpendHeatmap } from "@/features/heatmap/spend-heatmap";
+import { AccountsCard } from "@/features/home/accounts-card";
 import { BudgetStatus } from "@/features/home/budget-status";
-import { NetWorthHero } from "@/features/home/net-worth-hero";
 import { QuickAdd } from "@/features/home/quick-add";
 import { Pockets } from "@/features/home/pockets";
 import { HomeSectionHeader } from "@/features/home/section-header";
@@ -49,6 +48,7 @@ const BILLS_WINDOW_DAYS = 30;
 const STAGGER = { base: 200, step: 55 } as const;
 /** Gap above each section; quick add sits closer to the hero. */
 const SPACING: Record<HomeSectionId, string> = {
+  accounts: "mt-3",
   quick_add: "mt-[22px]",
   pockets: "mt-[26px]",
   budgets: "mt-[26px]",
@@ -92,10 +92,6 @@ export default function Home() {
       b.budget.period === "monthly" &&
       b.budget.currency === displayCurrency,
   );
-  const netWorth = React.useMemo(
-    () => totalInDisplay(accounts, { displayCurrency, rates }).total,
-    [accounts, displayCurrency, rates],
-  );
   const overallAtRisk = overall
     ? budgetPace({
         spent: overall.spent,
@@ -117,6 +113,16 @@ export default function Home() {
 
   const renderSection = (id: HomeSectionId): React.ReactNode => {
     switch (id) {
+      case "accounts":
+        return (
+          <AccountsCard
+            accounts={accounts}
+            displayCurrency={displayCurrency}
+            rates={rates}
+            locale={locale}
+            showDecimals={money.showDecimals}
+          />
+        );
       case "quick_add":
         return <QuickAdd />;
       case "pockets":
@@ -198,23 +204,17 @@ export default function Home() {
         contentContainerStyle={empty ? { flexGrow: 1 } : undefined}
         showsVerticalScrollIndicator={false}
       >
-        <NetWorthHero
-          netWorth={fmt(netWorth, "auto")}
-          showStrip={!empty}
-          spent={fmt(spend.spent)}
-          earned={fmt(spend.earned)}
-          earnedZero={spend.earned <= 0}
-          caption={`in ${monthName(end.month)}`}
-        />
         {empty ? (
           <EmptyState
-            message="No transactions yet"
+            icon="bill"
+            title="No transactions yet"
+            message="Add what you spend and Home shows this month's total, your pace and where it all went."
             actionLabel="Add transaction"
             onAction={() => router.push("/transaction/new")}
           />
         ) : (
           <>
-            <View className="mt-7">
+            <View className="mt-2">
               <SpendHero
                 spend={spend}
                 allTime={allTime}
@@ -223,6 +223,8 @@ export default function Home() {
                 monthEnd={month.to}
                 budget={overall ? Math.max(0, overall.available) : 0}
                 budgetAtRisk={overallAtRisk}
+                earned={fmt(spend.earned)}
+                earnedZero={spend.earned <= 0}
                 locale={locale}
                 showDecimals={money.showDecimals}
               />

@@ -12,7 +12,13 @@ export interface DayGroupContext {
 
 export type ListEntry =
   | { type: "header"; key: string; label: string; total?: string }
-  | { type: "row"; key: string; item: TransactionListItem; last: boolean };
+  | {
+      type: "row";
+      key: string;
+      item: TransactionListItem;
+      first: boolean;
+      last: boolean;
+    };
 
 export interface Totals {
   spent: number;
@@ -79,6 +85,7 @@ export function buildDayEntries(
         type: "row",
         key: item.id,
         item,
+        first: index === 0,
         last: index === day.length - 1,
       }),
     );

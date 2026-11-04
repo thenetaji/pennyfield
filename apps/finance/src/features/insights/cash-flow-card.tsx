@@ -79,8 +79,17 @@ const CashFlowCard = React.memo(function CashFlowCard({
   locale,
 }: CashFlowCardProps) {
   const { colors } = useTokens();
-  const [scrub, setScrub] = React.useState<number | null>(null);
   const { months } = flow;
+  const windowKey = `${months[0]?.key ?? ""}:${months.length}`;
+  const [scrubbed, setScrubbed] = React.useState<{
+    window: string;
+    index: number | null;
+  }>({ window: windowKey, index: null });
+  const scrub = scrubbed.window === windowKey ? scrubbed.index : null;
+  const setScrub = React.useCallback(
+    (index: number | null) => setScrubbed({ window: windowKey, index }),
+    [windowKey],
+  );
   // A scrubbed month, else the period's own month, else the whole window (a year, a long range).
   const focus = scrub ?? (flow.focusIndex >= 0 ? flow.focusIndex : null);
   const first = months[0];
@@ -100,8 +109,7 @@ const CashFlowCard = React.memo(function CashFlowCard({
           }
         : undefined;
   const data = React.useMemo(
-    () =>
-      months.map((m) => ({ key: m.key, income: m.income, spent: m.spent })),
+    () => months.map((m) => ({ key: m.key, income: m.income, spent: m.spent })),
     [months],
   );
   const labels = React.useMemo(() => {

@@ -22,15 +22,22 @@ describe("normalizeHomeLayout", () => {
       { id: "recent", visible: true },
     ]);
     expect(layout.map((s) => s.id)).toEqual([
+      "accounts",
       "recent",
       "quick_add",
       "pockets",
       ...HOME_SECTION_IDS.filter(
-        (id) => id !== "recent" && id !== "quick_add" && id !== "pockets",
+        (id) =>
+          id !== "accounts" &&
+          id !== "recent" &&
+          id !== "quick_add" &&
+          id !== "pockets",
       ),
     ]);
-    expect(layout[0]).toEqual({ id: "recent", visible: false });
-    expect(layout.slice(1).every((s) => s.visible)).toBe(true);
+    expect(layout[1]).toEqual({ id: "recent", visible: false });
+    expect(
+      layout.filter((s) => s.id !== "recent").every((s) => s.visible),
+    ).toBe(true);
   });
 
   it("replaces Coming up with Budgets and Upcoming bills in place, and drops Summary", () => {
@@ -44,6 +51,7 @@ describe("normalizeHomeLayout", () => {
       { id: "recent", visible: true },
     ]);
     expect(layout).toEqual([
+      { id: "accounts", visible: true },
       { id: "quick_add", visible: true },
       { id: "pockets", visible: true },
       { id: "budgets", visible: false },
@@ -55,7 +63,7 @@ describe("normalizeHomeLayout", () => {
   });
 
   it("treats anything but an explicit false as visible", () => {
-    expect(normalizeHomeLayout([{ id: "heatmap" }])[0]).toEqual({
+    expect(normalizeHomeLayout([{ id: "heatmap" }])[1]).toEqual({
       id: "heatmap",
       visible: true,
     });
@@ -64,8 +72,8 @@ describe("normalizeHomeLayout", () => {
 
 describe("moveHomeSection", () => {
   it("swaps neighbours and ignores moves past either end", () => {
-    const moved = moveHomeSection(DEFAULT_HOME_LAYOUT, 1, -1);
-    expect(moved.slice(0, 2).map((s) => s.id)).toEqual([
+    const moved = moveHomeSection(DEFAULT_HOME_LAYOUT, 2, -1);
+    expect(moved.slice(1, 3).map((s) => s.id)).toEqual([
       "pockets",
       "quick_add",
     ]);

@@ -7,9 +7,21 @@ import {
 import * as React from "react";
 import { Platform, ScrollView, TextInput, View } from "react-native";
 
-import { EmptyState, ListGroup, ListRow, Button, Text } from "@studio/ui";
+import {
+  Card,
+  EmptyState,
+  ListGroup,
+  ListRow,
+  Button,
+  Pressable,
+  Text,
+} from "@studio/ui";
 import { AppIcon } from "@studio/icons";
-import { useSearchTransactions, useSetting } from "@/data/hooks";
+import { useSearchTransactions, useSetting, useTodayKey } from "@/data/hooks";
+import { merchantTotals } from "@/features/activity/merchants";
+import { normaliseTitle } from "@/lib/insights";
+import { formatMoney } from "@studio/money";
+import { dayLabel } from "@studio/dates";
 import { pushRecentSearch } from "@/features/search/recent-searches";
 import { TransactionDayList } from "@/features/transactions/transaction-day-list";
 import { useMoneyContext } from "@/features/transactions/use-money-context";
@@ -18,6 +30,7 @@ import { useTokens } from "@studio/theme";
 const HIDDEN_HEADER = { headerShown: false } as const;
 const DEBOUNCE_MS = 150;
 const LIMIT = 200;
+const MAX_MERCHANTS = 3;
 
 export default function Search() {
   const router = useRouter();
@@ -54,6 +67,76 @@ export default function Search() {
   );
 
   const typing = query.trim() !== "";
+  const today = useTodayKey();
+  const needle = normaliseTitle(active);
+  const merchants = React.useMemo(
+    () =>
+      needle === ""
+        ? []
+        : merchantTotals(results, "expense", money)
+            .filter((m) => m.key.includes(needle) || needle.includes(m.key))
+            .slice(0, MAX_MERCHANTS),
+    [results, money, needle],
+  );
+  const fmt = (minor: number) =>
+    formatMoney(minor, money.displayCurrency, {
+      locale: money.locale,
+      sign: "none",
+      decimals: money.showDecimals ? undefined : 0,
+    });
+  const oldest = results[results.length - 1]?.dateKey ?? today;
+  const header =
+    merchants.length > 0 ? (
+      <View className="gap-2 pt-2">
+        {merchants.map((m) => (
+          <Pressable
+            key={m.key}
+            role="button"
+            scale={0.99}
+            accessibilityLabel={`${m.title}, ${fmt(m.amount)} over ${m.count} payments, average ${fmt(m.average)}`}
+            accessibilityHint="Opens every payment to this merchant"
+            onPress={() =>
+              router.push({
+                pathname: "/payee",
+                params: {
+                  from: oldest,
+                  to: today,
+                  type: "custom",
+                  kind: "expense",
+                  key: m.key,
+                  title: m.title,
+                },
+              })
+            }
+            className="mx-4"
+          >
+            <Card className="flex-row items-center gap-3 rounded-[18px] px-4 py-3.5">
+              <View className="min-w-0 flex-1">
+                <Text variant="headline" numberOfLines={1}>
+                  {m.title}
+                </Text>
+                <Text
+                  variant="footnote"
+                  tone="secondary"
+                  numeric
+                  numberOfLines={1}
+                >
+                  {`${m.count} ${m.count === 1 ? "payment" : "payments"} · avg ${fmt(m.average)} · ${dayLabel(m.lastDate, today)}`}
+                </Text>
+              </View>
+              <Text variant="headline" numeric>
+                {fmt(m.amount)}
+              </Text>
+              <AppIcon
+                name="chevron.right"
+                size={12}
+                color={colors.textTertiary}
+              />
+            </Card>
+          </Pressable>
+        ))}
+      </View>
+    ) : null;
   const footer =
     results.length >= LIMIT ? (
       <Text variant="footnote" tone="secondary" className="py-4 text-center">
@@ -104,6 +187,7 @@ export default function Search() {
         <TransactionDayList
           items={results}
           context={money}
+          header={header}
           footer={footer}
           keyboardDismissMode="on-drag"
           contentContainerStyle={{ paddingBottom: 32 }}

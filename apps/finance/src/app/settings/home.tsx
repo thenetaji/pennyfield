@@ -17,6 +17,7 @@ const SECTION_ICONS: Record<
   HomeSectionId,
   { name: string; color: CategoryColorKey }
 > = {
+  accounts: { name: "bank", color: "purple" },
   quick_add: { name: "add", color: "purple" },
   pockets: { name: "savings", color: "purple" },
   budgets: { name: "budgets", color: "purple" },

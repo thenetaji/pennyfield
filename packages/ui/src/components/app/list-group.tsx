@@ -9,11 +9,14 @@ import { Text } from "../ui/text";
 import type { CategoryColorKey } from "@studio/theme";
 import { useTokens } from "@studio/theme";
 
+const VIVID_TILE = 30;
+
 type ListRowInjectedProps = { showSeparator?: boolean };
 
 type ListRowProps = ListRowInjectedProps & {
   label: string;
-  icon?: { name: string; color: CategoryColorKey };
+  /** `vivid` draws an iOS Settings tile: white symbol on the full system colour. */
+  icon?: { name: string; color: CategoryColorKey; vivid?: boolean };
   value?: string;
   subtitle?: string;
   chevron?: boolean;
@@ -56,7 +59,12 @@ function ListRow({
     >
       {icon ? (
         <View className="mr-3">
-          <IconTile icon={icon.name} color={icon.color} />
+          <IconTile
+            icon={icon.name}
+            color={icon.color}
+            vivid={icon.vivid}
+            size={icon.vivid ? VIVID_TILE : undefined}
+          />
         </View>
       ) : null}
       <View className="flex-1 py-1">
@@ -102,7 +110,7 @@ function ListRow({
         <View
           pointerEvents="none"
           style={{
-            left: icon ? 66 : 16,
+            left: icon ? (icon.vivid ? 16 + VIVID_TILE + 12 : 66) : 16,
             height: StyleSheet.hairlineWidth,
             backgroundColor: colors.separator,
           }}

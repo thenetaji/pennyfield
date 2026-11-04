@@ -10,7 +10,7 @@ import {
 } from "@studio/icons";
 import type { IconBackground, IconStyle } from "@studio/icons";
 import type { CategoryColorKey } from "@studio/theme";
-import { useTokens } from "@studio/theme";
+import { categoryColors, useTokens } from "@studio/theme";
 
 type IconTileProps = {
   /** Concept id or a legacy SF Symbol name. */
@@ -24,6 +24,8 @@ type IconTileProps = {
   /** Force a treatment / icon style (appearance previews). Defaults to the user's choice. */
   background?: IconBackground;
   iconStyle?: IconStyle;
+  /** Full system colour on a solid tile, ignoring the mono category setting (Settings rows). */
+  vivid?: boolean;
 };
 
 function IconTile({
@@ -34,10 +36,13 @@ function IconTile({
   splitBadge = false,
   background,
   iconStyle,
+  vivid = false,
 }: IconTileProps) {
-  const { colors, category, isDark } = useTokens();
+  const { colors, category, isDark, scheme } = useTokens();
   const chosen = useIconPrefs((s) => s.background);
-  const spec = tileSpec(background ?? chosen, isDark, category[color]);
+  const spec = vivid
+    ? tileSpec("solid", isDark, categoryColors[scheme][color])
+    : tileSpec(background ?? chosen, isDark, category[color]);
   const glyph = Math.round(size * spec.iconScale);
   const radius = tileRadius(size);
   const glyphNode = (

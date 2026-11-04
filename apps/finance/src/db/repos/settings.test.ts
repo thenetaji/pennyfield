@@ -86,7 +86,9 @@ describe("settings", () => {
       })
       .run();
     const layout = getSetting(db, "home_layout");
-    expect(layout[0]).toEqual({ id: "recent", visible: false });
+    // Accounts arrived in a later build and goes on top; the stored order follows.
+    expect(layout[0]).toEqual({ id: "accounts", visible: true });
+    expect(layout[1]).toEqual({ id: "recent", visible: false });
     expect(layout.map((s) => s.id).sort()).toEqual(
       DEFAULT_SETTINGS.home_layout.map((s) => s.id).sort(),
     );

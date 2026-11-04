@@ -1,5 +1,6 @@
 /** Home sections the owner can reorder and hide. The hero (greeting, amount, chart) always stays on top. */
 export const HOME_SECTION_IDS = [
+  "accounts",
   "quick_add",
   "pockets",
   "budgets",
@@ -17,6 +18,7 @@ export interface HomeSectionPref {
 }
 
 export const HOME_SECTION_LABELS: Record<HomeSectionId, string> = {
+  accounts: "Accounts",
   quick_add: "Quick add",
   pockets: "Pocket money",
   budgets: "Budgets",
@@ -37,6 +39,9 @@ const isSectionId = (value: unknown): value is HomeSectionId =>
 const INSERT_AFTER: Partial<Record<HomeSectionId, HomeSectionId>> = {
   pockets: "quick_add",
 };
+
+/** Sections added in a later build that belong at the top, under the hero. */
+const INSERT_FIRST: ReadonlySet<HomeSectionId> = new Set(["accounts"]);
 
 /**
  * Stored ids from earlier builds and what replaced them, in place and with the same visibility: "Coming up" (next
@@ -73,6 +78,10 @@ export function normalizeHomeLayout(value: unknown): HomeSectionPref[] {
   }
   for (const id of HOME_SECTION_IDS) {
     if (seen.has(id)) continue;
+    if (INSERT_FIRST.has(id)) {
+      out.unshift({ id, visible: true });
+      continue;
+    }
     const anchor = INSERT_AFTER[id];
     const at = anchor ? out.findIndex((s) => s.id === anchor) : -1;
     if (at >= 0) out.splice(at + 1, 0, { id, visible: true });

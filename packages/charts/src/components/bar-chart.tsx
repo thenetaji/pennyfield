@@ -34,7 +34,6 @@ import {
   FloatingLabel,
   useChartWidth,
   useScrubGesture,
-  useSelectionTimeout,
 } from "./chart-kit";
 import { useHeld } from "./use-held";
 import { useChartFont } from "./use-chart-font";
@@ -157,7 +156,6 @@ function BarChart({
     : [];
   const selected =
     selectedIndex !== null && selectedIndex < count ? selectedIndex : null;
-  useSelectionTimeout(selected, onSelect);
   const heldIndex = useHeld(selected);
   const spoken =
     selected === null

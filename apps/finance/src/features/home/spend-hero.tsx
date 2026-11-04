@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ActionSheetIOS, Platform, View } from "react-native";
+import { ActionSheetIOS, Platform, StyleSheet, View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 
 import {
@@ -7,11 +7,13 @@ import {
   Pressable,
   Text,
   AnimatedNumber,
+  Card,
   OptionPicker,
   type Option,
+  type TextTone,
 } from "@studio/ui";
 import { evenPace, foldOlder, withSkia } from "@studio/charts";
-import type { AllTimeSpend, HomeSpend } from "@/data/hooks";
+import { useSetting, type AllTimeSpend, type HomeSpend } from "@/data/hooks";
 import { addDays, monthShort, parseKey } from "@studio/dates";
 import { formatMoney, formatMoneyForSpeech } from "@studio/money";
 import { haptic, useTokens, withAlpha } from "@studio/theme";
@@ -50,6 +52,9 @@ type SpendHeroProps = {
   budget: number;
   /** The budget's pace status is at risk or over: only then is running ahead of the even pace a warning. */
   budgetAtRisk?: boolean;
+  /** Formatted income this month, shown in the strip when there is no budget. */
+  earned: string;
+  earnedZero: boolean;
   locale?: string;
   showDecimals: boolean;
 };
@@ -92,6 +97,57 @@ function usePeriodMenu(
   return { show, picker };
 }
 
+/** Splits "₹8,07,855" into the symbol (drawn smaller) and the rolling digits. Suffix symbols stay with the digits. */
+function splitSymbol(formatted: string): { symbol: string; digits: string } {
+  const match = /^([−+-]?[^\d•]*)(.*)$/.exec(formatted);
+  const symbol = match?.[1] ?? "";
+  return symbol && match?.[2]
+    ? { symbol, digits: match[2] }
+    : { symbol: "", digits: formatted };
+}
+
+function Stat({
+  label,
+  value,
+  tone,
+  divider,
+}: {
+  label: string;
+  value: string;
+  tone?: TextTone;
+  divider?: boolean;
+}) {
+  const { colors } = useTokens();
+  return (
+    <View
+      accessible
+      accessibilityLabel={`${label}, ${value}`}
+      className="flex-1 px-4"
+      style={
+        divider
+          ? {
+              borderLeftWidth: StyleSheet.hairlineWidth * 2,
+              borderLeftColor: colors.separator,
+            }
+          : null
+      }
+    >
+      <Text variant="caption" tone="secondary" numberOfLines={1}>
+        {label}
+      </Text>
+      <AnimatedNumber
+        value={value}
+        variant="headline"
+        tone={tone}
+        fit
+        align="left"
+        intro
+        className="mt-0.5 font-semibold"
+      />
+    </View>
+  );
+}
+
 /** Three round dots: the key for the dotted reference line. */
 function DottedKey({ color }: { color: string }) {
   return (
@@ -112,8 +168,9 @@ function DottedKey({ color }: { color: string }) {
 }
 
 /**
- * Spending this month: a period label (menu: this month or all time), the total, how it compares with the budget
- * pace or last month at the same day, and the spend curve: solid so far, dotted reference for the whole month.
+ * The Home hero, spending first: a period label (menu: this month or all time), the total as the one big number
+ * (long-press hides amounts), how it compares with the budget pace or last month at the same day, the spend curve,
+ * then today, the daily average and what is left of the budget.
  */
 function SpendHero({
   spend,
@@ -123,10 +180,17 @@ function SpendHero({
   monthEnd,
   budget,
   budgetAtRisk = false,
+  earned,
+  earnedZero,
   locale,
   showDecimals,
 }: SpendHeroProps) {
   const { colors } = useTokens();
+  const [hidden, setHidden] = useSetting("hide_amounts");
+  const toggleHidden = () => {
+    haptic("medium");
+    setHidden(!hidden);
+  };
   const period = useHeroPeriod((s) => s.period);
   const setPeriod = useHeroPeriod((s) => s.set);
   const all = period === "all";
@@ -214,6 +278,12 @@ function SpendHero({
     sign: "none",
     locale,
   });
+  const { symbol, digits } = splitSymbol(formatted);
+  const fmt = (minor: number) =>
+    formatMoney(minor, spend.currency, { locale, sign: "none", decimals });
+  const today =
+    (actual[spend.dayIndex] ?? 0) - (actual[spend.dayIndex - 1] ?? 0);
+  const left = budget - spend.spent;
   const start = parseKey(spend.from);
   const end = parseKey(monthEnd);
 
@@ -262,39 +332,62 @@ function SpendHero({
           </View>
         ) : null}
       </View>
-      <View className="flex-row items-center gap-2.5">
-        <AnimatedNumber
-          value={formatted}
-          variant="title1"
-          intro
-          fit
-          align="left"
-          accessibilityLabel={formatted}
-          className="shrink tracking-[-0.6px]"
-        />
-        {!all && deltaText ? (
-          <Animated.View
-            entering={FadeIn.delay(300).duration(220)}
-            className="flex-row items-center gap-1 rounded-full px-2 py-[3px]"
-            style={{ backgroundColor: withAlpha(deltaTone, 0.12) }}
-          >
-            <SymbolIcon
-              name={over ? "arrow-up-right" : "arrow-down-right"}
-              size={12}
-              color={deltaTone}
-            />
+      <Pressable
+        accessibilityLabel={speech}
+        accessibilityActions={[
+          {
+            name: "longpress",
+            label: hidden ? "Show amounts" : "Hide amounts",
+          },
+        ]}
+        onAccessibilityAction={(event) => {
+          if (event.nativeEvent.actionName === "longpress") toggleHidden();
+        }}
+        scale={0.99}
+        onLongPress={toggleHidden}
+        delayLongPress={450}
+      >
+        <View className="flex-row items-start" style={{ flexShrink: 1 }}>
+          {symbol ? (
             <Text
-              variant="caption"
-              numeric
-              numberOfLines={1}
-              style={{ color: deltaTone }}
-              className="font-semibold"
+              variant="display"
+              className="mr-px text-[44px] font-semibold tracking-[-0.9px]"
+              style={{ marginTop: 3 }}
             >
-              {deltaText}
+              {symbol}
             </Text>
-          </Animated.View>
-        ) : null}
-      </View>
+          ) : null}
+          <AnimatedNumber
+            value={digits}
+            variant="display"
+            intro
+            fit
+            accessibilityLabel={formatted}
+          />
+        </View>
+      </Pressable>
+      {!all && deltaText ? (
+        <Animated.View
+          entering={FadeIn.delay(300).duration(220)}
+          className="mt-1.5 flex-row items-center gap-1 self-start rounded-full px-2.5 py-1"
+          style={{ backgroundColor: withAlpha(deltaTone, 0.12) }}
+        >
+          <SymbolIcon
+            name={over ? "arrow-up-right" : "arrow-down-right"}
+            size={12}
+            color={deltaTone}
+          />
+          <Text
+            variant="footnote"
+            numeric
+            numberOfLines={1}
+            style={{ color: deltaTone }}
+            className="font-semibold"
+          >
+            {deltaText}
+          </Text>
+        </Animated.View>
+      ) : null}
       {hasChart ? (
         <Animated.View
           key={period}
@@ -327,9 +420,34 @@ function SpendHero({
           )}
         </Animated.View>
       ) : null}
+      {!all ? (
+        <Card className="mt-4 flex-row rounded-[20px] px-0 py-3.5">
+          <Stat
+            label="Today"
+            value={fmt(today)}
+            tone={today > 0 ? undefined : "tertiary"}
+          />
+          <Stat label="Per day" value={fmt(spend.perDay)} divider />
+          {hasBudget ? (
+            <Stat
+              label={left >= 0 ? "Left" : "Over"}
+              value={fmt(Math.abs(left))}
+              tone={left >= 0 ? "income" : "expense"}
+              divider
+            />
+          ) : (
+            <Stat
+              label="Earned"
+              value={earned}
+              tone={earnedZero ? "tertiary" : "income"}
+              divider
+            />
+          )}
+        </Card>
+      ) : null}
       {menu.picker}
     </View>
   );
 }
 
-export { SpendHero };
+export { SpendHero, splitSymbol };

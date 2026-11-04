@@ -38,7 +38,6 @@ import {
   FloatingLabel,
   useChartWidth,
   useScrubGesture,
-  useSelectionTimeout,
 } from "./chart-kit";
 import { useHeld } from "./use-held";
 import { useChartFont } from "./use-chart-font";
@@ -216,7 +215,6 @@ function CumulativeDuo({
   const outAreaOpacity = useDerivedValue(() => fill.value);
 
   const count = series.length;
-  useSelectionTimeout(selected, setSelected);
   const heldIndex = useHeld(selected);
   const gesture = useScrubGesture({
     // Day i ends at (i + 1) / count of the plot; pick the nearest day that has happened.

@@ -1,9 +1,10 @@
 import * as React from "react";
-import { View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import { withSkia } from "@studio/charts";
 import type { MonthlyBarsProps } from "@studio/charts/components";
-import { Card } from "@studio/ui";
+import { AnimatedNumber, Card, Text, type TextTone } from "@studio/ui";
+import { useTokens, withAlpha } from "@studio/theme";
 import { useMonthlyTotals } from "@/data/hooks";
 import { monthShort, parseKey, type Period } from "@studio/dates";
 import { formatMoneyForSpeech } from "@studio/money";
@@ -24,10 +25,19 @@ type MonthlyCardProps = {
   /** A bar was tapped: switch to that month. */
   onPick: (period: Period) => void;
   locale?: string;
+  /** Figures for the month in view, shown above the bars. */
+  stats?: readonly { label: string; value: string; tone?: TextTone }[];
 };
 
-/** Twelve months of spending (brass bars) with income ticks (mint); tap a bar to view that month. */
-function MonthlyCard({ months, viewedFrom, onPick, locale }: MonthlyCardProps) {
+/** The viewed month's figures over twelve months of spending (bars) with income ticks; tap a bar to view that month. */
+function MonthlyCard({
+  months,
+  viewedFrom,
+  onPick,
+  locale,
+  stats = [],
+}: MonthlyCardProps) {
+  const { colors } = useTokens();
   const recent = React.useMemo(() => months.slice(0, SHOWN), [months]);
   const totals = useMonthlyTotals(recent);
   // Leading months with nothing in them only waste width; keep at least six.
@@ -60,7 +70,37 @@ function MonthlyCard({ months, viewedFrom, onPick, locale }: MonthlyCardProps) {
     )
     .join("; ")}`;
   return (
-    <Card className="mx-4 rounded-[16px] px-4 pb-1 pt-3">
+    <Card className="mx-4 rounded-[20px] px-4 pb-3 pt-3.5">
+      {stats.length > 0 ? (
+        <View
+          className="mb-1 flex-row pb-3"
+          style={{
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomColor: colors.separator,
+          }}
+        >
+          {stats.map((stat) => (
+            <View
+              key={stat.label}
+              className="flex-1"
+              accessible
+              accessibilityLabel={`${stat.label}, ${stat.value}`}
+            >
+              <Text variant="caption" tone="secondary" numberOfLines={1}>
+                {stat.label}
+              </Text>
+              <AnimatedNumber
+                value={stat.value}
+                variant="headline"
+                tone={stat.tone}
+                fit
+                align="left"
+                className="mt-0.5 font-semibold"
+              />
+            </View>
+          ))}
+        </View>
+      ) : null}
       <View style={{ height: 150 }}>
         <MonthlyBars
           data={data}
@@ -86,6 +126,40 @@ function MonthlyCard({ months, viewedFrom, onPick, locale }: MonthlyCardProps) {
           }
           accessibilityLabel={summary}
         />
+      </View>
+      <View
+        className="mt-1 flex-row gap-4"
+        importantForAccessibility="no-hide-descendants"
+      >
+        <View className="flex-row items-center gap-1.5">
+          <View
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: 2,
+              backgroundColor: withAlpha(colors.text, 0.35),
+            }}
+          />
+          <Text variant="caption" tone="tertiary">
+            Spent
+          </Text>
+        </View>
+        <View className="flex-row items-center gap-1.5">
+          <View
+            style={{
+              width: 10,
+              height: 2.5,
+              borderRadius: 1,
+              backgroundColor: colors.income,
+            }}
+          />
+          <Text variant="caption" tone="tertiary">
+            Earned
+          </Text>
+        </View>
+        <Text variant="caption" tone="tertiary" className="ml-auto">
+          Tap a month
+        </Text>
       </View>
     </Card>
   );

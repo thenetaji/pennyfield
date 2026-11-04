@@ -145,6 +145,34 @@ describe("topTitles", () => {
   });
 });
 
+describe("normaliseTitle", () => {
+  it("groups spellings of one merchant", () => {
+    const keys = [
+      "Tikhub",
+      "TikHub",
+      "TIKHUB API",
+      "tikhub.io",
+      "Tikhub Pvt. Ltd.",
+      "UPI/tikhub/482913",
+      "www.tikhub.com",
+    ].map(normaliseTitle);
+    expect(new Set(keys)).toEqual(new Set(["tikhub"]));
+  });
+
+  it("keeps different merchants and short numbers apart", () => {
+    expect(normaliseTitle("Café Coffee Day")).toBe("cafe coffee day");
+    expect(normaliseTitle("7 Eleven")).toBe("7 eleven");
+    expect(normaliseTitle("Swiggy Instamart")).not.toBe(
+      normaliseTitle("Swiggy"),
+    );
+  });
+
+  it("falls back to the plain title when every word is noise", () => {
+    expect(normaliseTitle("UPI")).toBe("upi");
+    expect(normaliseTitle("  ")).toBe("");
+  });
+});
+
 describe("byAccount", () => {
   it("sums per account in display currency", () => {
     const out = byAccount(

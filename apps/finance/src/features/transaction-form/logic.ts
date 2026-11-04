@@ -570,3 +570,45 @@ export function moneyShort(
     ...(whole ? { decimals: 0 } : {}),
   });
 }
+
+export interface BudgetHint {
+  name: string;
+  /** What the budget has left before this entry. */
+  left: number;
+  /** After this entry; negative when it goes over. */
+  after: number;
+}
+
+/**
+ * The budget this expense draws on: the tightest category budget that covers it, else the all-spending budget.
+ * Only budgets in the entry's currency, so the figures never mix currencies.
+ */
+export function budgetHint(
+  budgets: readonly {
+    budget: {
+      name: string;
+      scope: string;
+      currency: string;
+      categoryIds: readonly string[];
+    };
+    remaining: number;
+  }[],
+  entry: { categoryId: string | null; currency: string; amount: number },
+): BudgetHint | null {
+  const same = budgets.filter((b) => b.budget.currency === entry.currency);
+  const covering = same
+    .filter(
+      (b) =>
+        b.budget.scope !== "all" &&
+        entry.categoryId !== null &&
+        b.budget.categoryIds.includes(entry.categoryId),
+    )
+    .sort((a, b) => a.remaining - b.remaining);
+  const pick = covering[0] ?? same.find((b) => b.budget.scope === "all");
+  if (!pick) return null;
+  return {
+    name: pick.budget.name,
+    left: pick.remaining,
+    after: pick.remaining - entry.amount,
+  };
+}

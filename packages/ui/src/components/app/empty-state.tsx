@@ -10,6 +10,8 @@ import { fadeIn, Float } from "@studio/motion";
 import { useTokens } from "@studio/theme";
 
 type EmptyStateProps = {
+  /** Optional headline above the message, for a first-run screen. */
+  title?: string;
   message: string;
   actionLabel?: string;
   onAction?: () => void;
@@ -23,6 +25,7 @@ const LIFT = 0.1;
  * The action is always a secondary button; labels are verb + object.
  */
 function EmptyState({
+  title,
   message,
   actionLabel,
   onAction,
@@ -49,9 +52,20 @@ function EmptyState({
         </Animated.View>
       </Float>
       <Animated.View entering={fadeIn(120)} className="items-center gap-4">
-        <Text variant="callout" tone="secondary" className="text-center">
-          {message}
-        </Text>
+        <View className="items-center gap-1.5">
+          {title ? (
+            <Text variant="title2" className="text-center font-semibold">
+              {title}
+            </Text>
+          ) : null}
+          <Text
+            variant="callout"
+            tone="secondary"
+            className="max-w-[300px] text-center"
+          >
+            {message}
+          </Text>
+        </View>
         {actionLabel && onAction ? (
           <Button variant="secondary" onPress={onAction}>
             {actionLabel}

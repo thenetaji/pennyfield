@@ -41,7 +41,6 @@ import {
   FloatingLabel,
   useChartWidth,
   useScrubGesture,
-  useSelectionTimeout,
 } from "./chart-kit";
 import { useChartFont } from "./use-chart-font";
 
@@ -128,7 +127,6 @@ function TideChart({
   const accent = colors.accent;
   const labelFont = useChartFont(12, "semibold");
   const [selected, setSelected] = React.useState<number | null>(null);
-  useSelectionTimeout(selected, setSelected);
 
   const geo = React.useMemo(
     () => tideGeometry(cumulative, days, reference, width, height),

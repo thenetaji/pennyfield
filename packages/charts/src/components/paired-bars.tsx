@@ -21,7 +21,6 @@ import {
   useChartWidth,
   useGrow,
   useScrubGesture,
-  useSelectionTimeout,
 } from "./chart-kit";
 import { useHeld } from "./use-held";
 import { useChartFont } from "./use-chart-font";
@@ -113,7 +112,6 @@ function PairedBars({
     : [];
   const selected =
     selectedIndex !== null && selectedIndex < count ? selectedIndex : null;
-  useSelectionTimeout(selected, onSelect);
   const heldIndex = useHeld(selected);
   const spoken =
     selected === null
