@@ -674,6 +674,24 @@ export const flows = [
     },
   },
   {
+    name: "Merchants",
+    async run({ page, base }) {
+      await seeded(page, base, "demo");
+      await tabTo(page, "Activity");
+      await tapText(page, "Merchants");
+      await expectText(page, "Swiggy");
+      // One row per merchant: Swiggy's several payments are combined, not listed day by day.
+      assert.equal(
+        (await body(page)).match(/\bSwiggy\b/g)?.length,
+        1,
+        "Swiggy should appear once in the merchant view",
+      );
+      await goClient(page, "/search");
+      await page.locator('input[aria-label="Search"]').fill("swiggy");
+      await expectLabel(page, "payments, average", { exact: false });
+    },
+  },
+  {
     name: "Spend analyzer",
     async run({ page, base }) {
       await seeded(page, base, "demo");

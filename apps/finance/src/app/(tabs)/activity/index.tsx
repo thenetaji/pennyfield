@@ -1,14 +1,29 @@
+import { FlashList } from "@shopify/flash-list";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import * as React from "react";
 import { View } from "react-native";
 
-import { barLeft, barRight, HeaderButton, EmptyState } from "@studio/ui";
+import {
+  barLeft,
+  barRight,
+  HeaderButton,
+  EmptyState,
+  SegmentedControl,
+} from "@studio/ui";
 import { CalendarView } from "@/features/calendar/calendar-view";
 import { monthOf, shiftMonth } from "@/features/calendar/grid";
 
 import { AddFab } from "@/components/app/add-fab";
 import { OptionPicker, type Option } from "@studio/ui";
-import { usePeriodTransactions, useSetting, useTodayKey } from "@/data/hooks";
+import {
+  useCategories,
+  usePeriodTransactions,
+  useSetting,
+  useTodayKey,
+} from "@/data/hooks";
+import { merchantTotals } from "@/features/activity/merchants";
+import { PayeeRow } from "@/features/insights/payee-row";
+import type { Payee } from "@/features/insights/payees-model";
 import { FilterChips } from "@/features/activity/filter-chips";
 import {
   activeFilterCount,
@@ -95,6 +110,18 @@ export default function Activity() {
   const label = allTime || !month ? "All time" : pillLabel(month);
 
   const totals = React.useMemo(() => sumItems(items, money), [items, money]);
+  const [byMerchant, setByMerchant] = React.useState(false);
+  const merchantKind =
+    kinds.length === 1 && kinds[0] === "income" ? "income" : "expense";
+  const merchants = React.useMemo(
+    () => (byMerchant ? merchantTotals(items, merchantKind, money) : []),
+    [byMerchant, items, merchantKind, money],
+  );
+  const categoryRows = useCategories();
+  const categoryById = React.useMemo(
+    () => new Map(categoryRows.map((c) => [c.id, c])),
+    [categoryRows],
+  );
   const transferOnly = kinds.length === 1 && kinds[0] === "transfer";
   const decimals = money.showDecimals ? undefined : 0;
   const showSpent = kinds.length === 0 || kinds.includes("expense");
@@ -235,6 +262,16 @@ export default function Activity() {
         stats={items.length > 0 && !transferOnly ? summary : []}
       />
       <FilterChips />
+      {items.length > 0 && !transferOnly ? (
+        <View className="px-4">
+          <SegmentedControl
+            values={["Days", "Merchants"]}
+            selectedIndex={byMerchant ? 1 : 0}
+            onChange={(i) => setByMerchant(i === 1)}
+            accessibilityLabel="Group by"
+          />
+        </View>
+      ) : null}
     </View>
   );
 
@@ -271,6 +308,56 @@ export default function Activity() {
           {header}
           {empty}
         </View>
+      ) : byMerchant && !transferOnly ? (
+        <FlashList
+          data={merchants}
+          keyExtractor={(m: Payee) => m.key}
+          ListHeaderComponent={header}
+          contentInsetAdjustmentBehavior="automatic"
+          contentContainerStyle={{ paddingBottom: 96 }}
+          ListEmptyComponent={<EmptyState message="No titled transactions" />}
+          renderItem={({ item, index }: { item: Payee; index: number }) => (
+            <View
+              className={`mx-4 overflow-hidden ${index === 0 ? "mt-3" : ""}`}
+              style={{
+                borderTopLeftRadius: index === 0 ? 18 : 0,
+                borderTopRightRadius: index === 0 ? 18 : 0,
+                borderBottomLeftRadius: index === merchants.length - 1 ? 18 : 0,
+                borderBottomRightRadius:
+                  index === merchants.length - 1 ? 18 : 0,
+              }}
+            >
+              <PayeeRow
+                payee={item}
+                category={
+                  item.categoryId
+                    ? (categoryById.get(item.categoryId) ?? null)
+                    : null
+                }
+                currency={money.displayCurrency}
+                locale={money.locale}
+                showDecimals={money.showDecimals}
+                max={merchants[0]?.amount ?? 0}
+                separator={index < merchants.length - 1}
+                onPress={() =>
+                  router.push({
+                    pathname: "/payee",
+                    params: {
+                      from: allTime
+                        ? (items[items.length - 1]?.dateKey ?? today)
+                        : range.from,
+                      to: allTime ? today : range.to,
+                      type: allTime ? "custom" : "month",
+                      kind: merchantKind,
+                      key: item.key,
+                      title: item.title,
+                    },
+                  })
+                }
+              />
+            </View>
+          )}
+        />
       ) : (
         <TransactionDayList
           items={items}
