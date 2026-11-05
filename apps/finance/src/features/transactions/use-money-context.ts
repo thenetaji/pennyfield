@@ -23,6 +23,7 @@ export function useMoneyContext(
   const [displayCurrency] = useSetting("display_currency");
   const [showDecimals] = useSetting("show_decimals");
   const [hidden] = useSetting("hide_amounts");
+  const [rowDetail] = useSetting("row_detail");
   const rates = useRateLookup();
   const todayKey = useTodayKey();
   const relative = options.relativeDays ?? false;
@@ -34,7 +35,8 @@ export function useMoneyContext(
       todayKey,
       locale: maskLocale(moneyLocale(displayCurrency), hidden),
       relativeTo: relative ? todayKey : undefined,
+      rowDetail,
     }),
-    [displayCurrency, showDecimals, hidden, rates, todayKey, relative],
+    [displayCurrency, showDecimals, hidden, rates, todayKey, relative, rowDetail],
   );
 }

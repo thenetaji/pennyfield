@@ -10,8 +10,16 @@ import {
   Button,
   Text,
   AnimatedNumber,
+  Pressable,
 } from "@studio/ui";
-import { useRecurringRule, useTransaction } from "@/data/hooks";
+import {
+  useBudgets,
+  useMerchantHistory,
+  useRecurringRule,
+  useSetting,
+  useTransaction,
+} from "@/data/hooks";
+import { MerchantContext } from "@/features/transactions/merchant-context";
 import { DetailRow } from "@/features/transactions/detail-row";
 import { repeatLabel } from "@/features/transactions/repeat-label";
 import { ReceiptThumb } from "@/features/receipts/receipt-thumb";
@@ -19,7 +27,7 @@ import { TagPills } from "@/features/tags/tag-pill";
 import { formatTime, lendingLabel } from "@/features/transactions/row-model";
 import { useMoneyContext } from "@/features/transactions/use-money-context";
 import { useTransactionActions } from "@/features/transactions/use-transaction-actions";
-import { fullDayLabel } from "@studio/dates";
+import { fullDayLabel, periodFor } from "@studio/dates";
 import { isLendingKind, type TransactionKind } from "@/lib/ledger";
 import {
   convertWithRates,
@@ -64,6 +72,10 @@ export default function TransactionDetail() {
   const money = useMoneyContext();
   const actions = useTransactionActions();
   const leaving = React.useRef(false);
+  const [weekStart] = useSetting("week_start");
+  const [monthStart] = useSetting("month_start");
+  const history = useMerchantHistory(item);
+  const budgets = useBudgets(item?.dateKey);
 
   // Deleted elsewhere while open: pop back.
   React.useEffect(() => {
@@ -126,6 +138,29 @@ export default function TransactionDetail() {
   ) as CategoryColorKey;
   const date = `${fullDayLabel(item.dateKey)} · ${formatTime(item.occurredAt)}`;
   const memo = item.memo.trim();
+  const month = periodFor("month", item.dateKey, { weekStart, monthStart });
+  const budget =
+    item.kind === "expense" && !split && item.categoryId
+      ? budgets
+          .filter(
+            (b) =>
+              b.budget.currency === item.currency &&
+              b.budget.scope !== "all" &&
+              b.budget.categoryIds.includes(item.categoryId ?? ""),
+          )
+          .sort((a, b) => a.remaining - b.remaining)[0]
+      : undefined;
+  const openCategory = (categoryId: string) =>
+    router.push({
+      pathname: "/category/[id]",
+      params: {
+        id: categoryId,
+        from: month.from,
+        to: month.to,
+        type: "month",
+        kind: item.kind === "income" ? "income" : "expense",
+      },
+    });
   const fmt = (minor: number, currency: string) =>
     formatMoney(minor, currency, { locale, sign: "none" });
 
@@ -184,7 +219,51 @@ export default function TransactionDetail() {
             {transferNote}
           </Text>
         ) : null}
+        {memo ? (
+          <Pressable
+            role="button"
+            accessibilityLabel={`Memo, ${memo}`}
+            accessibilityHint="Edits the memo"
+            onPress={() => actions.editMemo(item.id)}
+            className="mt-3 max-w-full rounded-[14px] bg-fill px-4 py-2.5"
+            style={{ borderCurve: "continuous" }}
+          >
+            <Text variant="callout" className="text-center" numberOfLines={4}>
+              {memo}
+            </Text>
+          </Pressable>
+        ) : !isTransfer ? (
+          <Pressable
+            role="button"
+            onPress={() => actions.editMemo(item.id)}
+            className="mt-2 px-3 py-1.5"
+          >
+            <Text variant="footnote" tone="accent">
+              Add a memo
+            </Text>
+          </Pressable>
+        ) : null}
       </Stagger>
+
+      {history || budget ? (
+        <Stagger index={1} className="px-4 pb-6">
+          <MerchantContext
+            title={item.title.trim()}
+            history={history}
+            budget={budget}
+            currency={item.currency}
+            locale={locale}
+            onOpenMerchant={() => actions.openMerchant(item)}
+            onOpenBudget={() =>
+              budget &&
+              router.push({
+                pathname: "/budget/[id]",
+                params: { id: budget.budget.id },
+              })
+            }
+          />
+        </Stagger>
+      ) : null}
 
       <View className="gap-6">
         {split ? (
@@ -226,6 +305,8 @@ export default function TransactionDetail() {
               <DetailRow
                 label="Category"
                 value={item.category.name}
+                chevron
+                onPress={() => item.categoryId && openCategory(item.categoryId)}
                 tile={{
                   icon: item.category.icon,
                   color: item.category.color as CategoryColorKey,
@@ -246,6 +327,13 @@ export default function TransactionDetail() {
               <DetailRow
                 label="Account"
                 value={item.account.name}
+                chevron
+                onPress={() =>
+                  router.push({
+                    pathname: "/accounts/[id]",
+                    params: { id: item.accountId },
+                  })
+                }
                 tile={{
                   icon: item.account.icon,
                   color: item.account.color as CategoryColorKey,
@@ -320,10 +408,9 @@ export default function TransactionDetail() {
           </Stagger>
         ) : null}
 
-        {memo || rule ? (
+        {rule ? (
           <Stagger index={3}>
             <ListGroup>
-              {memo ? <DetailRow label="Memo" value={memo} stacked /> : null}
               {rule ? (
                 <DetailRow
                   label="Repeats"

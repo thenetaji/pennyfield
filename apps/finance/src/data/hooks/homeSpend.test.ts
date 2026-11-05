@@ -10,6 +10,7 @@ import {
   perDayAverage,
   readAllTime,
   readHomeSpend,
+  trailingDays,
 } from "./homeSpend";
 import { frequentTitles } from "./useFrequentTitles";
 
@@ -24,6 +25,12 @@ describe("home spend maths", () => {
     expect(percentChange(105, 100)).toBe(5);
     expect(percentChange(1, 0)).toBeNull();
     expect(percentChange(0, 100)).toBe(-100);
+  });
+
+  it("takes the last days up to today, reaching into the previous period", () => {
+    expect(trailingDays([1, 2, 3], [4, 5, 6, 7], 1, 4)).toEqual([2, 3, 4, 5]);
+    expect(trailingDays([], [4, 5, 6], 2, 4)).toEqual([0, 4, 5, 6]);
+    expect(trailingDays([1], [4, 5], 9, 2)).toEqual([4, 5]);
   });
 
   it("averages per elapsed day, half up", () => {
@@ -96,6 +103,7 @@ describe("readHomeSpend", () => {
     expect(result.dayIndex).toBe(4);
     expect(result.series).toHaveLength(31);
     expect(result.previousTotal).toBe(10000);
+    expect(result.week).toEqual([0, 0, 500, 0, 0, 0, 0]);
   });
 
   it("reads all time as monthly totals from the first transaction", () => {

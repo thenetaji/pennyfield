@@ -24,7 +24,6 @@ const SECTION_ICONS: Record<
   bills: { name: "calendar", color: "purple" },
   top_categories: { name: "tag", color: "purple" },
   recent: { name: "activity", color: "purple" },
-  heatmap: { name: "grid", color: "purple" },
 };
 
 function MoveButton({

@@ -9,6 +9,7 @@ import {
   previousLabel,
   previousName,
   scrubLabel,
+  analyzerSummary,
   trendBadge,
   trendLabel,
   weekdayShort,
@@ -128,15 +129,38 @@ describe("trendBadge and previousName", () => {
   const base = { average: 410000, spark: [1, 2, 3] };
   it("marks a fall in spending as good", () => {
     const badge = trendBadge(
-      { ...base, direction: "down", percent: -12 },
+      { ...base, direction: "down", percent: -12, delta: -240000 },
       "expense",
       "September",
       money,
     );
-    expect(badge).toMatchObject({ text: "12%", arrow: "down", good: true });
+    expect(badge).toMatchObject({
+      text: "12%",
+      amount: "−₹2,400",
+      arrow: "down",
+      good: true,
+    });
     expect(badge.speech).toBe(
-      "down 12 percent on September, 3 period average ₹4,100",
+      "down ₹2,400, 12 percent on September, 3 period average ₹4,100",
     );
+  });
+  it("gives a signed amount, compact for large changes", () => {
+    expect(
+      trendBadge(
+        { ...base, direction: "up", percent: 40, delta: 240000 },
+        "expense",
+        "x",
+        money,
+      ).amount,
+    ).toBe("+₹2,400");
+    expect(
+      trendBadge(
+        { ...base, direction: "up", percent: 40, delta: 1240000 },
+        "expense",
+        "x",
+        money,
+      ).amount,
+    ).toMatch(/^\+₹12\.4K$/);
   });
   it("marks a rise in income as good and handles new and flat", () => {
     expect(
@@ -164,5 +188,13 @@ describe("trendBadge and previousName", () => {
     expect(
       previousName({ type: "custom", from: "2026-10-01", to: "2026-10-10" }),
     ).toBe("the previous 10 days");
+  });
+});
+
+describe("analyzerSummary", () => {
+  it("counts unusual and repeats, singular where it should be", () => {
+    expect(analyzerSummary(3, 2)).toBe("3 unusual · 2 repeats");
+    expect(analyzerSummary(0, 1)).toBe("1 repeat");
+    expect(analyzerSummary(0, 0)).toBe("Your habits");
   });
 });

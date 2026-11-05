@@ -13,7 +13,7 @@ import { daysText } from "./no-spend-labels";
 
 /**
  * Self-contained doorway to `/calendar`: the current no-spend streak and this month's no-spend days.
- * Suggested home: Home (under the spending heatmap) or Activity. Renders nothing before the first entry.
+ * Renders nothing before the first entry.
  */
 export function CalendarEntryCard() {
   const router = useRouter();

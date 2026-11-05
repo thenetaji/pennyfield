@@ -7,7 +7,6 @@ export const HOME_SECTION_IDS = [
   "bills",
   "top_categories",
   "recent",
-  "heatmap",
 ] as const;
 
 export type HomeSectionId = (typeof HOME_SECTION_IDS)[number];
@@ -25,7 +24,6 @@ export const HOME_SECTION_LABELS: Record<HomeSectionId, string> = {
   bills: "Upcoming bills",
   top_categories: "Top categories",
   recent: "Recent",
-  heatmap: "Spending heatmap",
 };
 
 export const DEFAULT_HOME_LAYOUT: readonly HomeSectionPref[] =

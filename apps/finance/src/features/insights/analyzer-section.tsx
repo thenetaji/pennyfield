@@ -10,7 +10,6 @@ import {
   Card,
   IconTile,
   Pressable,
-  SectionHeader,
   Text,
   showToast,
 } from "@studio/ui";
@@ -24,6 +23,8 @@ import {
 } from "@studio/theme";
 import { weekdayName } from "@/features/budgets/logic";
 import { DAY_PARTS } from "@/lib/insights";
+
+import { analyzerSummary } from "./labels";
 
 type AnalyzerSectionProps = {
   analyzer: Analyzer;
@@ -468,7 +469,15 @@ function RepeatsCard({
   );
 }
 
-/** The spend analyzer: where the month is heading, what is unusual, habits, and payments that repeat. */
+function GroupLabel({ children }: { children: string }) {
+  return (
+    <Text variant="footnote" tone="secondary" className="px-8 pb-1.5 pt-4">
+      {children}
+    </Text>
+  );
+}
+
+/** The month-end forecast directly under the hero, then unusual spending, repeats and habits as one group. */
 function AnalyzerSection({
   analyzer,
   budget,
@@ -477,43 +486,54 @@ function AnalyzerSection({
   showDecimals,
 }: AnalyzerSectionProps) {
   const money = useMoney(analyzer.currency, locale, showDecimals);
-  const hasUnusual = analyzer.unusual.length > 0;
-  const hasRepeats = analyzer.repeats.length > 0;
+  const unusual = Math.min(analyzer.unusual.length, MAX_UNUSUAL);
+  const repeats = Math.min(analyzer.repeats.length, MAX_REPEATS);
   const hasPatterns = analyzer.patterns.count > 0;
-  if (!analyzer.forecast && !hasUnusual && !hasRepeats && !hasPatterns)
-    return null;
+  const hasGroup = unusual > 0 || repeats > 0 || hasPatterns;
+  if (!analyzer.forecast && !hasGroup) return null;
+  const summary = analyzerSummary(unusual, repeats);
   return (
     <View>
       {analyzer.forecast ? (
-        <>
-          <SectionHeader title="Month-end forecast" />
+        <View className="pt-3">
           <ForecastCard analyzer={analyzer} budget={budget} money={money} />
-        </>
+        </View>
       ) : null}
-      {hasUnusual ? (
+      {hasGroup ? (
         <>
-          <SectionHeader title="Unusual this month" />
-          <UnusualCard analyzer={analyzer} money={money} />
-        </>
-      ) : null}
-      {hasRepeats ? (
-        <>
-          <SectionHeader title="Repeat payments" />
-          <RepeatsCard analyzer={analyzer} money={money} />
-          <Text variant="footnote" tone="secondary" className="px-8 pt-2">
-            These come back on a rhythm. Track them to see them in upcoming
-            bills and the forecast.
-          </Text>
-        </>
-      ) : null}
-      {hasPatterns ? (
-        <>
-          <SectionHeader title="Your patterns" />
-          <PatternsCard
-            analyzer={analyzer}
-            weekStart={weekStart}
-            money={money}
-          />
+          <View
+            className="flex-row items-baseline justify-between px-4 pb-0 pt-6"
+            accessible
+            accessibilityRole="header"
+            accessibilityLabel={`Analyzer, ${summary}`}
+          >
+            <Text variant="headline">Analyzer</Text>
+            <Text variant="footnote" tone="secondary" numeric>
+              {summary}
+            </Text>
+          </View>
+          {unusual > 0 ? (
+            <>
+              <GroupLabel>Unusual this month</GroupLabel>
+              <UnusualCard analyzer={analyzer} money={money} />
+            </>
+          ) : null}
+          {repeats > 0 ? (
+            <>
+              <GroupLabel>Repeat payments</GroupLabel>
+              <RepeatsCard analyzer={analyzer} money={money} />
+            </>
+          ) : null}
+          {hasPatterns ? (
+            <>
+              <GroupLabel>Your patterns</GroupLabel>
+              <PatternsCard
+                analyzer={analyzer}
+                weekStart={weekStart}
+                money={money}
+              />
+            </>
+          ) : null}
         </>
       ) : null}
     </View>

@@ -30,6 +30,7 @@ import {
   useActiveFilterCount,
   useActivityFilters,
 } from "@/features/activity/filter-store";
+import { DailyCard } from "@/features/activity-chart/daily-card";
 import { MonthlyCard } from "@/features/activity-chart/monthly-card";
 import { MonthPill } from "@/features/activity/month-pill";
 import { sumItems } from "@/features/transactions/day-groups";
@@ -43,7 +44,7 @@ import {
   recentMonthPeriods,
   type Period,
 } from "@studio/dates";
-import { formatMoney } from "@studio/money";
+import { convertWithRates, formatMoney, minorDigits } from "@studio/money";
 import { haptic } from "@studio/theme";
 
 const ALL = "all";
@@ -71,8 +72,16 @@ export default function Activity() {
   const kinds = useActivityFilters((s) => s.kinds);
   const categoryId = useActivityFilters((s) => s.categoryId);
   const accountId = useActivityFilters((s) => s.accountId);
+  const memoOnly = useActivityFilters((s) => s.memoOnly);
+  const minAmount = useActivityFilters((s) => s.minAmount);
   const clear = useActivityFilters((s) => s.clear);
-  const params = useLocalSearchParams<{ filter?: string; view?: string }>();
+  const params = useLocalSearchParams<{
+    filter?: string;
+    view?: string;
+    day?: string;
+    now?: string;
+  }>();
+  const [focusDay, setFocusDay] = React.useState<string | null>(null);
   React.useEffect(() => {
     // Deep link / QA: `?filter=expense` opens with that type filter on.
     const kind = params.filter;
@@ -81,7 +90,8 @@ export default function Activity() {
       useActivityFilters.getState().toggleKind(kind);
     }
   }, [params.filter]);
-  const filtersActive = activeFilterCount({ kinds, categoryId, accountId }) > 0;
+  const filtersActive =
+    activeFilterCount({ kinds, categoryId, accountId, memoOnly, minAmount }) > 0;
 
   const allTime = choice === ALL;
   const month =
@@ -92,12 +102,23 @@ export default function Activity() {
   React.useEffect(() => {
     setPeriod({ from: range.from, to: range.to });
   }, [range.from, range.to, setPeriod]);
-  const items = usePeriodTransactions({
+  const queried = usePeriodTransactions({
     ...range,
     kinds: kinds.length > 0 ? kinds : undefined,
     categoryId: categoryId ?? undefined,
     accountId: accountId ?? undefined,
   });
+  const items = React.useMemo(() => {
+    if (!memoOnly && minAmount === null) return queried;
+    const min =
+      minAmount === null ? 0 : minAmount * 10 ** minorDigits(money.displayCurrency);
+    return queried.filter(
+      (item) =>
+        (!memoOnly || item.memo.trim() !== "") &&
+        (min === 0 ||
+          convertWithRates(item.amount, item.currency, money.displayCurrency, money.rates) >= min),
+    );
+  }, [queried, memoOnly, minAmount, money.displayCurrency, money.rates]);
 
   const options = React.useMemo<readonly Option<string>[]>(
     () => [
@@ -180,6 +201,15 @@ export default function Activity() {
     () => params.view === "calendar",
   );
   const [calMonth, setCalMonth] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    const day = params.day;
+    if (!day && !params.now) return;
+    setCalendar(false);
+    const target = day ? months.find((m) => m.from <= day && day <= m.to) : undefined;
+    setChoice(target && target.from !== months[0]?.from ? target.from : null);
+    setFocusDay(day ?? null);
+    router.setParams({ day: undefined, now: undefined });
+  }, [params.day, params.now, months, router]);
   const [calDay, setCalDay] = React.useState<string | null>(null);
   const currentMonth = monthOf(today);
   const shownMonth = calMonth ?? currentMonth;
@@ -252,16 +282,31 @@ export default function Activity() {
 
   const header = (
     <View className="gap-3 pb-1 pt-2">
-      <MonthlyCard
-        months={months}
-        viewedFrom={allTime ? null : (month?.from ?? null)}
-        onPick={(picked) =>
-          setChoice(picked.from === months[0]?.from ? null : picked.from)
-        }
-        locale={money.locale}
-        stats={items.length > 0 && !transferOnly ? summary : []}
-      />
-      <FilterChips />
+      {allTime || !month ? (
+        <MonthlyCard
+          months={months}
+          viewedFrom={null}
+          onPick={(picked) =>
+            setChoice(picked.from === months[0]?.from ? null : picked.from)
+          }
+          locale={money.locale}
+          stats={items.length > 0 && !transferOnly ? summary : []}
+        />
+      ) : (
+        <DailyCard
+          items={items}
+          from={month.from}
+          to={month.to}
+          today={today}
+          money={money}
+          stats={items.length > 0 && !transferOnly ? summary : []}
+          onPickDay={(day) => {
+            setByMerchant(false);
+            setFocusDay(day);
+          }}
+        />
+      )}
+      <FilterChips currency={money.displayCurrency} locale={money.locale} />
       {items.length > 0 && !transferOnly ? (
         <View className="px-4">
           <SegmentedControl
@@ -363,6 +408,7 @@ export default function Activity() {
           items={items}
           context={money}
           header={header}
+          focusDay={focusDay}
           contentContainerStyle={{ paddingBottom: 96 }}
         />
       )}

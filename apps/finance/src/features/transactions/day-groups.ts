@@ -11,7 +11,15 @@ export interface DayGroupContext {
 }
 
 export type ListEntry =
-  | { type: "header"; key: string; label: string; total?: string }
+  | {
+      type: "header";
+      key: string;
+      dateKey: string;
+      label: string;
+      total?: string;
+      /** The day's spending against the biggest day in the list, 0–1. */
+      share?: number;
+    }
   | {
       type: "row";
       key: string;
@@ -51,6 +59,12 @@ export function buildDayEntries(
   ctx: DayGroupContext,
 ): ListEntry[] {
   const out: ListEntry[] = [];
+  const spentByDay = new Map<string, number>();
+  for (const item of items) {
+    if (item.kind !== "expense") continue;
+    spentByDay.set(item.dateKey, (spentByDay.get(item.dateKey) ?? 0) + sumItems([item], ctx).spent);
+  }
+  const maxDay = Math.max(0, ...spentByDay.values());
   let start = 0;
   while (start < items.length) {
     const dateKey = (items[start] as TransactionListItem).dateKey;
@@ -77,8 +91,10 @@ export function buildDayEntries(
     out.push({
       type: "header",
       key: `h:${dateKey}`,
+      dateKey,
       label: dayLabel(dateKey, ctx.todayKey),
       total,
+      share: maxDay > 0 ? (spentByDay.get(dateKey) ?? 0) / maxDay : undefined,
     });
     day.forEach((item, index) =>
       out.push({

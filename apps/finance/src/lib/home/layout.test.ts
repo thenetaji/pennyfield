@@ -40,7 +40,7 @@ describe("normalizeHomeLayout", () => {
     ).toBe(true);
   });
 
-  it("replaces Coming up with Budgets and Upcoming bills in place, and drops Summary", () => {
+  it("replaces Coming up with Budgets and Upcoming bills in place, and drops Summary and the heatmap", () => {
     const layout = normalizeHomeLayout([
       { id: "quick_add", visible: true },
       { id: "stats", visible: true },
@@ -56,15 +56,14 @@ describe("normalizeHomeLayout", () => {
       { id: "pockets", visible: true },
       { id: "budgets", visible: false },
       { id: "bills", visible: false },
-      { id: "heatmap", visible: true },
       { id: "top_categories", visible: true },
       { id: "recent", visible: true },
     ]);
   });
 
   it("treats anything but an explicit false as visible", () => {
-    expect(normalizeHomeLayout([{ id: "heatmap" }])[1]).toEqual({
-      id: "heatmap",
+    expect(normalizeHomeLayout([{ id: "recent" }])[1]).toEqual({
+      id: "recent",
       visible: true,
     });
   });

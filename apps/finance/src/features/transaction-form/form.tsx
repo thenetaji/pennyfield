@@ -30,7 +30,9 @@ import {
   useCategories,
   usePeople,
   useRateLookup,
+  usePeriodTransactions,
   useRecentCategories,
+  useRecentMemos,
   useRecurringRule,
   useSettings,
   useTags,
@@ -90,6 +92,8 @@ import {
 } from "@/features/transaction-form/menu-chip";
 import { SplitList } from "@/features/transaction-form/split-list";
 import { selectDraft, useDraftStore } from "@/features/transaction-form/store";
+import { sumItems } from "@/features/transactions/day-groups";
+import { useMoneyContext } from "@/features/transactions/use-money-context";
 import {
   createKeypadState,
   deriveKeypad,
@@ -263,6 +267,16 @@ function TransactionForm({
   const budgets = useBudgets(
     draft.occurredAt ? toDateKey(draft.occurredAt) : todayKey,
   );
+  const money = useMoneyContext();
+  const todayItems = usePeriodTransactions({
+    from: todayKey,
+    to: todayKey,
+    kinds: ["expense"],
+  });
+  const spentToday = React.useMemo(
+    () => sumItems(todayItems, money).spent,
+    [todayItems, money],
+  );
   const hint =
     mode === "new" &&
     draft.kind === "expense" &&
@@ -412,6 +426,12 @@ function TransactionForm({
     }
     haptic("success");
     close();
+    if (mode !== "edit")
+      showToast({
+        message: "Saved",
+        actionLabel: "Add another",
+        onAction: () => router.push("/transaction/new"),
+      });
   };
 
   /** Photos are copied after the transaction is saved; a failure only costs the photo. */
@@ -580,12 +600,25 @@ function TransactionForm({
       categoriesAll.some((c) => c.id === row.categoryId && c.kind === s.kind);
     if (!s.splits && fits) patch.categoryId = row.categoryId;
     s.patch(patch);
-    if (
+    const switchTo =
       row.accountId &&
       row.accountId !== s.accountId &&
       accountsAll.some((a) => a.id === row.accountId && !a.archivedAt)
-    )
-      changeAccount(row.accountId);
+        ? row.accountId
+        : null;
+    if (switchTo) changeAccount(switchTo);
+    // Same merchant, usually the same price: fill the last amount when none is typed yet.
+    const currency = accountOf(switchTo ?? get().accountId)?.currency;
+    if (
+      get().amount === 0 &&
+      !get().splits &&
+      row.lastAmount &&
+      row.lastCurrency === currency
+    ) {
+      get().patch({ amount: row.lastAmount });
+      if (get().focus === "amount")
+        setEntry(createKeypadState(minorDigits(row.lastCurrency), row.lastAmount));
+    }
   };
 
   // -- derived view data ----------------------------------------------------------------------
@@ -595,6 +628,10 @@ function TransactionForm({
   const titleNorm = normalizeTitle(draft.title);
   const suggestions = useTitleSuggestions(draft.title, recentKind).filter(
     (row) => row.titleNorm !== titleNorm,
+  );
+  const memoSuggestions = useRecentMemos(
+    inputFocus === "memo" ? draft.title : "",
+    inputFocus === "memo" ? draft.memo : "\u0000",
   );
   const showSuggestions =
     !isTransfer &&
@@ -767,6 +804,19 @@ function TransactionForm({
                 {hint.after < 0
                   ? `${formatMoney(-hint.after, fromCurrency, { sign: "none", decimals: 0 })} over ${hint.name} after this`
                   : `${formatMoney(hint.after, fromCurrency, { sign: "none", decimals: 0 })} left in ${hint.name} after this`}
+              </Text>
+            ) : mode === "new" &&
+              draft.kind === "expense" &&
+              spentToday > 0 &&
+              !inputFocus ? (
+              <Text
+                variant="footnote"
+                tone="secondary"
+                numeric
+                numberOfLines={1}
+                className="mt-1 px-6 text-center"
+              >
+                {`${formatMoney(spentToday, money.displayCurrency, { locale: money.locale, sign: "none", decimals: 0 })} spent today`}
               </Text>
             ) : null}
             {crossCurrency ? (
@@ -1056,6 +1106,23 @@ function TransactionForm({
               inputAccessoryViewID={ACCESSORY_ID}
               className="max-h-[84px] min-h-12 px-4 py-3"
             />
+            {inputFocus === "memo" && memoSuggestions.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                contentContainerClassName="items-center gap-2 px-4 pb-3"
+              >
+                {memoSuggestions.map((memo) => (
+                  <FormChip
+                    key={memo}
+                    label={memo}
+                    onPress={() => get().patch({ memo })}
+                    accessibilityLabel={`Use memo ${memo}`}
+                  />
+                ))}
+              </ScrollView>
+            ) : null}
             {draftTags.length > 0 || draft.receipts.length > 0 ? (
               <>
                 <Hairline />

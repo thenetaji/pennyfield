@@ -5,8 +5,10 @@ import Animated, { LinearTransition } from "react-native-reanimated";
 import { IconTile, Pressable, Text } from "@studio/ui";
 import { Sparkline } from "@studio/charts/components";
 import { formatMoney, formatMoneyForSpeech } from "@studio/money";
-import { durations, type CategoryColorKey } from "@studio/theme";
+import { durations, haptic, type CategoryColorKey } from "@studio/theme";
 import { useTokens } from "@studio/theme";
+
+import { ShareBar } from "./share-bar";
 
 export type CategoryListItem = {
   /** Category id; null for uncategorised lines (not drillable). */
@@ -25,6 +27,8 @@ export type CategoryListTrend = {
   spark: readonly number[];
   /** Short change text: "12%", "New", "Same". */
   text: string;
+  /** The change in money: "+₹2,400", "New", "Same". */
+  amount: string;
   /** Arrow to draw before `text`. */
   arrow: "up" | "down" | null;
   /** True when the change is the welcome direction (spending fell, income rose). */
@@ -47,10 +51,16 @@ function CategoryRow({
   locale,
   showDecimals,
   last,
+  max,
+  asPercent,
+  onTogglePercent,
   onPress,
 }: Omit<CategoryListProps, "items" | "onPress"> & {
   item: CategoryListItem;
   last: boolean;
+  max: number;
+  asPercent: boolean;
+  onTogglePercent: () => void;
   onPress: () => void;
 }) {
   const { colors, category } = useTokens();
@@ -58,7 +68,6 @@ function CategoryRow({
     locale,
     decimals: showDecimals ? undefined : 0,
   });
-  const share = Math.max(0, Math.min(1, item.percent / 100));
   const trend = item.trend;
   return (
     <Pressable
@@ -75,22 +84,22 @@ function CategoryRow({
         <Text variant="body" numberOfLines={1}>
           {item.name}
         </Text>
-        <View
-          className="mt-1.5 h-1 overflow-hidden rounded-full"
-          style={{ backgroundColor: colors.fill }}
-        >
-          <View
-            style={{
-              width: `${Math.max(share * 100, share > 0 ? 2 : 0)}%`,
-              backgroundColor: category[item.color],
-              height: 4,
-              borderRadius: 2,
-            }}
-          />
-        </View>
+        <ShareBar amount={item.amount} max={max} color={category[item.color]} />
       </View>
       {trend ? (
-        <View className="ml-3 items-center" style={{ width: 52 }}>
+        <Pressable
+          role="button"
+          scale={1}
+          dimTo={0.6}
+          hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+          accessibilityLabel={`${trend.speech}, show ${asPercent ? "amount" : "percent"}`}
+          onPress={() => {
+            haptic("selection");
+            onTogglePercent();
+          }}
+          className="ml-3 items-center"
+          style={{ width: 60 }}
+        >
           <Sparkline
             values={trend.spark}
             width={48}
@@ -98,7 +107,7 @@ function CategoryRow({
             endColor={category[item.color]}
           />
           <View className="mt-0.5 flex-row items-center">
-            {trend.arrow ? (
+            {trend.arrow && asPercent ? (
               <Text
                 variant="caption"
                 tone={trend.good ? "income" : "tertiary"}
@@ -114,10 +123,10 @@ function CategoryRow({
               numeric
               numberOfLines={1}
             >
-              {trend.text}
+              {asPercent ? trend.text : trend.amount}
             </Text>
           </View>
-        </View>
+        </Pressable>
       ) : null}
       <View className="ml-4 items-end" style={{ minWidth: 72 }}>
         <Text variant="body" numeric numberOfLines={1} className="font-medium">
@@ -142,7 +151,7 @@ function CategoryRow({
   );
 }
 
-/** One row per category: icon, name, share bar, amount and percent. */
+/** One row per category: icon, name, share bar, change badge, amount and percent. */
 function CategoryList({
   items,
   currency,
@@ -150,6 +159,9 @@ function CategoryList({
   showDecimals,
   onPress,
 }: CategoryListProps) {
+  const [asPercent, setAsPercent] = React.useState(false);
+  const max = items.reduce((m, item) => Math.max(m, item.amount), 0);
+  const togglePercent = React.useCallback(() => setAsPercent((v) => !v), []);
   return (
     <>
       {items.map((item, index) => (
@@ -163,6 +175,9 @@ function CategoryList({
             locale={locale}
             showDecimals={showDecimals}
             last={index === items.length - 1}
+            max={max}
+            asPercent={asPercent}
+            onTogglePercent={togglePercent}
             onPress={() => onPress(item)}
           />
         </Animated.View>

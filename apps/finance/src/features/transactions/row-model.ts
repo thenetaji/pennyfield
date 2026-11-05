@@ -1,5 +1,6 @@
 import type { TransactionRowProps } from "@/components/app/transaction-row";
 import type { TransactionListItem } from "@/data/hooks";
+import type { RowDetail } from "@/db/repos/settings";
 import { addDays, monthShort, parseKey } from "@studio/dates";
 import { isLendingKind } from "@/lib/ledger";
 import {
@@ -18,6 +19,8 @@ export interface RowModelContext {
   rates: RateLookup;
   /** When set, rows from other days show a short day ("Yesterday", "3 Oct") instead of the time. */
   relativeTo?: string;
+  /** What the second line shows; defaults to category and account. */
+  rowDetail?: RowDetail;
 }
 
 export interface RowModel {
@@ -73,6 +76,23 @@ export function lendingLabel(
   return kind === "repaid_to_me" ? `Repaid by ${who}` : `Repaid to ${who}`;
 }
 
+function detailLine(
+  detail: RowDetail,
+  category: string,
+  account: string,
+  memo: string,
+): string[] {
+  const parts =
+    detail === "memo"
+      ? [memo || category]
+      : detail === "category"
+        ? [category]
+        : detail === "category_memo"
+          ? [category, memo]
+          : [category, account];
+  return parts.filter(Boolean);
+}
+
 const asColor = (value: string | undefined): CategoryColorKey =>
   (value ?? "gray") as CategoryColorKey;
 
@@ -115,6 +135,8 @@ export function toRowModel(
   }
 
   const accountName = item.account.name;
+  const memo = item.memo.trim().replace(/\s+/g, " ");
+  const detail = ctx.rowDetail ?? "category_account";
   const firstSplit = item.splits[0];
   const categoryName = split
     ? `${item.splits.length} categories`
@@ -135,12 +157,13 @@ export function toRowModel(
     const own =
       item.title && item.title !== item.person?.name ? item.title : "";
     title = own || label;
-    subtitle = [own ? label : "", accountName].filter(Boolean).join(" · ");
+    const extra = detail === "category_account" ? accountName : memo;
+    subtitle = [own ? label : "", extra].filter(Boolean).join(" · ");
     icon = "loans";
     color = "gray";
   } else {
     title = item.title || categoryName || "Transaction";
-    subtitle = [categoryName, accountName].filter(Boolean).join(" · ");
+    subtitle = detailLine(detail, categoryName, accountName, memo).join(" · ");
     icon =
       (split ? firstSplit?.category.icon : item.category?.icon) ?? "tag.fill";
     color = asColor(split ? firstSplit?.category.color : item.category?.color);
@@ -149,9 +172,7 @@ export function toRowModel(
   const spokenTitle = isTransfer
     ? `${accountName} to ${item.transferAccount?.name ?? ""}`
     : title;
-  const spokenSubtitle = isTransfer
-    ? "Transfer"
-    : [categoryName, accountName].filter(Boolean).join(", ");
+  const spokenSubtitle = isTransfer ? "Transfer" : subtitle.replace(/ · /g, ", ");
   const accessibilityLabel = [
     spokenTitle,
     spokenSubtitle,

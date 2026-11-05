@@ -19,6 +19,8 @@ type TransactionDayListProps = {
   empty?: React.ReactElement | null;
   contentContainerStyle?: StyleProp<ViewStyle>;
   keyboardDismissMode?: "none" | "on-drag" | "interactive";
+  /** Scrolls to this day (or the nearest earlier one) whenever it changes. */
+  focusDay?: string | null;
 };
 
 const RADIUS = 18;
@@ -35,7 +37,9 @@ function TransactionDayList({
   empty,
   contentContainerStyle,
   keyboardDismissMode,
+  focusDay,
 }: TransactionDayListProps) {
+  const listRef = React.useRef<React.ComponentRef<typeof FlashList<ListEntry>>>(null);
   // Day headers already say the date, so rows under them always show the time (C4), whatever the caller passed.
   const context = React.useMemo(
     () =>
@@ -56,7 +60,12 @@ function TransactionDayList({
   const renderItem = React.useCallback(
     ({ item }: { item: ListEntry }) =>
       item.type === "header" ? (
-        <DaySectionHeader label={item.label} total={item.total} inset />
+        <DaySectionHeader
+          label={item.label}
+          total={item.total}
+          share={item.share}
+          inset
+        />
       ) : (
         <View
           className="mx-4 overflow-hidden"
@@ -83,8 +92,20 @@ function TransactionDayList({
       ),
     [context, tracker, colors.border],
   );
+  // Scroll once per requested day, as soon as that day's entries are loaded.
+  const scrolledTo = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    if (!focusDay || scrolledTo.current === focusDay) return;
+    const index = entries.findIndex(
+      (e) => e.type === "header" && e.dateKey <= focusDay,
+    );
+    if (index < 0) return;
+    scrolledTo.current = focusDay;
+    listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0 });
+  }, [focusDay, entries]);
   return (
     <FlashList
+      ref={listRef}
       data={entries}
       renderItem={renderItem}
       keyExtractor={keyOf}

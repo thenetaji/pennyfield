@@ -7,6 +7,7 @@ import { formatMoney, formatMoneyForSpeech } from "@studio/money";
 import { categoryKeys, useTokens, type CategoryColorKey } from "@studio/theme";
 
 import type { Payee } from "./payees-model";
+import { ShareBar } from "./share-bar";
 
 const asColor = (value: string | undefined): CategoryColorKey =>
   (categoryKeys as readonly string[]).includes(value ?? "")
@@ -19,13 +20,13 @@ type PayeeRowProps = {
   currency: string;
   locale?: string;
   showDecimals: boolean;
-  /** Largest amount in the list; the share bar is relative to it. */
+  /** Largest amount in the list; the share bar scales to it. */
   max: number;
   separator: boolean;
   onPress: () => void;
 };
 
-/** "Swiggy · 6 × avg ₹420" with a share bar under the name and the total trailing. */
+/** Name, share bar and "6 × avg ₹420" on the left; total and share of the period trailing. */
 const PayeeRow = React.memo(function PayeeRow({
   payee,
   category,
@@ -38,7 +39,6 @@ const PayeeRow = React.memo(function PayeeRow({
 }: PayeeRowProps) {
   const { colors, category: palette } = useTokens();
   const color = asColor(category?.color);
-  const share = max > 0 ? payee.amount / max : 0;
   const average = formatMoney(payee.average, currency, {
     locale,
     decimals: 0,
@@ -56,31 +56,26 @@ const PayeeRow = React.memo(function PayeeRow({
         <Text variant="body" numberOfLines={1}>
           {payee.title}
         </Text>
-        <View className="mt-1 flex-row items-center">
-          <View
-            className="h-1 flex-1 overflow-hidden rounded-full"
-            style={{ backgroundColor: colors.fill, maxWidth: 120 }}
-          >
-            <View
-              style={{
-                width: `${Math.max(share * 100, share > 0 ? 3 : 0)}%`,
-                height: 4,
-                borderRadius: 2,
-                backgroundColor: palette[color],
-              }}
-            />
-          </View>
-        </View>
+        <ShareBar amount={payee.amount} max={max} color={palette[color]} />
+        <Text
+          variant="caption"
+          tone="tertiary"
+          numeric
+          numberOfLines={1}
+          className="mt-1"
+        >
+          {payee.count === 1 ? "Once" : `${payee.count} × avg ${average}`}
+        </Text>
       </View>
-      <View className="ml-4 items-end" style={{ minWidth: 84 }}>
+      <View className="ml-4 items-end" style={{ minWidth: 72 }}>
         <Text variant="body" numeric numberOfLines={1} className="font-medium">
           {formatMoney(payee.amount, currency, {
             locale,
             decimals: showDecimals ? undefined : 0,
           })}
         </Text>
-        <Text variant="footnote" tone="tertiary" numeric numberOfLines={1}>
-          {payee.count === 1 ? "Once" : `${payee.count} × avg ${average}`}
+        <Text variant="footnote" tone="tertiary" numeric>
+          {`${payee.percent}%`}
         </Text>
       </View>
       {separator ? (

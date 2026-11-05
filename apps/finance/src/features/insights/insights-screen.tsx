@@ -17,8 +17,6 @@ import {
   Amount,
   Card,
   Chip,
-  ListGroup,
-  ListRow,
   Pressable,
   SectionHeader,
   SegmentedControl,
@@ -76,7 +74,6 @@ import { donutData, keyForName, listItems, summaryLabel } from "./model";
 import { NetWorthCard } from "./net-worth-card";
 import {
   canStepForward,
-  contextParams,
   firstParam,
   parseBreakdownBy,
   parseInsightsParams,
@@ -93,6 +90,7 @@ import { PayeesCard } from "./payees-card";
 import { PeriodControls } from "./period-controls";
 import { useRangeStore } from "./range-store";
 import { ScopeBar } from "./scope-bar";
+import { TrendSection } from "./trend-section";
 import {
   categoryKeyOf,
   categoryTrends,
@@ -109,9 +107,15 @@ const LIST_TITLES: Record<BreakdownBy, string> = {
 };
 
 /** The deeper half of the screen shows one of these at a time. */
-const SECTIONS = ["flow", "compare", "payees", "worth"] as const;
+const SECTIONS = ["flow", "trend", "compare", "payees", "worth"] as const;
 type Section = (typeof SECTIONS)[number];
-const SECTION_LABELS = ["Flow", "Compare", "Payees", "Net worth"] as const;
+const SECTION_LABELS = [
+  "Flow",
+  "Trend",
+  "Compare",
+  "Payees",
+  "Net worth",
+] as const;
 
 /** Category rows shown before "Show all". */
 const LIST_LIMIT = 6;
@@ -123,6 +127,8 @@ export default function InsightsScreen() {
   const params = useLocalSearchParams() as InsightsParams & {
     section?: string;
     worth?: string;
+    /** Changes on every navigation that should re-apply the period params to an already-mounted tab. */
+    nav?: string;
   };
   const settings = useSettings();
   const money = useMoneyContext();
@@ -153,6 +159,26 @@ export default function InsightsScreen() {
     () => SECTIONS.find((s) => s === firstParam(params.section)) ?? "flow",
   );
   const [showAll, setShowAll] = React.useState(false);
+
+  const navKey = [
+    params.nav,
+    params.period,
+    params.offset,
+    params.kind,
+    params.from,
+    params.to,
+    params.select,
+  ].join("|");
+  const appliedNav = React.useRef(navKey);
+  React.useEffect(() => {
+    if (appliedNav.current === navKey) return;
+    appliedNav.current = navKey;
+    const next = parseInsightsParams(params, today, periodSettings);
+    setView(next.view);
+    setSelection(next.select ? { name: next.select } : null);
+    setShowAll(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navKey]);
 
   const period = periodOf(view, periodSettings);
   const both = view.kind === "both";
@@ -446,7 +472,8 @@ export default function InsightsScreen() {
                   {delta && !both ? (
                     <Pressable
                       role="button"
-                      accessibilityLabel={`${delta.text}, tap to show ${deltaAsAmount ? "percent" : "amount"}`}
+                      accessibilityLabel={deltaAsAmount && delta.alt ? delta.alt : delta.text}
+                      accessibilityHint={`Shows the ${deltaAsAmount ? "percent" : "amount"}`}
                       scale={1}
                       dimTo={0.6}
                       hitSlop={{ top: 8, bottom: 8, right: 16 }}
@@ -614,6 +641,18 @@ export default function InsightsScreen() {
               ) : null}
             </>
           ) : null}
+          {section === "trend" ? (
+            <TrendSection
+              insights={insights}
+              period={period}
+              kind={kind}
+              scope={scope}
+              by={by}
+              today={today}
+              settings={periodSettings}
+              locale={money.locale}
+            />
+          ) : null}
           {section === "compare" ? (
             comparison.current > 0 || comparison.previous > 0 ? (
               <CompareCard
@@ -656,21 +695,6 @@ export default function InsightsScreen() {
           <View className="gap-3 px-4 pt-8">
             <ReportEntryRow />
             <ReviewEntryCard />
-          </View>
-          <View className="pt-6">
-            <ListGroup>
-              <ListRow
-                label="More insights"
-                subtitle="Daily, running total, weekdays, accounts"
-                chevron
-                onPress={() =>
-                  router.push({
-                    pathname: "/insights-more",
-                    params: { ...contextParams(context), by },
-                  })
-                }
-              />
-            </ListGroup>
           </View>
         </Animated.View>
       </ScrollView>

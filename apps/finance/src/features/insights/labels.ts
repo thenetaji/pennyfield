@@ -158,13 +158,25 @@ export function flowScrub(
   return `${when} · In ${flowAmount(point.income, currency, locale)} · Out ${flowAmount(point.spent, currency, locale)} · Net ${flowAmount(point.income - point.spent, currency, locale, "auto")}`;
 }
 
-/** Row badge for a category's trend: arrow, short text, whether it is welcome, and a spoken summary. */
+/** "+₹2,400", "−₹12.4K": a signed change, compact from 10,000 major units so it fits a row badge. */
+export function changeAmount(
+  minor: number,
+  currency: string,
+  locale?: string,
+): string {
+  const sign = minor < 0 ? MINUS : "+";
+  return `${sign}${flowAmount(Math.abs(minor), currency, locale)}`;
+}
+
+/** Row badge for a category's trend: arrow, percent and money forms, whether it is welcome, and a spoken summary. */
 export function trendBadge(
   trend: {
     direction: "up" | "down" | "flat" | "new";
     percent: number | null;
     average: number | null;
     spark: readonly number[];
+    /** This period minus the previous one, minor units. */
+    delta?: number;
   },
   kind: "expense" | "income",
   previousName: string,
@@ -172,6 +184,7 @@ export function trendBadge(
 ): {
   spark: readonly number[];
   text: string;
+  amount: string;
   arrow: "up" | "down" | null;
   good: boolean;
   speech: string;
@@ -181,10 +194,17 @@ export function trendBadge(
       ? ""
       : `, 3 period average ${formatMoney(trend.average, money.currency, { locale: money.locale, decimals: 0 })}`;
   const { direction, percent } = trend;
+  const delta = trend.delta ?? 0;
+  const amount = changeAmount(delta, money.currency, money.locale);
+  const spokenAmount = formatMoney(Math.abs(delta), money.currency, {
+    locale: money.locale,
+    decimals: 0,
+  });
   if (direction === "new")
     return {
       spark: trend.spark,
       text: "New",
+      amount: delta === 0 ? "New" : amount,
       arrow: null,
       good: false,
       speech: `new since ${previousName}${average}`,
@@ -193,6 +213,7 @@ export function trendBadge(
     return {
       spark: trend.spark,
       text: "Same",
+      amount: "Same",
       arrow: null,
       good: false,
       speech: `same as ${previousName}${average}`,
@@ -202,9 +223,10 @@ export function trendBadge(
   return {
     spark: trend.spark,
     text,
+    amount,
     arrow: direction,
     good: kind === "expense" ? direction === "down" : direction === "up",
-    speech: `${direction} ${size} percent on ${previousName}${average}`,
+    speech: `${direction} ${spokenAmount}, ${size} percent on ${previousName}${average}`,
   };
 }
 
@@ -223,4 +245,13 @@ export function previousName(period: Period): string {
     case "custom":
       return `the previous ${periodLength(period)} days`;
   }
+}
+
+/** "3 unusual · 2 repeats"; habits alone read as "Your habits". */
+export function analyzerSummary(unusual: number, repeats: number): string {
+  const parts = [
+    unusual > 0 ? `${unusual} unusual` : null,
+    repeats > 0 ? `${repeats} ${repeats === 1 ? "repeat" : "repeats"}` : null,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(" · ") : "Your habits";
 }
