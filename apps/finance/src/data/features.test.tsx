@@ -234,7 +234,7 @@ describe("feature hooks react to writes made through useActions", () => {
       status: null,
       lastBackupAt: null,
     });
-    expect(hooks.value.style[0]).toBe("sf");
+    expect(hooks.value.style[0]).toBe("phosphor-duotone");
 
     act(() => {
       hooks.value.actions.recurring.create({

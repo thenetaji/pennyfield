@@ -81,6 +81,8 @@ export interface SettingsMap {
   /** Epoch ms of the last backup export or sync; null when never. */
   last_backup_at: number | null;
   row_detail: RowDetail;
+  /** Which default look has been applied; see `applyLookDefaults`. */
+  look_version: number;
 }
 
 export type SettingKey = keyof SettingsMap;
@@ -102,9 +104,9 @@ export const DEFAULT_SETTINGS: Readonly<SettingsMap> = {
   onboarding_done: false,
   schema_seeded: false,
   recent_searches: [],
-  icon_style: "sf",
-  icon_background: "mono",
-  category_colors: "mono",
+  icon_style: "phosphor-duotone",
+  icon_background: "graphite-accent",
+  category_colors: "colour",
   home_layout: DEFAULT_HOME_LAYOUT.map((s) => ({ ...s })),
   pockets: [],
   hide_amounts: false,
@@ -116,6 +118,16 @@ export const DEFAULT_SETTINGS: Readonly<SettingsMap> = {
   sync_provider: "none",
   last_backup_at: null,
   row_detail: "memo",
+  look_version: 0,
+};
+
+const LOOK_VERSION = 1;
+
+/** The defaults each look replaced; a setting still on its old default moves to the new one. */
+const PREVIOUS_LOOK: Partial<SettingsMap> = {
+  icon_style: "sf",
+  icon_background: "mono",
+  category_colors: "mono",
 };
 
 const ENUMS: Partial<Record<SettingKey, readonly unknown[]>> = {
@@ -189,4 +201,12 @@ export function insertMissingDefaults(db: Db): void {
       .onConflictDoNothing()
       .run();
   }
+}
+
+/** Moves installs that never changed their look to the current defaults, once. */
+export function applyLookDefaults(db: Db): void {
+  if (getSetting(db, "look_version") >= LOOK_VERSION) return;
+  for (const [key, old] of Object.entries(PREVIOUS_LOOK) as [SettingKey, unknown][])
+    if (getSetting(db, key) === old) setSetting(db, key, DEFAULT_SETTINGS[key]);
+  setSetting(db, "look_version", LOOK_VERSION);
 }

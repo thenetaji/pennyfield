@@ -2,6 +2,11 @@
 
 All notable changes to Finance. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.5.2] - 2026-11-05
+
+### Changed
+- New default look: duotone icons on graphite tiles with a soft colour accent per category, on the Titanium palette. Installs that never changed their icons or category colours switch over; a look you picked is kept.
+
 ## [0.5.1] - 2026-11-05
 
 ### Added

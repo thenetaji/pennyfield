@@ -4,6 +4,7 @@ import { categories, type NewCategory } from "./schema";
 import type { Db } from "./types";
 import {
   getSetting,
+  applyLookDefaults,
   insertMissingDefaults,
   setSetting,
 } from "./repos/settings";
@@ -90,6 +91,7 @@ export const INCOME_CATEGORIES: readonly SeedCategory[] = [
 export function seedDefaults(db: Db, now = Date.now()): void {
   db.transaction((tx) => {
     insertMissingDefaults(tx);
+    applyLookDefaults(tx);
     if (getSetting(tx, "schema_seeded")) return;
     const existing = tx.select({ n: count() }).from(categories).get()?.n ?? 0;
     if (existing === 0) tx.insert(categories).values(seedRows(now)).run();

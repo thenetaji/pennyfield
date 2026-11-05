@@ -2,6 +2,7 @@
 import { createTestDb } from "../test-helpers";
 import { deleteRate, convert, getRate, listRates, setRate } from "./fx";
 import {
+  applyLookDefaults,
   DEFAULT_SETTINGS,
   getAllSettings,
   getSetting,
@@ -48,6 +49,7 @@ describe("settings", () => {
         "sync_provider",
         "last_backup_at",
         "row_detail",
+        "look_version",
       ].sort(),
     );
   });
@@ -136,8 +138,8 @@ describe("feature settings", () => {
   it("have typed defaults", () => {
     const db = createTestDb();
     expect(getAllSettings(db)).toMatchObject({
-      icon_style: "sf",
-      icon_background: "mono",
+      icon_style: "phosphor-duotone",
+      icon_background: "graphite-accent",
       hide_amounts: false,
       reminder_daily_enabled: false,
       reminder_daily_time: "21:00",
@@ -180,9 +182,25 @@ describe("feature settings", () => {
         { key: "reminder_daily_time", value: '"25:99"' },
       ])
       .run();
-    expect(getSetting(db, "icon_style")).toBe("sf");
-    expect(getSetting(db, "icon_background")).toBe("mono");
+    expect(getSetting(db, "icon_style")).toBe("phosphor-duotone");
+    expect(getSetting(db, "icon_background")).toBe("graphite-accent");
     expect(getSetting(db, "sync_provider")).toBe("none");
     expect(getSetting(db, "reminder_daily_time")).toBe("21:00");
+  });
+});
+
+describe("applyLookDefaults", () => {
+  it("moves an untouched look to the new defaults once, and keeps a chosen one", () => {
+    const db = createTestDb({ seed: false });
+    setSetting(db, "icon_style", "sf");
+    setSetting(db, "icon_background", "solid");
+    setSetting(db, "category_colors", "mono");
+    applyLookDefaults(db);
+    expect(getSetting(db, "icon_style")).toBe("phosphor-duotone");
+    expect(getSetting(db, "icon_background")).toBe("solid");
+    expect(getSetting(db, "category_colors")).toBe("colour");
+    setSetting(db, "icon_style", "sf");
+    applyLookDefaults(db);
+    expect(getSetting(db, "icon_style")).toBe("sf");
   });
 });
