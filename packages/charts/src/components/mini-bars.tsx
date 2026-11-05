@@ -38,6 +38,8 @@ export type MiniBarsProps = {
   color?: string;
   accessibilityLabel: string;
   height?: number;
+  /** Space above the bars for broken-bar labels. */
+  lane?: number;
 };
 
 const LANE = 30;
@@ -55,6 +57,7 @@ function MiniBars({
   color,
   accessibilityLabel,
   height = 110,
+  lane = LANE,
 }: MiniBarsProps) {
   const { colors } = useTokens();
   const [width, onLayout] = useChartWidth();
@@ -62,7 +65,7 @@ function MiniBars({
   const labelFont = useChartFont(12, "semibold");
   const grow = useGrow();
   const count = data.length;
-  const baseline = LANE + height;
+  const baseline = lane + height;
   const { top, clipped } = barDomain(
     data.map((d) => d.value),
     average,
@@ -90,7 +93,7 @@ function MiniBars({
   return (
     <View
       onLayout={onLayout}
-      style={{ height: LANE + height + AXIS }}
+      style={{ height: lane + height + AXIS }}
       accessibilityLabel={accessibilityLabel}
       {...adjustableProps(
         count,
@@ -102,7 +105,7 @@ function MiniBars({
       {width > 0 ? (
         <GestureDetector gesture={gesture}>
           <View collapsable={false}>
-            <Canvas style={{ width, height: LANE + height + AXIS }}>
+            <Canvas style={{ width, height: lane + height + AXIS }}>
               <Line
                 p1={vec(0, baseline)}
                 p2={vec(width, baseline)}
@@ -178,15 +181,15 @@ function MiniBars({
                         {[10, 17].map((dy) => (
                           <Line
                             key={dy}
-                            p1={vec(slot.x - 3, LANE + dy + 5)}
-                            p2={vec(slot.x + slot.width + 3, LANE + dy - 5)}
+                            p1={vec(slot.x - 3, lane + dy + 5)}
+                            p2={vec(slot.x + slot.width + 3, lane + dy - 5)}
                             color={colors.surface}
                             strokeWidth={2.5}
                           />
                         ))}
                         <SkText
                           x={x}
-                          y={LANE - 5}
+                          y={lane - 5}
                           text={text}
                           font={labelFont}
                           color={colors.textSecondary}

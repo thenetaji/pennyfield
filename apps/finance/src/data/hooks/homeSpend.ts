@@ -42,6 +42,8 @@ export interface HomeSpend {
   /** Zero-based index of today in the period. */
   dayIndex: number;
   series: HomeSpendPoint[];
+  /** Daily spend for the last seven days, oldest first, ending today (reaches into the previous period). */
+  week: number[];
 }
 
 export function cumulative(amounts: readonly number[]): number[] {
@@ -64,6 +66,18 @@ export function perDayAverage(spent: number, elapsedDays: number): number {
   return elapsedDays <= 0
     ? 0
     : Math.floor((spent * 2 + elapsedDays) / (elapsedDays * 2));
+}
+
+/** The `count` daily amounts ending at `dayIndex` of `current`, borrowing from the end of `previous` early in a period. */
+export function trailingDays(
+  previous: readonly number[],
+  current: readonly number[],
+  dayIndex: number,
+  count = 7,
+): number[] {
+  const all = [...previous, ...current];
+  const end = previous.length + Math.min(Math.max(dayIndex, 0), current.length - 1);
+  return Array.from({ length: count }, (_, i) => all[end - count + 1 + i] ?? 0);
 }
 
 /** Pure core: daily amounts for this and the previous period plus today's index. */
@@ -123,9 +137,11 @@ export function readHomeSpend(
     granularity: "day",
   }).map((x) => x.amount);
   const dayIndex = Math.max(diffDays(period.from, todayKey), 0);
+  const currentDaily = amounts(period);
+  const previousDaily = amounts(previous);
   const core = buildHomeSpend(
-    amounts(period),
-    amounts(previous),
+    currentDaily,
+    previousDaily,
     dayIndex,
     incomeDaily,
   );
@@ -135,6 +151,7 @@ export function readHomeSpend(
     earned: sumLines(lines, "income", period, ctx),
     previousTotal: sumLines(lines, "expense", previous, ctx),
     dayIndex,
+    week: trailingDays(previousDaily, currentDaily, dayIndex),
     ...core,
   };
 }

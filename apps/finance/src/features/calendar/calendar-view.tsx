@@ -26,13 +26,16 @@ import { formatMoney, formatMoneyForSpeech } from "@studio/money";
 import { haptic, withAlpha, useTokens } from "@studio/theme";
 import { dayStatus, noSpendSummary, type DayStatus } from "@/lib/reports";
 
+import { heatScale } from "@/features/heatmap/model";
+
 import {
   buildMonthGrid,
-  heatOpacity,
+  HEAT_LEVELS,
   monthOf,
   weekdayLetters,
   type CalendarCell,
 } from "./grid";
+import { useHeatFill } from "./heat-fill";
 import { StreakSummary } from "./streak-summary";
 
 const GAP = 6;
@@ -54,18 +57,13 @@ function Cell({
   bills: number;
   onPress: () => void;
 }) {
-  const { colors, isDark } = useTokens();
+  const { colors } = useTokens();
+  const heatFill = useHeatFill();
   const money = useMoneyContext();
   const spent = cell.level > 0;
   const future = status === "future";
   const quiet = status === "no-spend";
-  const fill = spent
-    ? withAlpha(colors.accent, heatOpacity(cell.level))
-    : future
-      ? "transparent"
-      : isDark
-        ? "#000000"
-        : colors.fill;
+  const fill = heatFill({ level: cell.level, future: future && !spent });
   const ring = selected
     ? colors.accent
     : today
@@ -155,6 +153,7 @@ function Cell({
 
 function Legend() {
   const { colors } = useTokens();
+  const fill = useHeatFill();
   return (
     <View className="flex-row items-center justify-center gap-5 pt-3">
       <View className="flex-row items-center gap-1.5">
@@ -176,17 +175,27 @@ function Legend() {
           Bill due
         </Text>
       </View>
-      <View className="flex-row items-center gap-1.5">
-        <View
-          style={{
-            width: 11,
-            height: 11,
-            borderRadius: 3,
-            backgroundColor: withAlpha(colors.accent, heatOpacity(4)),
-          }}
-        />
-        <Text variant="caption" tone="secondary">
-          Spent
+      <View
+        className="flex-row items-center gap-1"
+        accessible
+        accessibilityLabel="Spent, less to more"
+      >
+        <Text variant="caption" tone="secondary" className="mr-0.5">
+          Less
+        </Text>
+        {[1, 3, 5, HEAT_LEVELS].map((level) => (
+          <View
+            key={level}
+            style={{
+              width: 11,
+              height: 11,
+              borderRadius: 3,
+              backgroundColor: fill({ level, future: false }),
+            }}
+          />
+        ))}
+        <Text variant="caption" tone="secondary" className="ml-0.5">
+          More
         </Text>
       </View>
     </View>
@@ -253,7 +262,7 @@ type CalendarViewProps = {
 };
 
 /**
- * Month heatmap (7 columns, honours week_start): each day's spend as a brass tint plus a compact amount,
+ * Month heatmap (7 columns, honours week_start): each day's spend on the heatmap's colour ramp plus a compact amount,
  * no-spend days with a leaf, unposted bills as a dot. The selected day's entries and bills are listed underneath.
  */
 export function CalendarView({
@@ -282,8 +291,15 @@ export function CalendarView({
   const size = width > 0 ? Math.floor((width - GAP * 6) / 7) : 0;
   const rows = React.useMemo(
     () =>
-      buildMonthGrid(totals.days, totals.max, totals.firstWeekday, weekStart),
-    [totals, weekStart],
+      buildMonthGrid(
+        totals.days,
+        heatScale(
+          totals.days.filter((d) => d.dateKey <= todayKey).map((d) => d.amount),
+        ),
+        totals.firstWeekday,
+        weekStart,
+      ),
+    [totals, weekStart, todayKey],
   );
   const letters = React.useMemo(() => weekdayLetters(weekStart), [weekStart]);
   const billsByDay = React.useMemo(() => {

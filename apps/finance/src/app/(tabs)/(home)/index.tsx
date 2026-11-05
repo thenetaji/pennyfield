@@ -3,7 +3,7 @@ import * as React from "react";
 import { ScrollView, View } from "react-native";
 
 import { AddFab } from "@/components/app/add-fab";
-import { Button, EmptyState, Card } from "@studio/ui";
+import { EmptyState, Card } from "@studio/ui";
 import {
   useAccounts,
   useAllTimeSpend,
@@ -17,8 +17,6 @@ import {
   useTodayKey,
   useUpcoming,
 } from "@/data/hooks";
-import { CalendarEntryCard } from "@/features/calendar/entry";
-import { SpendHeatmap } from "@/features/heatmap/spend-heatmap";
 import { AccountsCard } from "@/features/home/accounts-card";
 import { BudgetStatus } from "@/features/home/budget-status";
 import { QuickAdd } from "@/features/home/quick-add";
@@ -53,7 +51,6 @@ const SPACING: Record<HomeSectionId, string> = {
   pockets: "mt-[26px]",
   budgets: "mt-[26px]",
   bills: "mt-[26px]",
-  heatmap: "mt-[26px]",
   top_categories: "mt-[26px]",
   recent: "mt-[26px]",
 };
@@ -153,18 +150,6 @@ export default function Home() {
             showDecimals={money.showDecimals}
           />
         ) : null;
-      case "heatmap":
-        return (
-          <View className="gap-3">
-            <SpendHeatmap
-              todayKey={today}
-              locale={locale}
-              showDecimals={money.showDecimals}
-              currency={displayCurrency}
-            />
-            <CalendarEntryCard />
-          </View>
-        );
       case "top_categories":
         return insights.categories.length > 0 ? (
           <TopCategories
@@ -179,7 +164,9 @@ export default function Home() {
             <HomeSectionHeader
               title="Recent"
               actionLabel="All"
-              onAction={() => router.navigate("/activity")}
+              onAction={() =>
+                router.push({ pathname: "/activity", params: { now: "1" } })
+              }
             />
             <Card className="overflow-hidden rounded-[20px] p-0">
               {recent.map((item, i) => (
@@ -245,15 +232,6 @@ export default function Home() {
                   </Stagger>
                 );
               })}
-            <View className="mt-6 items-center">
-              <Button
-                variant="barSecondary"
-                size="sm"
-                onPress={() => router.push("/settings/home")}
-              >
-                Customize Home
-              </Button>
-            </View>
           </>
         )}
       </ScrollView>

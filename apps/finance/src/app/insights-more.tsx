@@ -1,4 +1,5 @@
-import { withSkia } from "@studio/charts";
+import { Redirect } from "expo-router";
 
-// Skia charts load lazily; on web CanvasKit is fetched first (see with-skia.web.tsx).
-export default withSkia(() => import("@/features/insights/more-screen"));
+export default function InsightsMore() {
+  return <Redirect href="/insights" />;
+}

@@ -47,6 +47,7 @@ describe("settings", () => {
         "reminder_budget_fired",
         "sync_provider",
         "last_backup_at",
+        "row_detail",
       ].sort(),
     );
   });

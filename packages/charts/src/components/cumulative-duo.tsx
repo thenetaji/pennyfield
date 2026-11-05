@@ -8,6 +8,7 @@ import {
   Path,
   RadialGradient,
   Skia,
+  Text as SkText,
   vec,
 } from "@shopify/react-native-skia";
 import * as React from "react";
@@ -27,9 +28,11 @@ import {
   duoGeometry,
   gapSegments,
   sampleSmooth,
+  type AxisLabel,
   type DuoPoint,
   type Pt,
 } from "../lib";
+import { textWidth } from "../lib/text-width";
 import { monotoneSegments } from "../lib/smooth";
 import { buildPolyPath, pointAt } from "@studio/motion";
 import { withAlpha, useTokens } from "@studio/theme";
@@ -50,9 +53,24 @@ export type CumulativeDuoProps = {
   /** Floating read-out for a day, e.g. "12 Oct · In ₹1.45L · Out ₹21.3K". */
   formatLabel: (index: number) => string;
   accessibilityLabel: string;
+  /** Controlled selection; omit both to let the chart keep its own. */
+  selectedIndex?: number | null;
+  onSelect?: (index: number | null) => void;
+  /** Money-in line; defaults to the income colour. */
+  inColor?: string;
+  /** Money-out line; defaults to the neutral text colour. */
+  outColor?: string;
+  /** Names drawn at the end of each line, e.g. "In" and "Out". */
+  inName?: string;
+  outName?: string;
+  /** Axis labels under the plot, by point index. */
+  labels?: readonly AxisLabel[];
+  /** A point to keep emphasised on the axis when nothing is selected. */
+  focusIndex?: number;
 };
 
 const LANE = 28;
+const AXIS = 22;
 const INSET = 8;
 const easeOutQuint = Easing.bezier(0.22, 1, 0.36, 1);
 const OUT_DELAY = 100;
@@ -122,20 +140,41 @@ function EndDot({
 }
 
 /**
- * Two cumulative lines on ONE shared axis: money in (mint, stepped) and money out (brass, smooth). The gap between
- * them is tinted mint where in leads (kept) and warm red where out leads. Draws in out first, then in; scrubbable.
+ * Two cumulative lines on ONE shared axis: money in (income colour, stepped) and money out (neutral, smooth). The gap
+ * between them is tinted with income where in leads (kept) and with expense where out leads. Draws out first, then
+ * in; scrubbable, and a scrub stays selected until the caller clears it.
  */
 function CumulativeDuo({
   series,
   height = 150,
   formatLabel,
   accessibilityLabel,
+  selectedIndex,
+  onSelect,
+  inColor,
+  outColor,
+  inName,
+  outName,
+  labels,
+  focusIndex,
 }: CumulativeDuoProps) {
   const { colors } = useTokens();
   const [width, onLayout] = useChartWidth();
   const labelFont = useChartFont(12, "semibold");
+  const nameFont = useChartFont(11, "semibold");
+  const axisFont = useChartFont(11, "medium");
   const reduced = useReducedMotion();
-  const [selected, setSelected] = React.useState<number | null>(null);
+  const [ownSelected, setOwnSelected] = React.useState<number | null>(null);
+  const controlled = selectedIndex !== undefined;
+  const selected = controlled ? selectedIndex : ownSelected;
+  const setSelected = React.useCallback(
+    (index: number | null) => {
+      if (!controlled) setOwnSelected(index);
+      onSelect?.(index);
+    },
+    [controlled, onSelect],
+  );
+  const axis = labels && labels.length > 0 ? AXIS : 0;
 
   const plotWidth = Math.max(0, width - INSET);
   const geo = React.useMemo(
@@ -230,8 +269,8 @@ function CumulativeDuo({
     minY: LANE - 6,
   });
 
-  const mint = colors.income;
-  const brass = colors.accent;
+  const mint = inColor ?? colors.income;
+  const brass = outColor ?? colors.text;
   const point =
     selected !== null && selected <= todayIndex ? series[selected] : undefined;
   const sx = selected !== null ? geo.xAt(selected) : 0;
@@ -240,18 +279,38 @@ function CumulativeDuo({
       ? `${accessibilityLabel}. ${formatLabel(selected)}`
       : accessibilityLabel;
   const showIn = geo.hasIncome && geo.inEnd;
+  const names = React.useMemo(() => {
+    if (!nameFont || !geo.outEnd) return [];
+    const list: { text: string; color: string; end: Pt }[] = [];
+    if (outName) list.push({ text: outName, color: brass, end: geo.outEnd });
+    if (inName && showIn && geo.inEnd)
+      list.push({ text: inName, color: mint, end: geo.inEnd });
+    const placed = list.map((n) => ({
+      ...n,
+      x: Math.max(0, n.end[0] - textWidth(nameFont, n.text) - 10),
+      y: Math.max(11, n.end[1] - 9),
+    }));
+    if (placed.length === 2) {
+      const [a, b] = placed as [(typeof placed)[0], (typeof placed)[0]];
+      if (Math.abs(a.y - b.y) < 14) {
+        const lower = a.end[1] >= b.end[1] ? a : b;
+        lower.y = Math.min(height - 6, lower.end[1] + 18);
+      }
+    }
+    return placed;
+  }, [nameFont, geo, outName, inName, showIn, brass, mint, height]);
 
   return (
     <View
       onLayout={onLayout}
-      style={{ height: LANE + height }}
+      style={{ height: LANE + height + axis }}
       accessibilityLabel={accessibilityLabel}
       {...adjustableProps(todayIndex + 1, selected, setSelected, spoken)}
     >
       {width > 0 && geo.outEnd ? (
         <GestureDetector gesture={gesture}>
           <View collapsable={false}>
-            <Canvas style={{ width, height: LANE + height }}>
+            <Canvas style={{ width, height: LANE + height + axis }}>
               <Group transform={[{ translateY: LANE }]}>
                 {/* Faint baseline so a near-zero line still has ground to sit on. */}
                 <Line
@@ -381,6 +440,19 @@ function CumulativeDuo({
                   bg={colors.bg}
                   opacity={outDot}
                 />
+                {nameFont
+                  ? names.map((n) => (
+                      <Group key={n.text} opacity={fill}>
+                        <SkText
+                          x={n.x}
+                          y={n.y}
+                          text={n.text}
+                          font={nameFont}
+                          color={n.color}
+                        />
+                      </Group>
+                    ))
+                  : null}
                 {point && selected !== null ? (
                   <Group>
                     <Line
@@ -420,6 +492,30 @@ function CumulativeDuo({
                   </Group>
                 ) : null}
               </Group>
+              {axisFont && labels
+                ? labels.map((label) => {
+                    const w = textWidth(axisFont, label.text);
+                    const x = Math.min(
+                      Math.max(geo.xAt(label.index) - w / 2, 0),
+                      width - w,
+                    );
+                    return (
+                      <SkText
+                        key={label.index}
+                        x={x}
+                        y={LANE + height + 16}
+                        text={label.text}
+                        font={axisFont}
+                        color={
+                          selected === label.index ||
+                          (selected === null && focusIndex === label.index)
+                            ? colors.text
+                            : colors.textTertiary
+                        }
+                      />
+                    );
+                  })
+                : null}
               {labelFont ? (
                 <FloatingLabel
                   text={point && selected !== null ? formatLabel(selected) : ""}

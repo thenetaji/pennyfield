@@ -185,3 +185,28 @@ describe("repeatLabel", () => {
     ).toBe("Every 2 weeks · next 3 Nov");
   });
 });
+
+describe("row detail", () => {
+  const withMemo = item({ memo: "  Team   lunch " });
+  const sub = (row: TransactionListItem, rowDetail: RowModelContext["rowDetail"]) =>
+    toRowModel(row, { ...ctx, rowDetail }).subtitle;
+
+  it("shows the memo, or the category when there is none", () => {
+    expect(sub(withMemo, "memo")).toBe("Team lunch");
+    expect(sub(item({}), "memo")).toBe("Food & Drink");
+  });
+
+  it("offers category alone, with the memo, or with the account", () => {
+    expect(sub(withMemo, "category")).toBe("Food & Drink");
+    expect(sub(withMemo, "category_memo")).toBe("Food & Drink · Team lunch");
+    expect(sub(item({}), "category_memo")).toBe("Food & Drink");
+    expect(sub(withMemo, "category_account")).toBe("Food & Drink · HDFC");
+  });
+
+  it("reads the same line aloud", () => {
+    expect(
+      toRowModel(withMemo, { ...ctx, rowDetail: "category_memo" })
+        .accessibilityLabel,
+    ).toContain("Swiggy, Food & Drink, Team lunch,");
+  });
+});

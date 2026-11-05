@@ -17,6 +17,44 @@ const MonthlyBars = withSkia<MonthlyBarsProps>(() =>
 
 const SHOWN = 12;
 
+type Stat = { label: string; value: string; tone?: TextTone };
+
+/** The viewed period's figures in a row, above a chart. */
+function StatStrip({ stats }: { stats: readonly Stat[] }) {
+  const { colors } = useTokens();
+  if (stats.length === 0) return null;
+  return (
+    <View
+      className="mb-1 flex-row pb-3"
+      style={{
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: colors.separator,
+      }}
+    >
+      {stats.map((stat) => (
+        <View
+          key={stat.label}
+          className="flex-1"
+          accessible
+          accessibilityLabel={`${stat.label}, ${stat.value}`}
+        >
+          <Text variant="caption" tone="secondary" numberOfLines={1}>
+            {stat.label}
+          </Text>
+          <AnimatedNumber
+            value={stat.value}
+            variant="headline"
+            tone={stat.tone}
+            fit
+            align="left"
+            className="mt-0.5 font-semibold"
+          />
+        </View>
+      ))}
+    </View>
+  );
+}
+
 type MonthlyCardProps = {
   /** Month periods, newest first (the screen's month list). */
   months: readonly Period[];
@@ -26,7 +64,7 @@ type MonthlyCardProps = {
   onPick: (period: Period) => void;
   locale?: string;
   /** Figures for the month in view, shown above the bars. */
-  stats?: readonly { label: string; value: string; tone?: TextTone }[];
+  stats?: readonly Stat[];
 };
 
 /** The viewed month's figures over twelve months of spending (bars) with income ticks; tap a bar to view that month. */
@@ -71,36 +109,7 @@ function MonthlyCard({
     .join("; ")}`;
   return (
     <Card className="mx-4 rounded-[20px] px-4 pb-3 pt-3.5">
-      {stats.length > 0 ? (
-        <View
-          className="mb-1 flex-row pb-3"
-          style={{
-            borderBottomWidth: StyleSheet.hairlineWidth,
-            borderBottomColor: colors.separator,
-          }}
-        >
-          {stats.map((stat) => (
-            <View
-              key={stat.label}
-              className="flex-1"
-              accessible
-              accessibilityLabel={`${stat.label}, ${stat.value}`}
-            >
-              <Text variant="caption" tone="secondary" numberOfLines={1}>
-                {stat.label}
-              </Text>
-              <AnimatedNumber
-                value={stat.value}
-                variant="headline"
-                tone={stat.tone}
-                fit
-                align="left"
-                className="mt-0.5 font-semibold"
-              />
-            </View>
-          ))}
-        </View>
-      ) : null}
+      <StatStrip stats={stats} />
       <View style={{ height: 150 }}>
         <MonthlyBars
           data={data}
@@ -157,12 +166,10 @@ function MonthlyCard({
             Earned
           </Text>
         </View>
-        <Text variant="caption" tone="tertiary" className="ml-auto">
-          Tap a month
-        </Text>
       </View>
     </Card>
   );
 }
 
-export { MonthlyCard };
+export { MonthlyCard, StatStrip };
+export type { Stat };

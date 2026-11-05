@@ -1,33 +1,30 @@
-import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import * as React from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView } from "react-native";
 
-import {
-  Card,
-  ListGroup,
-  ListRow,
-  OptionPicker,
-  Pressable,
-  Text,
-  type Option,
-} from "@studio/ui";
-import {
-  useAccounts,
-  useCategories,
-  useEntryCount,
-  useSetting,
-} from "@/data/hooks";
-import { AppIcon } from "@studio/icons";
-import { pressScale, useTokens } from "@studio/theme";
+import { ListGroup, ListRow, OptionPicker, type Option } from "@studio/ui";
+import { useAccounts, useSetting } from "@/data/hooks";
 import { ordinal } from "@/features/budgets/logic";
 import { moneyLocale } from "@/features/transactions/use-money-context";
 import { formatMoney } from "@studio/money";
 import Constants from "expo-constants";
-import { APP_NAME } from "@/constants/app";
 import { isDefaultHomeLayout } from "@/lib/home/layout";
+import type { RowDetail } from "@/db/repos/settings";
 
-type Picker = "week" | "month" | "account" | null;
+type Picker = "week" | "month" | "account" | "rows" | null;
+
+const rowOptions: readonly Option<RowDetail>[] = [
+  { value: "memo", label: "Memo, or category when there is none" },
+  { value: "category", label: "Category" },
+  { value: "category_memo", label: "Category and memo" },
+  { value: "category_account", label: "Category and account" },
+];
+const ROW_LABELS: Record<RowDetail, string> = {
+  memo: "Memo",
+  category: "Category",
+  category_memo: "Category, memo",
+  category_account: "Category, account",
+};
 
 const weekOptions: readonly Option<1 | 7>[] = [
   { value: 1, label: "Monday" },
@@ -46,90 +43,6 @@ const PALETTE_LABELS = {
   paper: "Paper",
 };
 
-const plural = (n: number, one: string, many: string) =>
-  `${n.toLocaleString()} ${n === 1 ? one : many}`;
-
-function Stat({ value, label }: { value: number; label: string }) {
-  return (
-    <View className="flex-1 items-center gap-0.5">
-      <Text variant="headline" numeric>
-        {value.toLocaleString()}
-      </Text>
-      <Text variant="caption" tone="secondary">
-        {label}
-      </Text>
-    </View>
-  );
-}
-
-/** What the app holds, at a glance; opens About. */
-function SummaryCard({ onPress }: { onPress: () => void }) {
-  const { colors } = useTokens();
-  const accounts = useAccounts();
-  const categories = useCategories();
-  const entries = useEntryCount();
-  const version = Constants.expoConfig?.version ?? "";
-  const detail = [
-    plural(entries, "entry", "entries"),
-    plural(accounts.length, "account", "accounts"),
-    plural(categories.length, "category", "categories"),
-  ].join(", ");
-  return (
-    <View className="px-4">
-      <Pressable
-        role="button"
-        accessibilityLabel={`${APP_NAME} ${version}, ${detail}`}
-        accessibilityHint="Opens About"
-        scale={pressScale.row}
-        onPress={onPress}
-      >
-        <Card className="px-4 pb-3.5 pt-4">
-          <View className="flex-row items-center gap-3.5">
-            <Image
-              source={require("../../../assets/images/icon.png")}
-              style={{ width: 54, height: 54, borderRadius: 13 }}
-              accessibilityIgnoresInvertColors
-            />
-            <View className="min-w-0 flex-1 gap-0.5">
-              <Text variant="title2" className="font-semibold">
-                {APP_NAME}
-              </Text>
-              <View className="flex-row items-center gap-1">
-                <AppIcon name="lock" size={11} color={colors.textTertiary} />
-                <Text variant="footnote" tone="secondary" numberOfLines={1}>
-                  Private, stored on this device
-                </Text>
-              </View>
-            </View>
-            <AppIcon
-              name="chevron.right"
-              size={13}
-              color={colors.textTertiary}
-            />
-          </View>
-          <View
-            className="mt-3.5 flex-row pt-3"
-            style={{
-              borderTopWidth: StyleSheet.hairlineWidth,
-              borderTopColor: colors.separator,
-            }}
-          >
-            <Stat value={entries} label={entries === 1 ? "Entry" : "Entries"} />
-            <Stat
-              value={accounts.length}
-              label={accounts.length === 1 ? "Account" : "Accounts"}
-            />
-            <Stat
-              value={categories.length}
-              label={categories.length === 1 ? "Category" : "Categories"}
-            />
-          </View>
-        </Card>
-      </Pressable>
-    </View>
-  );
-}
-
 export default function Settings() {
   const router = useRouter();
   const accounts = useAccounts();
@@ -145,6 +58,7 @@ export default function Settings() {
   const [lockEnabled] = useSetting("lock_enabled");
   const [hideAmounts] = useSetting("hide_amounts");
   const [homeLayout] = useSetting("home_layout");
+  const [rowDetail, setRowDetail] = useSetting("row_detail");
   const version = Constants.expoConfig?.version ?? "";
   const homeSummary = isDefaultHomeLayout(homeLayout) ? "Default" : "Custom";
   const [picker, setPicker] = React.useState<Picker>(null);
@@ -162,10 +76,8 @@ export default function Settings() {
     <ScrollView
       className="flex-1 bg-bg"
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerClassName="gap-7 py-4 pb-16"
+      contentContainerClassName="gap-7 pb-16 pt-2"
     >
-      <SummaryCard onPress={() => router.push("/settings/about")} />
-
       <ListGroup header="Money">
         <ListRow
           label="Accounts"
@@ -269,6 +181,13 @@ export default function Settings() {
           onPress={() => router.push("/settings/home")}
         />
         <ListRow
+          label="Transaction rows"
+          icon={{ name: "list", color: "orange", vivid: true }}
+          value={ROW_LABELS[rowDetail]}
+          chevron
+          onPress={() => setPicker("rows")}
+        />
+        <ListRow
           label="Haptics"
           icon={{ name: "phone", color: "gray", vivid: true }}
           switchValue={haptics}
@@ -320,6 +239,14 @@ export default function Settings() {
         />
       </ListGroup>
 
+      <OptionPicker
+        visible={picker === "rows"}
+        title="Under each transaction"
+        options={rowOptions}
+        selected={rowDetail}
+        onSelect={setRowDetail}
+        onClose={close}
+      />
       <OptionPicker
         visible={picker === "week"}
         title="Week starts on"

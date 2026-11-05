@@ -2,59 +2,15 @@ import { useRouter } from "expo-router";
 import * as React from "react";
 import { View } from "react-native";
 
-import {
-  SectionHeader,
-  Card,
-  Pressable,
-  Text,
-  AnimatedNumber,
-} from "@studio/ui";
-import { BarChart } from "@studio/charts/components";
+import { Card, Pressable, Text, AnimatedNumber } from "@studio/ui";
 import type { InsightsExtras } from "@/data/hooks";
 import { formatMoney, formatMoneyForSpeech } from "@studio/money";
-import { categoryKeys, type CategoryColorKey } from "@studio/theme";
-import { useTokens } from "@studio/theme";
 
-import { peakCaption, percentText, weekdayShort } from "./labels";
+import { percentText } from "./labels";
 
 const TILE = { flex: 1, flexBasis: 0, minWidth: 0 } as const;
-const CARD = "mx-4 rounded-[16px] p-4";
-
-const asColor = (value: string | undefined): CategoryColorKey =>
-  (categoryKeys as readonly string[]).includes(value ?? "")
-    ? (value as CategoryColorKey)
-    : "gray";
 
 type MoneyProps = { currency: string; locale?: string };
-
-/** Hairline-tracked share bar; `fraction` is 0-1. */
-function ShareBar({
-  fraction,
-  color,
-  height = 4,
-}: {
-  fraction: number;
-  color: string;
-  height?: number;
-}) {
-  const { colors } = useTokens();
-  const width = Math.max(fraction * 100, fraction > 0 ? 2 : 0);
-  return (
-    <View
-      className="overflow-hidden"
-      style={{ height, borderRadius: height / 2, backgroundColor: colors.fill }}
-    >
-      <View
-        style={{
-          width: `${width}%`,
-          height,
-          borderRadius: height / 2,
-          backgroundColor: color,
-        }}
-      />
-    </View>
-  );
-}
 
 type TileProps = {
   label: string;
@@ -215,110 +171,4 @@ const StatsGrid = React.memo(function StatsGrid({
   );
 });
 
-type WeekdayProps = MoneyProps & { extras: InsightsExtras };
-
-/** Average per weekday with the highest one picked out. */
-const WeekdayCard = React.memo(function WeekdayCard({
-  extras,
-  currency,
-  locale,
-}: WeekdayProps) {
-  const [scrub, setScrub] = React.useState<number | null>(null);
-  const { weekdays, peakWeekday } = extras;
-  const data = React.useMemo(
-    () => weekdays.map((d) => ({ key: String(d.weekday), value: d.average })),
-    [weekdays],
-  );
-  const labels = React.useMemo(
-    () =>
-      weekdays.map((d, index) => ({ index, text: weekdayShort(d.weekday) })),
-    [weekdays],
-  );
-  const peakIndex = peakWeekday === null ? null : peakWeekday;
-  const mean = weekdays.reduce((s, d) => s + d.average, 0) / 7;
-  const caption =
-    peakIndex === null ? null : peakCaption(weekdays[peakIndex]!.weekday);
-  const amount = (value: number) =>
-    formatMoney(value, currency, { locale, decimals: 0 });
-  return (
-    <>
-      <SectionHeader title="By weekday" />
-      <Card className={`${CARD} pb-3`}>
-        <BarChart
-          data={data}
-          currency={currency}
-          locale={locale}
-          labels={labels}
-          average={mean}
-          selectedIndex={scrub}
-          onSelect={setScrub}
-          highlightIndex={peakIndex}
-          height={120}
-          formatLabel={(i) =>
-            `${weekdayShort(weekdays[i]?.weekday ?? 1)} · avg ${amount(weekdays[i]?.average ?? 0)}`
-          }
-          accessibilityLabel={`Average by weekday. ${caption ?? "Nothing yet"}`}
-        />
-        {caption ? (
-          <Text variant="subhead" tone="secondary" className="pt-1">
-            {caption}
-          </Text>
-        ) : null}
-      </Card>
-    </>
-  );
-});
-
-type AccountsProps = MoneyProps & { accounts: InsightsExtras["accounts"] };
-
-/** One horizontal bar per account in its own colour. */
-const AccountsCard = React.memo(function AccountsCard({
-  accounts,
-  currency,
-  locale,
-}: AccountsProps) {
-  const { category } = useTokens();
-  if (accounts.length < 2) return null;
-  return (
-    <>
-      <SectionHeader title="By account" />
-      <Card className={`${CARD} gap-4`}>
-        {accounts.map((a) => {
-          const color = category[asColor(a.account?.color)];
-          const name = a.account?.name ?? "Account";
-          return (
-            <View
-              key={a.accountId}
-              accessible
-              accessibilityLabel={`${name}, ${formatMoneyForSpeech(a.amount, currency, { sign: "none" })}, ${a.percent} percent`}
-            >
-              <View className="flex-row items-baseline justify-between pb-1.5">
-                <Text variant="body" numberOfLines={1} className="mr-3 flex-1">
-                  {name}
-                </Text>
-                <Text variant="body" numeric className="font-medium">
-                  {formatMoney(a.amount, currency, { locale, decimals: 0 })}
-                </Text>
-                <Text
-                  variant="footnote"
-                  tone="tertiary"
-                  numeric
-                  className="w-10 text-right"
-                >
-                  {`${a.percent}%`}
-                </Text>
-              </View>
-              <ShareBar fraction={a.percent / 100} color={color} height={8} />
-            </View>
-          );
-        })}
-      </Card>
-    </>
-  );
-});
-
-export {
-  AccountsCard,
-  StatsGrid,
-  WeekdayCard,
-};
+export { StatsGrid };

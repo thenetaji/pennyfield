@@ -704,8 +704,8 @@ export const flows = [
     async run({ page, base }) {
       await seeded(page, base, "demo");
       await tabTo(page, "Insights");
-      await expectText(page, "Month-end forecast");
       await expectLabel(page, "Forecast: about ", { exact: false });
+      await expectText(page, "Analyzer");
       await expectText(page, "Your patterns");
       assert.match(
         await body(page),
@@ -716,7 +716,7 @@ export const flows = [
         .locator('[aria-label="Previous period"]:visible')
         .first()
         .tap();
-      await expectNoText(page, "Month-end forecast");
+      await expectNoText(page, "At this pace, by");
     },
   },
   {

@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import * as React from "react";
 import { ActionSheetIOS, Platform, StyleSheet, View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
@@ -24,6 +25,7 @@ import type { SpendCurveProps, TideBarsProps } from "@studio/charts/components";
 
 import { useHeroPeriod, type HeroPeriod } from "./period-store";
 import { paceDelta } from "./curve";
+import { WeekStrip } from "./week-strip";
 
 /** Skia loads lazily (CanvasKit first on web), keeping chart code out of the initial graph. */
 const SpendCurve = withSkia<SpendCurveProps>(() =>
@@ -148,25 +150,6 @@ function Stat({
   );
 }
 
-/** Three round dots: the key for the dotted reference line. */
-function DottedKey({ color }: { color: string }) {
-  return (
-    <View className="flex-row items-center gap-[3px]">
-      {[0, 1, 2].map((i) => (
-        <View
-          key={i}
-          style={{
-            width: 3,
-            height: 3,
-            borderRadius: 1.5,
-            backgroundColor: color,
-          }}
-        />
-      ))}
-    </View>
-  );
-}
-
 /**
  * The Home hero, spending first: a period label (menu: this month or all time), the total as the one big number
  * (long-press hides amounts), how it compares with the budget pace or last month at the same day, the spend curve,
@@ -185,6 +168,7 @@ function SpendHero({
   locale,
   showDecimals,
 }: SpendHeroProps) {
+  const router = useRouter();
   const { colors } = useTokens();
   const [hidden, setHidden] = useSetting("hide_amounts");
   const toggleHidden = () => {
@@ -319,18 +303,6 @@ function SpendHero({
             />
           </Animated.View>
         </Pressable>
-        {!all && referenceName ? (
-          <View
-            accessible
-            accessibilityLabel={`Dotted line, ${referenceName}`}
-            className="flex-row items-center gap-1.5"
-          >
-            <DottedKey color={withAlpha(colors.text, 0.45)} />
-            <Text variant="caption" tone="tertiary">
-              {referenceName}
-            </Text>
-          </View>
-        ) : null}
       </View>
       <Pressable
         accessibilityLabel={speech}
@@ -411,8 +383,8 @@ function SpendHero({
               startLabel={`${start.day} ${monthShort(start.month)}`}
               endLabel={`${end.day} ${monthShort(end.month)}`}
               referenceLabel={
-                reference.length > 0
-                  ? money(reference[reference.length - 1] ?? 0)
+                reference.length > 0 && referenceName
+                  ? `${referenceName} ${money(reference[reference.length - 1] ?? 0)}`
                   : undefined
               }
               accessibilityLabel={`Spent in ${monthLabel}, ${speech} so far${deltaText ? `, ${deltaText}` : ""}`}
@@ -443,6 +415,33 @@ function SpendHero({
               divider
             />
           )}
+        </Card>
+      ) : null}
+      {!all && spend.week.length > 0 ? (
+        <Card className="mt-3 rounded-[20px] px-4 pb-1 pt-3">
+          <View className="flex-row items-center justify-between">
+            <Text variant="caption" tone="secondary">
+              Last 7 days
+            </Text>
+            <Pressable
+              role="button"
+              accessibilityLabel="Spending calendar"
+              hitSlop={8}
+              scale={0.96}
+              onPress={() => router.push("/calendar")}
+            >
+              <Text variant="caption" tone="accent" className="font-semibold">
+                Calendar
+              </Text>
+            </Pressable>
+          </View>
+          <WeekStrip
+            days={spend.week}
+            todayKey={addDays(spend.from, spend.dayIndex)}
+            currency={spend.currency}
+            locale={locale}
+            showDecimals={showDecimals}
+          />
         </Card>
       ) : null}
       {menu.picker}

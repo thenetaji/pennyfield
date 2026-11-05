@@ -4,7 +4,10 @@ import { Chip, Pressable, Text } from "@studio/ui";
 import { useAccounts, useCategories } from "@/data/hooks";
 import type { TransactionKind } from "@/db/schema";
 
-import { useActivityFilters } from "./filter-store";
+import { formatMoney, minorDigits } from "@studio/money";
+import { haptic } from "@studio/theme";
+
+import { nextAmountStep, useActivityFilters } from "./filter-store";
 
 const KIND_LABEL: Record<TransactionKind, string> = {
   expense: "Expense",
@@ -16,11 +19,17 @@ const KIND_LABEL: Record<TransactionKind, string> = {
   repaid_by_me: "Repaid by me",
 };
 
-/** Active filters as removable chips plus Clear. Renders nothing when no filter is set. */
-function FilterChips() {
+const QUICK_KINDS = ["expense", "income"] as const;
+
+/** Quick filters (type, memo, amount) plus any filter set in the sheet; Clear when something is on. */
+function FilterChips({ currency, locale }: { currency: string; locale?: string }) {
   const kinds = useActivityFilters((s) => s.kinds);
   const categoryId = useActivityFilters((s) => s.categoryId);
   const accountId = useActivityFilters((s) => s.accountId);
+  const memoOnly = useActivityFilters((s) => s.memoOnly);
+  const minAmount = useActivityFilters((s) => s.minAmount);
+  const toggleMemo = useActivityFilters((s) => s.toggleMemo);
+  const setMinAmount = useActivityFilters((s) => s.setMinAmount);
   const toggleKind = useActivityFilters((s) => s.toggleKind);
   const setCategory = useActivityFilters((s) => s.setCategory);
   const setAccount = useActivityFilters((s) => s.setAccount);
@@ -34,7 +43,9 @@ function FilterChips() {
   const account = accountId
     ? accounts.find((a) => a.id === accountId)
     : undefined;
-  if (kinds.length === 0 && !category && !account) return null;
+  const any =
+    kinds.length > 0 || !!category || !!account || memoOnly || minAmount !== null;
+  const amountLabel = `Over ${formatMoney((minAmount ?? nextAmountStep(null) ?? 0) * 10 ** minorDigits(currency), currency, { locale, sign: "none", decimals: 0 })}`;
 
   return (
     <ScrollView
@@ -43,14 +54,43 @@ function FilterChips() {
       contentContainerClassName="items-center gap-2 px-4 py-1"
       keyboardShouldPersistTaps="handled"
     >
-      {kinds.map((kind) => (
+      {QUICK_KINDS.map((kind) => (
         <Chip
           key={kind}
           label={KIND_LABEL[kind]}
-          selected
-          onPress={() => toggleKind(kind)}
+          selected={kinds.includes(kind)}
+          onPress={() => {
+            haptic("selection");
+            toggleKind(kind);
+          }}
         />
       ))}
+      {kinds
+        .filter((kind) => !(QUICK_KINDS as readonly string[]).includes(kind))
+        .map((kind) => (
+          <Chip
+            key={kind}
+            label={KIND_LABEL[kind]}
+            selected
+            onPress={() => toggleKind(kind)}
+          />
+        ))}
+      <Chip
+        label="With memo"
+        selected={memoOnly}
+        onPress={() => {
+          haptic("selection");
+          toggleMemo();
+        }}
+      />
+      <Chip
+        label={amountLabel}
+        selected={minAmount !== null}
+        onPress={() => {
+          haptic("selection");
+          setMinAmount(nextAmountStep(minAmount));
+        }}
+      />
       {category ? (
         <Chip
           label={category.name}
@@ -67,6 +107,7 @@ function FilterChips() {
           onPress={() => setAccount(null)}
         />
       ) : null}
+      {any ? (
       <Pressable
         role="button"
         scale={1}
@@ -79,6 +120,7 @@ function FilterChips() {
           Clear
         </Text>
       </Pressable>
+      ) : null}
     </ScrollView>
   );
 }

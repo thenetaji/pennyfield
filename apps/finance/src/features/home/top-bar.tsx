@@ -57,7 +57,7 @@ function CircleButton({
   );
 }
 
-/** Greeting on the left; hide-amounts eye and settings circle on the right. */
+/** Greeting on the left; hide-amounts eye, Customize Home and settings circles on the right. */
 function HomeTopBar() {
   const router = useRouter();
   const greeting = useGreeting();
@@ -77,6 +77,11 @@ function HomeTopBar() {
             label={hidden ? "Show amounts" : "Hide amounts"}
             icon={hidden ? "eye-off" : "eye"}
             onPress={() => setHidden(!hidden)}
+          />
+          <CircleButton
+            label="Customize Home"
+            icon="square.grid.2x2"
+            onPress={() => router.push("/settings/home")}
           />
           <CircleButton
             label="Settings"

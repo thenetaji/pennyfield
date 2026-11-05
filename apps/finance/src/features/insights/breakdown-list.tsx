@@ -8,6 +8,7 @@ import { formatMoney, formatMoneyForSpeech } from "@studio/money";
 import { durations, useTokens } from "@studio/theme";
 
 import { asColorKey } from "./breakdown-model";
+import { ShareBar } from "./share-bar";
 
 type Money = {
   currency: string;
@@ -21,6 +22,8 @@ type RowProps = Money & {
   last: boolean;
   /** Group rows: whether the member categories are showing. */
   expanded?: boolean;
+  /** Largest amount among the rows at this level; bars scale to it. */
+  max: number;
   onPress?: () => void;
 };
 
@@ -32,6 +35,7 @@ function Row({
   nested = false,
   last,
   expanded,
+  max,
   onPress,
   currency,
   locale,
@@ -43,7 +47,6 @@ function Row({
     locale,
     decimals: showDecimals ? undefined : 0,
   });
-  const share = Math.max(0, Math.min(1, slice.percent / 100));
   const tile = nested ? 28 : 38;
   const inset = nested ? 52 + tile + 12 - 16 : 64;
   const grouped = slice.children.length > 0;
@@ -64,23 +67,13 @@ function Row({
           {slice.name}
         </Text>
         {nested ? null : (
-          <View
-            className="mt-1.5 h-1 overflow-hidden rounded-full"
-            style={{ backgroundColor: colors.fill }}
-          >
-            <View
-              style={{
-                width: `${Math.max(share * 100, share > 0 ? 2 : 0)}%`,
-                backgroundColor: category[color],
-                height: 4,
-                borderRadius: 2,
-              }}
-            />
-          </View>
+          <ShareBar amount={slice.amount} max={max} color={category[color]} />
         )}
-        {grouped ? (
+        {grouped || nested ? (
           <Text variant="caption" tone="tertiary" className="mt-1">
-            {`${slice.children.length} ${slice.children.length === 1 ? "category" : "categories"}`}
+            {grouped
+              ? `${slice.children.length} ${slice.children.length === 1 ? "category" : "categories"}`
+              : countLabel(slice.count)}
           </Text>
         ) : null}
       </View>
@@ -94,7 +87,7 @@ function Row({
           {amount}
         </Text>
         <Text variant="footnote" tone="tertiary" numeric>
-          {nested ? countLabel(slice.count) : `${slice.percent}%`}
+          {`${slice.percent}%`}
         </Text>
       </View>
       {last ? null : (
@@ -118,11 +111,12 @@ type BreakdownListProps = Money & {
 };
 
 /**
- * One row per slice: icon, name, share bar, amount and percent. A group row toggles its member categories
+ * One row per slice: icon, name, share bar (scaled to the largest row), amount and percent. A group row toggles its member categories
  * underneath; rows with a screen (category, tag, account) open it.
  */
 function BreakdownList({ slices, onOpen, ...money }: BreakdownListProps) {
   const [open, setOpen] = React.useState<ReadonlySet<string>>(new Set());
+  const max = slices.reduce((m, s) => Math.max(m, s.amount), 0);
   const toggle = (key: string) =>
     setOpen((current) => {
       const next = new Set(current);
@@ -144,6 +138,7 @@ function BreakdownList({ slices, onOpen, ...money }: BreakdownListProps) {
             <Row
               {...money}
               slice={slice}
+              max={max}
               last={last && !expanded}
               expanded={expanded}
               onPress={
@@ -160,6 +155,7 @@ function BreakdownList({ slices, onOpen, ...money }: BreakdownListProps) {
                     {...money}
                     key={child.key}
                     slice={child}
+                    max={slice.children[0]?.amount ?? 0}
                     nested
                     last={last && i === slice.children.length - 1}
                     onPress={child.target ? () => onOpen(child) : undefined}

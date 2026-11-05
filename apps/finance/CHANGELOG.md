@@ -2,6 +2,31 @@
 
 All notable changes to Finance. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.5.1] - 2026-11-05
+
+### Added
+- Choose what the line under each transaction shows in Settings → Transaction rows: the memo (or the category when there is none, the default), the category, the category and memo, or the category and account.
+- Long-press a transaction to add or edit its memo, change its category, move it to another account, or see every payment to the same merchant.
+- The transaction screen shows the memo under the title (tap to edit), how this payment compares with earlier ones to the same merchant, and the category budget it draws on. Category and account open their own screens.
+- Activity shows spending per day for the month in view, with the daily average; tap a day to jump to it. Each day header has a bar for that day's spending against the month's biggest day.
+- Activity quick filters: Expense, Income, With memo and a minimum amount.
+- Home shows the last seven days as bars under the month's spending; tap a day to open it in Activity.
+- The Add sheet fills in the last amount when you pick a previous title, suggests earlier memos while you type one, shows what you have spent today, and offers "Add another" after saving.
+
+### Changed
+- Insights puts the month-end forecast right under the total and groups the rest of the analyzer together. "More insights" is folded into Insights.
+- Cash flow is drawn as money in and money out adding up over the period, with the gap between them shaded.
+- Category trends show the change in money by default; tap for the percentage.
+- Share bars for categories and merchants all measure against the largest row.
+- Budgets on Home are slim bars that read like the forecast.
+- The calendar tints each day by how much you spent; the separate heatmap on Home is gone.
+- Customize Home moved to Home's top bar.
+- Settings starts straight with your settings; the app card at the top is gone (the version is under About).
+- Tapping Top categories on Home opens Insights on the same month; "All" under Recent opens the current month in Activity.
+
+### Fixed
+- Cash flow drew spending in the accent colour instead of the spending colour.
+
 ## [0.5.0] - 2026-11-04
 
 ### Added

@@ -25,6 +25,15 @@ import {
 export { ICON_BACKGROUNDS, ICON_STYLES };
 export type { IconBackground, IconStyle };
 export type SyncProviderId = "none" | "icloud" | "gdrive";
+/** What a transaction row's second line shows. */
+export type RowDetail = "memo" | "category" | "category_account" | "category_memo";
+
+export const ROW_DETAILS: readonly RowDetail[] = [
+  "memo",
+  "category",
+  "category_account",
+  "category_memo",
+];
 
 export const SYNC_PROVIDER_IDS: readonly SyncProviderId[] = [
   "none",
@@ -71,6 +80,7 @@ export interface SettingsMap {
   sync_provider: SyncProviderId;
   /** Epoch ms of the last backup export or sync; null when never. */
   last_backup_at: number | null;
+  row_detail: RowDetail;
 }
 
 export type SettingKey = keyof SettingsMap;
@@ -105,6 +115,7 @@ export const DEFAULT_SETTINGS: Readonly<SettingsMap> = {
   reminder_budget_fired: [],
   sync_provider: "none",
   last_backup_at: null,
+  row_detail: "memo",
 };
 
 const ENUMS: Partial<Record<SettingKey, readonly unknown[]>> = {
@@ -114,6 +125,7 @@ const ENUMS: Partial<Record<SettingKey, readonly unknown[]>> = {
   icon_style: ICON_STYLES,
   icon_background: ICON_BACKGROUNDS,
   sync_provider: SYNC_PROVIDER_IDS,
+  row_detail: ROW_DETAILS,
 };
 
 export const SETTING_KEYS = Object.keys(DEFAULT_SETTINGS) as SettingKey[];
