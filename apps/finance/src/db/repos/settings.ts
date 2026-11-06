@@ -99,7 +99,7 @@ export type SettingKey = keyof SettingsMap;
 export const DEFAULT_SETTINGS: Readonly<SettingsMap> = {
   display_currency: "USD",
   theme: "system",
-  accent: "blue",
+  accent: "ivory",
   palette: "system",
   haptics: true,
   show_decimals: false,

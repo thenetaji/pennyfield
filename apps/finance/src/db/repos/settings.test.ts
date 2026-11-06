@@ -185,7 +185,7 @@ describe("feature settings", () => {
         { key: "icon_background", value: '"graphite-accent"' },
       ])
       .run();
-    expect(getSetting(db, "accent")).toBe("blue");
+    expect(getSetting(db, "accent")).toBe("ivory");
     expect(getSetting(db, "palette")).toBe("system");
     expect(getSetting(db, "icon_style")).toBe("phosphor-fill");
     expect(getSetting(db, "icon_background")).toBe("solid");
