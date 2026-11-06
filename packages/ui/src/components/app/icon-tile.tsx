@@ -28,11 +28,15 @@ function IconTile({
   background,
   iconStyle,
 }: IconTileProps) {
-  const { colors, category, categoryMode, isDark } = useTokens();
+  const { colors, category, categoryMode, ink } = useTokens();
   const chosen = useIconPrefs((s) => s.background);
-  // The faint end of the theme's shades is for chart marks; on a tinted tile a symbol needs the full colour.
-  const tone = categoryMode === "mono" ? colors.accent : category[color];
-  const spec = tileSpec(background ?? chosen, isDark, tone);
+  const treatment = background ?? chosen;
+  const mono = categoryMode === "mono";
+  const tone =
+    treatment === "glyph-only"
+      ? mono ? colors.accent : category[color]
+      : mono ? colors.tile : ink[color];
+  const spec = tileSpec(treatment, tone);
   const glyph = Math.round(size * spec.iconScale);
   const radius = tileRadius(size);
   const glyphNode = (

@@ -37,7 +37,7 @@ const ICON_LOOKS: readonly {
   style: IconStyle;
   background: IconBackground;
 }[] = [
-  { label: "Duotone", subtitle: "Two-tone, on a soft background", style: "phosphor-duotone", background: "soft" },
+  { label: "Solid", subtitle: "White on your theme colour", style: "phosphor-fill", background: "solid" },
   { label: "Line", subtitle: "Thin, with no background", style: "lucide", background: "glyph-only" },
 ];
 

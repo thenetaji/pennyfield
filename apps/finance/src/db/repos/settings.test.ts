@@ -141,8 +141,8 @@ describe("feature settings", () => {
   it("have typed defaults", () => {
     const db = createTestDb();
     expect(getAllSettings(db)).toMatchObject({
-      icon_style: "phosphor-duotone",
-      icon_background: "soft",
+      icon_style: "phosphor-fill",
+      icon_background: "solid",
       hide_amounts: false,
       reminder_daily_enabled: false,
       reminder_daily_time: "21:00",
@@ -187,8 +187,8 @@ describe("feature settings", () => {
       .run();
     expect(getSetting(db, "accent")).toBe("blue");
     expect(getSetting(db, "palette")).toBe("system");
-    expect(getSetting(db, "icon_style")).toBe("phosphor-duotone");
-    expect(getSetting(db, "icon_background")).toBe("soft");
+    expect(getSetting(db, "icon_style")).toBe("phosphor-fill");
+    expect(getSetting(db, "icon_background")).toBe("solid");
   });
 
   it("falls back to the default for stored values that are no longer valid", () => {
@@ -201,8 +201,8 @@ describe("feature settings", () => {
         { key: "reminder_daily_time", value: '"25:99"' },
       ])
       .run();
-    expect(getSetting(db, "icon_style")).toBe("phosphor-duotone");
-    expect(getSetting(db, "icon_background")).toBe("soft");
+    expect(getSetting(db, "icon_style")).toBe("phosphor-fill");
+    expect(getSetting(db, "icon_background")).toBe("solid");
     expect(getSetting(db, "sync_provider")).toBe("none");
     expect(getSetting(db, "reminder_daily_time")).toBe("21:00");
   });

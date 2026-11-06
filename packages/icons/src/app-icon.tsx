@@ -12,8 +12,6 @@ type AppIconProps = {
   size?: number;
   color: string;
   /** Recolours the duotone layer (Phosphor duotone, Solar). */
-  secondaryColor?: string;
-  secondaryOpacity?: number;
   /** Force a style (previews). Defaults to the user's chosen style. */
   iconStyle?: IconStyle;
   /** Ignored; accepted so SF-era call sites keep compiling. */
@@ -25,8 +23,6 @@ function AppIcon({
   name,
   size = 20,
   color,
-  secondaryColor,
-  secondaryOpacity,
   iconStyle,
   accessibilityLabel,
 }: AppIconProps) {
@@ -42,7 +38,7 @@ function AppIcon({
   };
   return (
     <SvgXml
-      xml={iconXml(style, conceptFor(name), secondaryColor, secondaryOpacity)}
+      xml={iconXml(style, conceptFor(name))}
       width={size}
       height={size}
       color={color}

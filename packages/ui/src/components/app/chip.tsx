@@ -1,3 +1,4 @@
+import { View } from "react-native";
 import * as React from "react";
 
 import { IconTile } from "./icon-tile";
@@ -100,7 +101,13 @@ function CategoryChip({
         selected ? "bg-accent" : "bg-fill",
       )}
     >
-      <IconTile icon={icon} color={color} size={26} background={selected ? "soft" : undefined} />
+      {selected ? (
+        <View className="h-[26px] w-[26px] items-center justify-center">
+          <AppIcon name={icon} size={18} color={colors.onAccent} />
+        </View>
+      ) : (
+        <IconTile icon={icon} color={color} size={26} />
+      )}
       <Text
         variant="subhead"
         className="font-medium"

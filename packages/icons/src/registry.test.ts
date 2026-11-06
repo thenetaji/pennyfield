@@ -45,11 +45,4 @@ describe("icon registry", () => {
     expect(conceptFor("definitely.not.a.symbol")).toBe(FALLBACK_CONCEPT);
     expect(conceptFor("")).toBe(FALLBACK_CONCEPT);
   });
-
-  it("recolours the duotone layer", () => {
-    const plain = iconXml("phosphor-duotone", "food");
-    const tinted = iconXml("phosphor-duotone", "food", "#ff0000", 0.9);
-    expect(plain).toContain('opacity=".2"');
-    expect(tinted).toContain('fill="#ff0000" opacity="0.9"');
-  });
 });

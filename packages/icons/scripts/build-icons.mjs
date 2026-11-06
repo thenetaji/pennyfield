@@ -23,10 +23,10 @@ fs.mkdirSync(outDir, { recursive: true });
 const load = (pkg) => require(`@iconify-json/${pkg}/icons.json`);
 
 const SETS = {
-  "phosphor-duotone": {
+  "phosphor-fill": {
     pkg: "ph",
-    suffix: "-duotone",
-    file: "phosphorDuotone",
+    suffix: "-fill",
+    file: "phosphorFill",
     strict: true,
   },
   lucide: { pkg: "lucide", suffix: "", file: "lucide" },
@@ -67,8 +67,12 @@ const phDuoBars = bars([
   [184, 32, 32, 184, 4],
 ]);
 const CUSTOM = {
-  "phosphor-duotone": {
-    insights: `<g fill="currentColor"><g opacity=".2">${phDuoBars}</g><g fill="none" stroke="currentColor" stroke-width="16" stroke-linejoin="round">${phDuoBars}</g></g>`,
+  "phosphor-fill": {
+    insights: `<g fill="currentColor">${bars([
+      [32, 128, 48, 96, 12],
+      [104, 80, 48, 144, 12],
+      [176, 32, 48, 192, 12],
+    ])}</g>`,
   },
   lucide: {
     insights: `<g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">${bars([

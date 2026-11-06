@@ -18,7 +18,7 @@ All notable changes to Finance. The format follows [Keep a Changelog](https://ke
 
 ### Changed
 - **New default look:** deep blue, with Teal, Plum, Bronze and Ink as alternatives. Charts and icons use shades of your theme colour. Multicolour categories are still in Settings.
-- **Fewer icon options:** Duotone (default) or Line.
+- **Fewer icon options:** Solid (default) or Line.
 - **Larger buttons and switches** throughout, with the selected option filled in your theme colour.
 - **Settings** is organised into groups with search, in Calm, Glass or List style.
 - **Home and Insights** are reordered and grouped into clearer sections.

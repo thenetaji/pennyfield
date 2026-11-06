@@ -7,8 +7,8 @@ type Pack = { viewBox: number; bodies: Record<string, string> };
 function loadPack(style: IconStyle): Pack {
   /* eslint-disable @typescript-eslint/no-require-imports */
   switch (style) {
-    case "phosphor-duotone":
-      return require("./generated/phosphorDuotone") as Pack;
+    case "phosphor-fill":
+      return require("./generated/phosphorFill") as Pack;
     case "lucide":
       return require("./generated/lucide") as Pack;
   }
@@ -42,28 +42,13 @@ export function conceptLabel(id: string): string {
 
 const cache = new Map<string, string>();
 
-/**
- * SVG markup for a concept in a style. `secondary` recolours the duotone layer (the `opacity` paths in
- * Phosphor and Solar); `secondaryOpacity` overrides its strength. Cached: tiles repeat across lists.
- */
-export function iconXml(
-  style: IconStyle,
-  id: string,
-  secondary?: string,
-  secondaryOpacity?: number,
-): string {
-  const key = `${style}|${id}|${secondary ?? ""}|${secondaryOpacity ?? ""}`;
+/** SVG markup for a concept in a style. Cached: tiles repeat across lists. */
+export function iconXml(style: IconStyle, id: string): string {
+  const key = `${style}|${id}`;
   const hit = cache.get(key);
   if (hit) return hit;
   const pack = loadPack(style);
-  let body = pack.bodies[id] ?? pack.bodies[FALLBACK_CONCEPT] ?? "";
-  if (secondary || secondaryOpacity !== undefined) {
-    body = body.replace(
-      /opacity="(\.\d+)"/g,
-      (_m, o: string) =>
-        `${secondary ? `fill="${secondary}" ` : ""}opacity="${secondaryOpacity ?? o}"`,
-    );
-  }
+  const body = pack.bodies[id] ?? pack.bodies[FALLBACK_CONCEPT] ?? "";
   const xml = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${pack.viewBox} ${pack.viewBox}">${body}</svg>`;
   if (cache.size > 2000) cache.clear();
   cache.set(key, xml);

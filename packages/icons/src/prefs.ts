@@ -14,8 +14,8 @@ type IconPrefsState = {
  * subscribe to this store instead of each running a settings query.
  */
 export const useIconPrefs = create<IconPrefsState>((set) => ({
-  style: "phosphor-duotone",
-  background: "soft",
+  style: "phosphor-fill",
+  background: "solid",
   setStyle: (style) => set({ style }),
   setBackground: (background) => set({ background }),
 }));

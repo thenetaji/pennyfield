@@ -200,12 +200,19 @@ const RAMP_LIGHTNESS: Record<Scheme, readonly number[]> = {
 type ChartColors = {
   /** Near black in the theme's hue, for full-bleed dark canvases. */
   chartInk: string;
+  /** Icon tile fill: strong enough for a white symbol in either scheme. */
+  tile: string;
 };
 
-function chartColors(preset: AccentPresetKey): ChartColors {
+function chartColors(preset: AccentPresetKey, scheme: Scheme): ChartColors {
   const { hue, saturation } = CHART_TINTS[preset];
   return {
     chartInk: hslToHex(hue, saturation / 2, 7),
+    // Dark accents are pale, so tiles keep the light one. Ink's is the same black as a dark card.
+    tile:
+      preset === "ivory" && scheme === "dark"
+        ? accentPresets.ivory.light.accentDeep
+        : accentPresets[preset].light.accent,
   };
 }
 
@@ -217,7 +224,7 @@ export function buildColors(
   return {
     ...palettes[palette][scheme],
     ...accentPresets[preset][scheme],
-    ...chartColors(preset),
+    ...chartColors(preset, scheme),
   };
 }
 
@@ -250,7 +257,7 @@ export function configureTheme(overrides: ThemeOverrides): void {
     Object.assign(
       colors[scheme],
       accent,
-      chartColors(overrides.accentPreset ?? accentPreset),
+      chartColors(overrides.accentPreset ?? accentPreset, scheme),
     );
   }
 }

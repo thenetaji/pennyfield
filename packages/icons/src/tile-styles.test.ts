@@ -1,14 +1,11 @@
 import { tileSpec } from "./tile-styles";
-import { ICON_BACKGROUNDS } from "./types";
 
 describe("tile specs", () => {
-  it("defines every treatment in both schemes", () => {
-    for (const bg of ICON_BACKGROUNDS)
-      for (const dark of [true, false])
-        expect(tileSpec(bg, dark, "#5B86E0").icon).toBe("#5B86E0");
+  it("draws a white symbol on a solid tile", () => {
+    expect(tileSpec("solid", "#2F5FD0")).toMatchObject({ kind: "plain", icon: "#FFFFFF", base: "#2F5FD0" });
   });
 
   it("has no tile for glyph-only", () => {
-    expect(tileSpec("glyph-only", true, "#5B86E0").kind).toBe("none");
+    expect(tileSpec("glyph-only", "#2F5FD0")).toMatchObject({ kind: "none", icon: "#2F5FD0" });
   });
 });
