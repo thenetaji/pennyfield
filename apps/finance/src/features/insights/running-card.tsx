@@ -76,7 +76,7 @@ function RunningCard({ insights, period, today, locale }: RunningCardProps) {
       ? `${when} · ${money(before)} ${previous}`
       : `${when} · ${money(now)} · ${money(before)} ${previous}`;
   };
-  const tint = spending ? colors.accent : colors.income;
+  const tint = spending ? colors.chart : colors.income;
 
   return (
     <Card className="mx-4 mt-4 px-4 pb-1 pt-3">

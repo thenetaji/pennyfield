@@ -1,4 +1,3 @@
-import { useRouter } from "expo-router";
 import * as React from "react";
 import { ActionSheetIOS, Platform, StyleSheet, View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
@@ -25,7 +24,6 @@ import type { SpendCurveProps, TideBarsProps } from "@studio/charts/components";
 
 import { useHeroPeriod, type HeroPeriod } from "./period-store";
 import { paceDelta } from "./curve";
-import { WeekStrip } from "./week-strip";
 
 /** Skia loads lazily (CanvasKit first on web), keeping chart code out of the initial graph. */
 const SpendCurve = withSkia<SpendCurveProps>(() =>
@@ -57,6 +55,8 @@ type SpendHeroProps = {
   /** Formatted income this month, shown in the strip when there is no budget. */
   earned: string;
   earnedZero: boolean;
+  /** One line on what this pace means for the days left. */
+  outlook?: string;
   locale?: string;
   showDecimals: boolean;
 };
@@ -165,10 +165,10 @@ function SpendHero({
   budgetAtRisk = false,
   earned,
   earnedZero,
+  outlook,
   locale,
   showDecimals,
 }: SpendHeroProps) {
-  const router = useRouter();
   const { colors } = useTokens();
   const [hidden, setHidden] = useSetting("hide_amounts");
   const toggleHidden = () => {
@@ -338,7 +338,7 @@ function SpendHero({
           />
         </View>
       </Pressable>
-      {!all && deltaText ? (
+      {!all && deltaText && !hasBudget ? (
         <Animated.View
           entering={FadeIn.delay(300).duration(220)}
           className="mt-1.5 flex-row items-center gap-1 self-start rounded-full px-2.5 py-1"
@@ -359,6 +359,11 @@ function SpendHero({
             {deltaText}
           </Text>
         </Animated.View>
+      ) : null}
+      {!all && outlook ? (
+        <Text variant="subhead" tone="secondary" className="mt-2.5" numeric>
+          {outlook}
+        </Text>
       ) : null}
       {hasChart ? (
         <Animated.View
@@ -415,33 +420,6 @@ function SpendHero({
               divider
             />
           )}
-        </Card>
-      ) : null}
-      {!all && spend.week.length > 0 ? (
-        <Card className="mt-3 rounded-[20px] px-4 pb-1 pt-3">
-          <View className="flex-row items-center justify-between">
-            <Text variant="caption" tone="secondary">
-              Last 7 days
-            </Text>
-            <Pressable
-              role="button"
-              accessibilityLabel="Spending calendar"
-              hitSlop={8}
-              scale={0.96}
-              onPress={() => router.push("/calendar")}
-            >
-              <Text variant="caption" tone="accent" className="font-semibold">
-                Calendar
-              </Text>
-            </Pressable>
-          </View>
-          <WeekStrip
-            days={spend.week}
-            todayKey={addDays(spend.from, spend.dayIndex)}
-            currency={spend.currency}
-            locale={locale}
-            showDecimals={showDecimals}
-          />
         </Card>
       ) : null}
       {menu.picker}

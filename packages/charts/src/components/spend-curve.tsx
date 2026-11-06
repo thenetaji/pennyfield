@@ -29,7 +29,7 @@ import {
   type Pt,
   type Segment,
 } from "../lib";
-import { withAlpha, useTokens } from "@studio/theme";
+import { haptic, withAlpha, useTokens } from "@studio/theme";
 import {
   adjustableProps,
   FloatingLabel,
@@ -113,7 +113,7 @@ function SpendCurve({
   const font = useChartFont(11, "medium");
   const labelFont = useChartFont(12, "semibold");
   const [selected, setSelected] = React.useState<number | null>(null);
-  const tint = color ?? colors.accent;
+  const tint = color ?? colors.chart;
   const total = LANE + height + AXIS;
   const top = LANE + 4;
   const baseline = LANE + height;
@@ -154,7 +154,16 @@ function SpendCurve({
   const gesture = useScrubGesture({
     indexAt: (x) => spendCurveDayAt(x, width, days),
     selected,
-    onSelect: setSelected,
+    onSelect: (index) => {
+      // A firmer bump when the finger crosses the budget or last month's line.
+      if (index !== null && selected !== null && reference.length > 0) {
+        const side = (i: number) =>
+          (actual[i] ?? 0) > (reference[i] ?? Infinity);
+        if (index < actual.length && selected < actual.length && side(index) !== side(selected))
+          haptic("medium");
+      }
+      setSelected(index);
+    },
   });
   const shown = selected !== null && selected < days ? selected : null;
   const shownPoint =

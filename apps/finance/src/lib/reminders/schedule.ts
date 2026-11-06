@@ -9,7 +9,7 @@ export type ReminderTrigger =
 export interface PlannedNotification {
   /** Stable identifier: scheduling the same id twice replaces, never duplicates. */
   id: string;
-  kind: "daily" | "bill" | "budget";
+  kind: "daily" | "bill" | "budget" | "price";
   title: string;
   body: string;
   trigger: ReminderTrigger;
@@ -185,6 +185,41 @@ export interface PlanInput {
   fired: readonly string[];
   now: number;
   locale?: string;
+}
+
+export interface PriceRiseInput {
+  title: string;
+  from: number;
+  to: number;
+  percent: number;
+  dateKey: DateKey;
+  currency: string;
+}
+
+const PRICE_ALERT_DELAY_MS = 5000;
+const KEEP_FIRED_PRICES = 50;
+
+/** One alert per price rise, once: `fired` remembers it even after it has gone from the list. */
+export function planPriceAlerts(
+  rises: readonly PriceRiseInput[],
+  fired: readonly string[],
+  now: number,
+  options: { locale?: string } = {},
+): { notifications: PlannedNotification[]; fired: string[] } {
+  const already = new Set(fired);
+  const fresh = rises.filter((r) => !already.has(`${r.title}:${r.dateKey}`));
+  const amount = (minor: number, currency: string) =>
+    formatMoney(minor, currency, { locale: options.locale, sign: "none" });
+  return {
+    notifications: fresh.map((r) => ({
+      id: `price:${r.title}:${r.dateKey}`,
+      kind: "price",
+      title: `${r.title} went up ${r.percent}%`,
+      body: `From ${amount(r.from, r.currency)} to ${amount(r.to, r.currency)}.`,
+      trigger: { type: "date", at: now + PRICE_ALERT_DELAY_MS },
+    })),
+    fired: [...fired, ...fresh.map((r) => `${r.title}:${r.dateKey}`)].slice(-KEEP_FIRED_PRICES),
+  };
 }
 
 export interface ReminderPlan {

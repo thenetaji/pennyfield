@@ -294,15 +294,50 @@ export const palettes: Record<PaletteKey, Record<Scheme, PaletteColors>> = {
   },
 };
 
+/** Each accent's chart hue, richer than the accent itself so a grey accent like Titanium still reads as a colour. */
+const CHART_TINTS: Record<AccentPresetKey, { hue: number; saturation: number }> = {
+  blue: { hue: 211, saturation: 68 },
+  titanium: { hue: 33, saturation: 34 },
+  brass: { hue: 38, saturation: 48 },
+  slate: { hue: 212, saturation: 30 },
+  sage: { hue: 106, saturation: 26 },
+  copper: { hue: 17, saturation: 40 },
+  ivory: { hue: 240, saturation: 3 },
+};
+// Strongest first: dark on light surfaces, light on dark ones. The last step still holds about 3:1.
+const RAMP_LIGHTNESS: Record<Scheme, readonly number[]> = {
+  light: [24, 31, 38, 45, 52, 58],
+  dark: [86, 77, 68, 60, 51, 42],
+};
+
+type ChartColors = {
+  /** The main mark on any chart. */
+  chart: string;
+  /** Near black in the theme's hue, for full-bleed dark canvases. */
+  chartInk: string;
+};
+
+function chartColors(preset: AccentPresetKey, scheme: Scheme): ChartColors {
+  const { hue, saturation } = CHART_TINTS[preset];
+  return {
+    chart: monoRamp(preset, scheme)[scheme === "dark" ? 1 : 2]!,
+    chartInk: hslToHex(hue, saturation / 2, 7),
+  };
+}
+
 export function buildColors(
   scheme: Scheme,
   preset: AccentPresetKey = accentPreset,
   palette: PaletteKey = palettePreset,
-): SemanticColors & { accentDeep: string } {
-  return { ...palettes[palette][scheme], ...accentPresets[preset][scheme] };
+): SemanticColors & ChartColors & { accentDeep: string } {
+  return {
+    ...palettes[palette][scheme],
+    ...accentPresets[preset][scheme],
+    ...chartColors(preset, scheme),
+  };
 }
 
-export const colors: Record<Scheme, SemanticColors & { accentDeep: string }> = {
+export const colors: Record<Scheme, SemanticColors & ChartColors & { accentDeep: string }> = {
   light: buildColors("light"),
   dark: buildColors("dark"),
 };
@@ -328,7 +363,11 @@ export function configureTheme(overrides: ThemeOverrides): void {
       accentPresets[overrides.accentPreset ?? accentPreset][scheme];
     if (overrides.palette)
       Object.assign(colors[scheme], palettes[overrides.palette][scheme]);
-    Object.assign(colors[scheme], accent);
+    Object.assign(
+      colors[scheme],
+      accent,
+      chartColors(overrides.accentPreset ?? accentPreset, scheme),
+    );
   }
 }
 
@@ -378,12 +417,12 @@ export const categoryColors: Record<
   },
 };
 
-/** How categories are drawn: mono (greys told apart by lightness, the default) or colour. */
+/** How categories are drawn: mono (shades of the theme's hue, the default) or colour. */
 export type CategoryMode = "mono" | "colour";
 
 /**
- * Mono category greys. Each key keeps one fixed step (colour follows the entity, never its rank), and the steps
- * are spread so neighbouring keys differ in lightness. Light steps hold 3:1 on white; dark steps on #1C1C1E.
+ * Mono category shades. Each key keeps one fixed step (colour follows the entity, never its rank), and the steps
+ * are spread so neighbouring keys differ in lightness.
  */
 const MONO_STEPS: Record<CategoryColorKey, number> = {
   red: 0,
@@ -400,20 +439,35 @@ const MONO_STEPS: Record<CategoryColorKey, number> = {
   brown: 5,
   gray: 3,
 };
-const MONO_RAMP: Record<Scheme, readonly string[]> = {
-  light: ["#1C1C1E", "#3A3A3C", "#525256", "#67676B", "#7A7A7E", "#8E8E93"],
-  // Platinum to graphite with a faint warmth, like brushed titanium.
-  dark: ["#ECEAE6", "#CBC8C2", "#ABA8A2", "#8E8C88", "#73726F", "#5B5B5E"],
-};
-const monoFor = (scheme: Scheme) =>
-  Object.fromEntries(
-    categoryKeys.map((key) => [key, MONO_RAMP[scheme][MONO_STEPS[key]]!]),
-  ) as Record<CategoryColorKey, string>;
 
-export const monoCategoryColors: Record<
-  Scheme,
-  Record<CategoryColorKey, string>
-> = { light: monoFor("light"), dark: monoFor("dark") };
+function hslToHex(hue: number, saturation: number, lightness: number): string {
+  const s = saturation / 100;
+  const l = lightness / 100;
+  const channel = (n: number) => {
+    const k = (n + hue / 30) % 12;
+    const value = l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+    return Math.round(value * 255)
+      .toString(16)
+      .padStart(2, "0");
+  };
+  return `#${channel(0)}${channel(8)}${channel(4)}`;
+}
+
+/** One hue from strong to faint: every monochrome chart in a theme draws from this. */
+export function monoRamp(accent: AccentPresetKey, scheme: Scheme): string[] {
+  const { hue, saturation } = CHART_TINTS[accent];
+  return RAMP_LIGHTNESS[scheme].map((l) => hslToHex(hue, saturation, l));
+}
+
+export function monoCategoryColors(
+  accent: AccentPresetKey,
+  scheme: Scheme,
+): Record<CategoryColorKey, string> {
+  const ramp = monoRamp(accent, scheme);
+  return Object.fromEntries(
+    categoryKeys.map((key) => [key, ramp[MONO_STEPS[key]]!]),
+  ) as Record<CategoryColorKey, string>;
+}
 
 /** Solid tile fill (same in both schemes), as on iOS Settings icons; white glyph on top. */
 export const categoryInk: Record<CategoryColorKey, string> = {

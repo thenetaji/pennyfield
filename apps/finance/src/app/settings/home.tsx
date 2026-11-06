@@ -23,6 +23,7 @@ const SECTION_ICONS: Record<
   budgets: { name: "budgets", color: "purple" },
   bills: { name: "calendar", color: "purple" },
   top_categories: { name: "tag", color: "purple" },
+  week: { name: "calendar", color: "purple" },
   recent: { name: "activity", color: "purple" },
 };
 

@@ -2,6 +2,38 @@
 
 All notable changes to Finance. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.6.0] - 2026-11-06
+
+### Added
+- **Explore,** at the end of Insights: a place for new ways to see your money.
+- **Money map.** Every category as a tile sized by what you spent. Tap one to zoom into its payees, and slide through the last 12 months.
+- **What if.** Change your spending, add income or a big purchase and see where your balance goes over the next year, with a band showing how much your past months varied.
+- **Year spiral.** Every day you've tracked, one turn a year, so the same date lines up across years.
+- **Every transaction.** All your spending as moving particles, spread over time or gathered by category, with a WebGPU option that falls back to the standard view on phones that can't run it.
+- **Liquid budgets** that fill as you spend and lean as you tilt your phone, and a **coin jar** of what you saved that you can shake.
+- **Ask your money** on iPhones with Apple Intelligence. It answers from your own totals on the phone, and nothing is sent anywhere. **3D spending** on iOS 26.
+- **Your year as a poster** drawn from your own spending, and a **monthly recap** to swipe through and share.
+- **Safe to spend** on Home: what you can spend a day for the rest of the month after bills, or where this pace ends up if you have no budget.
+- **Type one line to add.** "uber 250 card yesterday" opens the Add sheet filled in.
+- **Widgets and shortcuts.** Home and Lock Screen widgets on iPhone, a home screen widget on Android, a Control Center button you can put on the Action Button, and "Add a transaction" for Siri.
+- **Price rise alerts.** Finance notices when a steady payment goes up, in Insights and as a notification.
+- **Hourly pay** in Settings shows what you spend as time at work.
+
+### Changed
+- **Settings is rebuilt** around a summary card, search and six group pages, without the coloured icons. Choose Calm, Glass or List at the bottom of Settings.
+- **Home follows the questions you ask as you scroll:** where you stand, what's ahead, where it went, what just happened and what you have. A Home you've rearranged stays as you set it.
+- **Insights is one continuous story** instead of tabs: is this normal, where it went, how it's changing, money in and out, who you pay and what you have.
+- **Charts are monochrome by default:** every chart uses shades of your theme's colour instead of a rainbow, and icons follow. Green and orange still mean money in and over budget. To get category colours back, go to Settings, Look and feel.
+- **Charts animate as you reach them:** sections on Home and Insights play their entrance when you scroll to them instead of off screen.
+- Scrubbing the Home chart gives a firmer bump as you cross your budget line.
+- Android 8 or newer is now required.
+
+### Fixed
+- Adding or editing an account, budget, category or recurring rule, and Search, showed two titles, with the form sliding over the Cancel and Save bar.
+- Tapping the amount while typing a name opened the keypad on top of the keyboard, leaving no room for the form.
+- Switches turned almost white when on, hiding the thumb in dark mode. They now use iOS green.
+- Switches sat above the middle of their row.
+
 ## [0.5.2] - 2026-11-05
 
 ### Changed

@@ -138,7 +138,7 @@ function BarChart({
     () => barSlots(0, plotWidth, count, count > 20 ? 3 : 6, 36),
     [plotWidth, count],
   );
-  const tint = color ?? colors.accent;
+  const tint = color ?? colors.chart;
 
   const gesture = useScrubGesture({
     indexAt: (x) => (x > plotWidth ? -1 : slotIndex(x, 0, plotWidth, count)),

@@ -217,7 +217,7 @@ export const saveDisabled = (page) =>
 /** From Home: Settings → Accounts, the way a person gets there. */
 export async function openAccounts(page) {
   await page.locator('[aria-label="Settings"]:visible').first().tap();
-  await page.locator('[aria-label^="Accounts"]:visible').first().tap();
+  await page.locator('[aria-label="Your accounts"]:visible').first().tap();
   await expectLabel(page, "Total, ", { exact: false });
 }
 
@@ -304,7 +304,7 @@ export const flows = [
       });
       await save(page);
       await sheetClosed(page);
-      await expectLabel(page, "Coffee, Food & Drink, Cash, ", { exact: false });
+      await expectLabel(page, "Coffee, Food & Drink, ", { exact: false });
       await expectText(page, "Recent");
       assert.match(await body(page), /Coffee[\s\S]*−\$450/);
       await tabTo(page, "Activity");
@@ -705,7 +705,7 @@ export const flows = [
       await seeded(page, base, "demo");
       await tabTo(page, "Insights");
       await expectLabel(page, "Forecast: about ", { exact: false });
-      await expectText(page, "Analyzer");
+      await goClient(page, "/insights?section=payees");
       await expectText(page, "Your patterns");
       assert.match(
         await body(page),
@@ -761,7 +761,8 @@ export const flows = [
         await row.getAttribute("aria-label"),
         /^Groceries, (?:[A-Za-z ]+, )?450 US dollars of 2,000 US dollars, 1,550 US dollars left$/,
       );
-      await expectText(page, "$450 of $2,000");
+      await expectText(page, "$1,550 left");
+      await expectText(page, "of $2,000");
       // The fill animates; wait for it to settle at 450/2000 = 22.5%.
       await page.waitForFunction(
         () =>
@@ -782,7 +783,8 @@ export const flows = [
         .locator('[aria-label^="Groceries, "][aria-label*=" of "]:visible')
         .last()
         .waitFor();
-      await expectText(page, "$450 of $2,000");
+      await expectText(page, "$1,550 left");
+      await expectText(page, "of $2,000");
     },
   },
   {
@@ -978,7 +980,7 @@ export const flows = [
         "decimals should be off by default",
       );
       await page.locator('[aria-label="Settings"]:visible').tap();
-      await expectText(page, "Show decimals");
+      await tapText(page, "Look and feel");
       await page.locator('[aria-label^="Appearance, "]:visible').first().tap();
       await tapText(page, "Dark");
       await page.waitForFunction(
@@ -991,10 +993,13 @@ export const flows = [
       const dark = await bg();
       assert.notEqual(dark, light);
       await page.goBack();
+      await page.goBack();
+      await tapText(page, "Entering money");
       await expectText(page, "Show decimals");
       await page
         .locator('input[aria-label="Show decimals"]')
         .dispatchEvent("click");
+      await page.goBack();
       await page.goBack();
       await expectText(page, `${amount}.00`);
       assert.equal(
@@ -1100,7 +1105,7 @@ export const flows = [
     async run({ page, base }) {
       await seeded(page, base, "demo");
       await page.locator('[aria-label="Settings"]:visible').tap();
-      await expectText(page, "Import and export");
+      await tapText(page, "Your data");
       await tapText(page, "Import and export");
       await expectText(page, "Erase all data");
       const dialogs = [];
@@ -1310,10 +1315,10 @@ export const flows = [
         `unexpected row: ${text}`,
       );
       // Demo data has a row later today, so the new one is not necessarily first: it must be within the five shown.
-      // Rows read "Title, Category, Account, minus …"; transfers carry no sign, so five is the ceiling.
+      // Rows read "Title, Category, minus …"; transfers carry no sign, so five is the ceiling.
       const recent = (await labelsOf(page)).filter(
         (l) =>
-          /^[^,]+, [^,]+, .*, (minus|plus) /.test(l) && !l.includes(", due "),
+          /^[^,]+, [^,]+, (?:.*, )?(minus|plus) /.test(l) && !l.includes(", due "),
       );
       assert.ok(
         recent.length > 0 && recent.length <= 5,
@@ -1327,7 +1332,7 @@ export const flows = [
     async run({ page, base }) {
       await seeded(page, base, "demo");
       await page.locator('[aria-label="Settings"]:visible').tap();
-      await expectText(page, "Show decimals");
+      await tapText(page, "Money");
       await tapText(page, "Recurring");
       await page.waitForFunction(
         () => location.pathname === "/recurring",
@@ -1353,7 +1358,7 @@ export const flows = [
       await expectText(page, `Spent in ${name(-2)}`);
       await tap(page, "Next month");
       await expectText(page, `Spent in ${name(-1)}`);
-      await tapText(page, "Calendar");
+      await page.getByText("Calendar", { exact: true }).last().tap();
       await expectText(page, "Current streak");
       await expectText(page, "Best streak");
     },

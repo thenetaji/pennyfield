@@ -8,6 +8,7 @@ import {
   categoryColors,
   categoryInk,
   monoCategoryColors,
+  monoRamp,
   durations,
   radii,
   shadows,
@@ -27,6 +28,7 @@ export function useTokens() {
   const categoryMode = useCategoryMode();
   return useMemo(() => {
     const colors = buildColors(scheme, accent, palette);
+    const mono = monoCategoryColors(accent, scheme);
     return {
       scheme,
       isDark: scheme === "dark",
@@ -35,11 +37,10 @@ export function useTokens() {
       colors,
       categoryMode,
       category:
-        categoryMode === "mono"
-          ? monoCategoryColors[scheme]
-          : categoryColors[scheme],
+        categoryMode === "mono" ? mono : categoryColors[scheme],
+      ramp: monoRamp(accent, scheme),
       incomeSoft: withAlpha(colors.income, scheme === "dark" ? 0.14 : 0.1),
-      ink: categoryMode === "mono" ? monoCategoryColors[scheme] : categoryInk,
+      ink: categoryMode === "mono" ? mono : categoryInk,
       spacing,
       radii,
       typeScale,

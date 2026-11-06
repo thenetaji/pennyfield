@@ -9,7 +9,6 @@ import {
   previousLabel,
   previousName,
   scrubLabel,
-  analyzerSummary,
   trendBadge,
   trendLabel,
   weekdayShort,
@@ -188,13 +187,5 @@ describe("trendBadge and previousName", () => {
     expect(
       previousName({ type: "custom", from: "2026-10-01", to: "2026-10-10" }),
     ).toBe("the previous 10 days");
-  });
-});
-
-describe("analyzerSummary", () => {
-  it("counts unusual and repeats, singular where it should be", () => {
-    expect(analyzerSummary(3, 2)).toBe("3 unusual · 2 repeats");
-    expect(analyzerSummary(0, 1)).toBe("1 repeat");
-    expect(analyzerSummary(0, 0)).toBe("Your habits");
   });
 });

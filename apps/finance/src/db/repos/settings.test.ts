@@ -49,6 +49,9 @@ describe("settings", () => {
         "sync_provider",
         "last_backup_at",
         "row_detail",
+        "settings_style",
+        "hourly_pay",
+        "reminder_price_fired",
         "look_version",
       ].sort(),
     );
@@ -194,13 +197,25 @@ describe("applyLookDefaults", () => {
     const db = createTestDb({ seed: false });
     setSetting(db, "icon_style", "sf");
     setSetting(db, "icon_background", "solid");
-    setSetting(db, "category_colors", "mono");
+    setSetting(db, "category_colors", "colour");
     applyLookDefaults(db);
     expect(getSetting(db, "icon_style")).toBe("phosphor-duotone");
     expect(getSetting(db, "icon_background")).toBe("solid");
-    expect(getSetting(db, "category_colors")).toBe("colour");
+    expect(getSetting(db, "category_colors")).toBe("mono");
     setSetting(db, "icon_style", "sf");
+    setSetting(db, "category_colors", "colour");
     applyLookDefaults(db);
     expect(getSetting(db, "icon_style")).toBe("sf");
+    expect(getSetting(db, "category_colors")).toBe("colour");
+  });
+
+  it("only applies the looks an install hasn't had yet", () => {
+    const db = createTestDb({ seed: false });
+    setSetting(db, "look_version", 1);
+    setSetting(db, "icon_style", "sf");
+    setSetting(db, "category_colors", "colour");
+    applyLookDefaults(db);
+    expect(getSetting(db, "icon_style")).toBe("sf");
+    expect(getSetting(db, "category_colors")).toBe("mono");
   });
 });

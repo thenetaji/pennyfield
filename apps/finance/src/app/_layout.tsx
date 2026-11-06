@@ -1,30 +1,29 @@
 import "../global.css";
 
 import { PortalHost } from "@rn-primitives/portal";
-import { Stack, type NativeStackNavigationOptions } from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
-import { StatusBar } from "expo-status-bar";
-import { type ReactNode, useEffect, useSyncExternalStore } from "react";
-import { openDatabaseAsync } from "expo-sqlite";
-import { Platform, View } from "react-native";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { SafeAreaProvider } from "react-native-safe-area-context";
-
-import { headerChrome, ToastHost, Text } from "@studio/ui";
-import { LockGate } from "@/features/lock/lock-gate";
-import { useSetting, usePostDueRecurring, useReminderSync } from "@/data/hooks";
-import { useIconPrefsSync } from "@/lib/icon-prefs-sync";
-import { DemoSeedGate } from "@/lib/demo-seed-gate";
-import { AmountsPrivacy } from "@/features/privacy/amounts-privacy";
 import {
-  setHapticsEnabled,
   applyThemePreference,
   followWebColorScheme,
   setAccent,
-  setPalette,
   setCategoryMode,
+  setHapticsEnabled,
+  setPalette,
   useTokens,
 } from "@studio/theme";
+import { headerChrome, Text, ToastHost } from "@studio/ui";
+import { type NativeStackNavigationOptions, Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { openDatabaseAsync } from "expo-sqlite";
+import { StatusBar } from "expo-status-bar";
+import { type ReactNode, useEffect, useSyncExternalStore } from "react";
+import { Platform, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { usePostDueRecurring, useReminderSync, useSetting } from "@/data/hooks";
+import { LockGate } from "@/features/lock/lock-gate";
+import { AmountsPrivacy } from "@/features/privacy/amounts-privacy";
+import { DemoSeedGate } from "@/lib/demo-seed-gate";
+import { useIconPrefsSync } from "@/lib/icon-prefs-sync";
 
 // expo-sqlite on web opens synchronously with a short busy-wait, so the worker must be live first.
 const warmWorker =
@@ -61,6 +60,12 @@ const sheet = (title: string): NativeStackNavigationOptions => ({
   sheetAllowedDetents: [1],
   sheetGrabberVisible: true,
   sheetCornerRadius: 24,
+});
+
+/** Form sheets that draw their own toolbar (useSheetHeader). Set here: hiding the native header later leaves it showing. */
+const formSheet = (title: string): NativeStackNavigationOptions => ({
+  ...sheet(title),
+  headerShown: false,
 });
 
 /** Detent sheets stacked over the add/edit sheet; they draw their own header. */
@@ -211,28 +216,45 @@ function Navigator() {
           options={{ ...sheet("Edit transaction"), headerShown: false }}
         />
         <Stack.Screen name="category/[id]" options={push("Category")} />
-        <Stack.Screen name="categories/[id]" options={sheet("Category")} />
+        <Stack.Screen name="categories/[id]" options={formSheet("Category")} />
         <Stack.Screen name="payees" options={push("Payees")} />
         <Stack.Screen name="payee" options={push("Payee")} />
         <Stack.Screen name="insights-more" options={push("More insights")} />
-        <Stack.Screen name="budget/new" options={sheet("New budget")} />
+        <Stack.Screen name="explore/index" options={push("Explore")} />
+        <Stack.Screen name="explore/map" options={push("Money map")} />
+        <Stack.Screen name="explore/what-if" options={push("What if")} />
+        <Stack.Screen name="explore/spiral" options={push("Year spiral")} />
+        <Stack.Screen name="explore/particles" options={push("Every transaction")} />
+        <Stack.Screen name="explore/three-d" options={push("3D spending")} />
+        <Stack.Screen name="explore/ask" options={push("Ask your money")} />
+        <Stack.Screen name="explore/liquid" options={push("Liquid budgets")} />
+        <Stack.Screen name="explore/jar" options={push("Coin jar")} />
+        <Stack.Screen name="explore/poster" options={push("Your year")} />
+        <Stack.Screen
+          name="recap/[month]"
+          options={{ headerShown: false, presentation: "fullScreenModal" }}
+        />
+        <Stack.Screen name="budget/new" options={formSheet("New budget")} />
         <Stack.Screen
           name="budget/categories"
           options={subSheet("Categories", [0.6, 1])}
         />
         <Stack.Screen name="budget/[id]/index" options={push("Budget")} />
-        <Stack.Screen name="budget/[id]/edit" options={sheet("Edit budget")} />
+        <Stack.Screen
+          name="budget/[id]/edit"
+          options={formSheet("Edit budget")}
+        />
         <Stack.Screen name="subscriptions" options={push("Subscriptions")} />
         <Stack.Screen name="recurring/index" options={push("Recurring")} />
-        <Stack.Screen name="recurring/[id]" options={sheet("Edit rule")} />
+        <Stack.Screen name="recurring/[id]" options={formSheet("Edit rule")} />
         <Stack.Screen name="accounts/index" options={push("Accounts")} />
-        <Stack.Screen name="accounts/new" options={sheet("New account")} />
+        <Stack.Screen name="accounts/new" options={formSheet("New account")} />
         <Stack.Screen name="accounts/[id]/index" options={push("Account")} />
         <Stack.Screen
           name="accounts/[id]/edit"
-          options={sheet("Edit account")}
+          options={formSheet("Edit account")}
         />
-        <Stack.Screen name="search" options={sheet("Search")} />
+        <Stack.Screen name="search" options={formSheet("Search")} />
         <Stack.Screen name="insights-range" options={sheet("Custom range")} />
         <Stack.Screen
           name="activity-filters"

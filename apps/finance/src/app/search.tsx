@@ -1,33 +1,26 @@
+import { dayLabel } from "@studio/dates";
+import { AppIcon } from "@studio/icons";
+import { formatMoney } from "@studio/money";
+import { useTokens } from "@studio/theme";
 import {
-  Stack,
-  useFocusEffect,
-  useLocalSearchParams,
-  useRouter,
-} from "expo-router";
-import * as React from "react";
-import { Platform, ScrollView, TextInput, View } from "react-native";
-
-import {
+  Button,
   Card,
   EmptyState,
   ListGroup,
   ListRow,
-  Button,
   Pressable,
   Text,
 } from "@studio/ui";
-import { AppIcon } from "@studio/icons";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import * as React from "react";
+import { Platform, ScrollView, TextInput, View } from "react-native";
 import { useSearchTransactions, useSetting, useTodayKey } from "@/data/hooks";
 import { merchantTotals } from "@/features/activity/merchants";
-import { normaliseTitle } from "@/lib/insights";
-import { formatMoney } from "@studio/money";
-import { dayLabel } from "@studio/dates";
 import { pushRecentSearch } from "@/features/search/recent-searches";
 import { TransactionDayList } from "@/features/transactions/transaction-day-list";
 import { useMoneyContext } from "@/features/transactions/use-money-context";
-import { useTokens } from "@studio/theme";
+import { normaliseTitle } from "@/lib/insights";
 
-const HIDDEN_HEADER = { headerShown: false } as const;
 const DEBOUNCE_MS = 150;
 const LIMIT = 200;
 const MAX_MERCHANTS = 3;
@@ -146,7 +139,6 @@ export default function Search() {
 
   return (
     <View className="flex-1 bg-bg">
-      <Stack.Screen options={HIDDEN_HEADER} />
       <View className="flex-row items-center gap-2 px-4 pb-2 pt-6">
         <View className="h-10 flex-1 flex-row items-center gap-2 rounded-[12px] bg-fill px-3">
           <AppIcon

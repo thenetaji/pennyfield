@@ -50,4 +50,18 @@ function HomeSectionHeader({
   );
 }
 
-export { HomeSectionHeader };
+/** The question the next sections answer: quiet, so it guides the eye without competing with their titles. */
+function HomeChapter({ title }: { title: string }) {
+  return (
+    <Text
+      variant="caption"
+      tone="tertiary"
+      accessibilityRole="header"
+      className="px-0.5 pb-2 uppercase tracking-[0.7px]"
+    >
+      {title}
+    </Text>
+  );
+}
+
+export { HomeChapter, HomeSectionHeader };

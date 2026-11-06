@@ -1,23 +1,33 @@
-import { useRouter } from "expo-router";
-import * as React from "react";
-import { Alert, View } from "react-native";
-
+import { AppIcon } from "@studio/icons";
+import {
+  currencySymbol,
+  formatMoneyForSpeech,
+  minorDigits,
+} from "@studio/money";
+import {
+  type CategoryColorKey,
+  categoryKeys,
+  haptic,
+  useTokens,
+} from "@studio/theme";
 import {
   AmountReadout,
   CurrencyPicker,
+  Input,
   ListGroup,
   ListRow,
   OptionPicker,
-  Input,
   Pressable,
   SegmentedControl,
   Text,
 } from "@studio/ui";
-import { AppIcon } from "@studio/icons";
+import { useRouter } from "expo-router";
+import * as React from "react";
+import { Alert, Keyboard, View } from "react-native";
 import { useActions } from "@/data/actions";
 import {
-  useAccountUsage,
   useAccounts,
+  useAccountUsage,
   useRateLookup,
   useSetting,
   useSettings,
@@ -31,13 +41,6 @@ import { FormRow } from "@/features/entry/form-row";
 import { useSheetHeader } from "@/features/entry/sheet-header";
 import { useAmountEntry } from "@/features/entry/use-amount-entry";
 import { FormChip } from "@/features/transaction-form/chips";
-import {
-  currencySymbol,
-  formatMoneyForSpeech,
-  minorDigits,
-} from "@studio/money";
-import { haptic, useTokens } from "@studio/theme";
-import { categoryKeys, type CategoryColorKey } from "@studio/theme";
 
 import { TYPE_LABELS, TYPES } from "./model";
 
@@ -211,7 +214,11 @@ export function AccountForm({ mode, accountId }: AccountFormProps) {
           pocketOn
             ? [
                 ...rest,
-                { accountId: id, amount: pocketMinor, fromAccountId: pocketFrom },
+                {
+                  accountId: id,
+                  amount: pocketMinor,
+                  fromAccountId: pocketFrom,
+                },
               ]
             : rest,
         );
@@ -239,10 +246,17 @@ export function AccountForm({ mode, accountId }: AccountFormProps) {
     }
   };
 
+  // The keypad replaces the system keyboard, so a focused text field has to let go first.
+  const openKeypad = (next: "balance" | "rate") => {
+    Keyboard.dismiss();
+    setNameFocused(false);
+    setTarget(next);
+    setKeypadOpen(true);
+  };
+
   const toggleNegative = () => {
     setNegative((v) => !v);
-    setTarget("balance");
-    setKeypadOpen(true);
+    openKeypad("balance");
   };
 
   const gone = () => {
@@ -312,11 +326,7 @@ export function AccountForm({ mode, accountId }: AccountFormProps) {
             symbol={`${negative && amount > 0 ? "−" : ""}${currencySymbol(currency)}`}
             value={entry.view.display}
             expression={entry.view.expression}
-            onPress={() => {
-              setNameFocused(false);
-              setTarget("balance");
-              setKeypadOpen(true);
-            }}
+            onPress={() => openKeypad("balance")}
             accessibilityLabel={`Opening balance, ${formatMoneyForSpeech(signed, currency)}`}
           />
           {canGoNegative ? (
@@ -369,11 +379,7 @@ export function AccountForm({ mode, accountId }: AccountFormProps) {
               <Pressable
                 role="button"
                 accessibilityLabel={`Rate, 1 ${currency} equals ${rateText} ${displayCurrency}`}
-                onPress={() => {
-                  setNameFocused(false);
-                  setTarget("rate");
-                  setKeypadOpen(true);
-                }}
+                onPress={() => openKeypad("rate")}
                 className="h-9 justify-center"
               >
                 <Text
@@ -423,7 +429,9 @@ export function AccountForm({ mode, accountId }: AccountFormProps) {
               <Input
                 variant="inline"
                 value={pocketText}
-                onChangeText={(text) => setPocketText(text.replace(/[^0-9.]/g, ""))}
+                onChangeText={(text) =>
+                  setPocketText(text.replace(/[^0-9.]/g, ""))
+                }
                 onFocus={() => setNameFocused(true)}
                 onBlur={() => setNameFocused(false)}
                 placeholder={`${currencySymbol(currency)}0`}

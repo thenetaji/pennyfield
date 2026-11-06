@@ -29,12 +29,12 @@ function SlimBar({ view }: { view: BudgetView }) {
       style={{ backgroundColor: colors.fill }}
     >
       <View
-        style={{ width: pct(Math.min(view.ratio, 1)), backgroundColor: colors.text }}
+        style={{ width: pct(Math.min(view.ratio, 1)), backgroundColor: colors.chart }}
       />
       <View
         style={{
           width: pct(view.upcomingRatio),
-          backgroundColor: withAlpha(colors.text, 0.5),
+          backgroundColor: withAlpha(colors.chart, 0.5),
         }}
       />
       {over ? (

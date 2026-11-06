@@ -1,12 +1,13 @@
 /** Home sections the owner can reorder and hide. The hero (greeting, amount, chart) always stays on top. */
 export const HOME_SECTION_IDS = [
-  "accounts",
-  "quick_add",
-  "pockets",
   "budgets",
   "bills",
   "top_categories",
+  "week",
+  "quick_add",
   "recent",
+  "accounts",
+  "pockets",
 ] as const;
 
 export type HomeSectionId = (typeof HOME_SECTION_IDS)[number];
@@ -23,8 +24,32 @@ export const HOME_SECTION_LABELS: Record<HomeSectionId, string> = {
   budgets: "Budgets",
   bills: "Upcoming bills",
   top_categories: "Top categories",
+  week: "Last 7 days",
   recent: "Recent",
 };
+
+/** The question each section answers; Home prints it when the question changes on the way down. */
+export const HOME_CHAPTERS: Record<HomeSectionId, string> = {
+  budgets: "What's ahead",
+  bills: "What's ahead",
+  top_categories: "Where it went",
+  week: "What just happened",
+  quick_add: "What just happened",
+  recent: "What just happened",
+  accounts: "What you have",
+  pockets: "What you have",
+};
+
+/** The default before the sections followed that story; a layout still in this order moves to the new one. */
+const PREVIOUS_DEFAULT_ORDER: readonly string[] = [
+  "accounts",
+  "quick_add",
+  "pockets",
+  "budgets",
+  "bills",
+  "top_categories",
+  "recent",
+];
 
 export const DEFAULT_HOME_LAYOUT: readonly HomeSectionPref[] =
   HOME_SECTION_IDS.map((id) => ({ id, visible: true }));
@@ -36,6 +61,7 @@ const isSectionId = (value: unknown): value is HomeSectionId =>
 /** Sections added in a later build that should land after a given section instead of at the end. */
 const INSERT_AFTER: Partial<Record<HomeSectionId, HomeSectionId>> = {
   pockets: "quick_add",
+  week: "top_categories",
 };
 
 /** Sections added in a later build that belong at the top, under the hero. */
@@ -56,6 +82,18 @@ const RENAMED: Record<string, readonly HomeSectionId[]> = {
  * section the stored value does not mention, visible, at the end (or after its `INSERT_AFTER` anchor).
  */
 export function normalizeHomeLayout(value: unknown): HomeSectionPref[] {
+  if (
+    Array.isArray(value) &&
+    value.length === PREVIOUS_DEFAULT_ORDER.length &&
+    value.every((s, i) => (s as { id?: unknown } | null)?.id === PREVIOUS_DEFAULT_ORDER[i])
+  ) {
+    const hidden = new Set(
+      value.flatMap((s: { id: string; visible?: unknown }) =>
+        s.visible === false ? [s.id] : [],
+      ),
+    );
+    return HOME_SECTION_IDS.map((id) => ({ id, visible: !hidden.has(id) }));
+  }
   const out: HomeSectionPref[] = [];
   const seen = new Set<HomeSectionId>();
   if (Array.isArray(value)) {
@@ -74,6 +112,7 @@ export function normalizeHomeLayout(value: unknown): HomeSectionPref[] {
       }
     }
   }
+  if (out.length === 0) return DEFAULT_HOME_LAYOUT.map((s) => ({ ...s }));
   for (const id of HOME_SECTION_IDS) {
     if (seen.has(id)) continue;
     if (INSERT_FIRST.has(id)) {
