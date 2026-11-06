@@ -2,7 +2,7 @@
   "expo": {
     "name": "Finance",
     "slug": "cadence",
-    "version": "0.5.2",
+    "version": "0.6.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "cadence",
@@ -14,7 +14,12 @@
         "tinted": "./assets/images/icon-tinted.png"
       },
       "bundleIdentifier": "com.thenetaji.cadence",
-      "supportsTablet": false
+      "supportsTablet": false,
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.com.thenetaji.cadence"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -62,7 +67,10 @@
       ],
       "expo-localization",
       "@react-native-community/datetimepicker",
-      "@studio/config/plugins/with-scene-lifecycle"
+      "@studio/config/plugins/with-scene-lifecycle",
+      "@bacons/apple-targets",
+      "./plugins/with-add-shortcut",
+      "react-native-webgpu"
     ],
     "experiments": {
       "typedRoutes": true,

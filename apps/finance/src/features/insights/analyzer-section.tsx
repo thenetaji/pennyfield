@@ -24,9 +24,9 @@ import {
 import { weekdayName } from "@/features/budgets/logic";
 import { DAY_PARTS } from "@/lib/insights";
 
-import { analyzerSummary } from "./labels";
 
 type AnalyzerSectionProps = {
+  part: "normal" | "habits";
   analyzer: Analyzer;
   /** What the all-spending monthly budget allows, in the display currency; 0 without one. */
   budget: number;
@@ -121,17 +121,17 @@ function ForecastCard({
         className="mt-4 h-3 flex-row overflow-hidden rounded-full"
         style={{ backgroundColor: colors.fill }}
       >
-        <View style={{ width: pct(f.spent), backgroundColor: colors.text }} />
+        <View style={{ width: pct(f.spent), backgroundColor: colors.chart }} />
         <View
           style={{
             width: pct(f.upcoming),
-            backgroundColor: withAlpha(colors.text, 0.5),
+            backgroundColor: withAlpha(colors.chart, 0.5),
           }}
         />
         <View
           style={{
             width: pct(everyday),
-            backgroundColor: withAlpha(colors.text, 0.22),
+            backgroundColor: withAlpha(colors.chart, 0.22),
           }}
         />
         {budget > 0 ? (
@@ -150,15 +150,15 @@ function ForecastCard({
         ) : null}
       </View>
       <View className="mt-2.5 flex-row flex-wrap gap-x-4 gap-y-1">
-        <Legend color={colors.text} label={`Spent ${money(f.spent)}`} />
+        <Legend color={colors.chart} label={`Spent ${money(f.spent)}`} />
         {f.upcoming > 0 ? (
           <Legend
-            color={withAlpha(colors.text, 0.5)}
+            color={withAlpha(colors.chart, 0.5)}
             label={`Bills due ${money(f.upcoming)}`}
           />
         ) : null}
         <Legend
-          color={withAlpha(colors.text, 0.22)}
+          color={withAlpha(colors.chart, 0.22)}
           label={`Everyday ${money(everyday)}`}
         />
       </View>
@@ -292,8 +292,8 @@ function PatternsCard({
                   height: Math.max(4, (d.amount / peak) * 52),
                   backgroundColor:
                     d.weekday === top.weekday
-                      ? colors.text
-                      : withAlpha(colors.text, 0.2),
+                      ? colors.chart
+                      : withAlpha(colors.chart, 0.2),
                 }}
               />
               <Text
@@ -330,7 +330,7 @@ function PatternsCard({
             key={d.part}
             style={{
               flex: Math.max(d.amount, 0),
-              backgroundColor: withAlpha(colors.text, shades[i] ?? 0.2),
+              backgroundColor: withAlpha(colors.chart, shades[i] ?? 0.2),
             }}
           />
         ))}
@@ -339,7 +339,7 @@ function PatternsCard({
         {p.dayParts.map((d, i) => (
           <Legend
             key={d.part}
-            color={withAlpha(colors.text, shades[i] ?? 0.2)}
+            color={withAlpha(colors.chart, shades[i] ?? 0.2)}
             label={`${DAY_PARTS[i]?.label} ${d.percent}%`}
           />
         ))}
@@ -477,21 +477,40 @@ function GroupLabel({ children }: { children: string }) {
   );
 }
 
-/** The month-end forecast directly under the hero, then unusual spending, repeats and habits as one group. */
+/** "normal" is the forecast, unusual spending and price rises; "habits" is repeat payments and patterns, further down the story. */
 function AnalyzerSection({
   analyzer,
   budget,
   weekStart,
   locale,
   showDecimals,
+  part,
 }: AnalyzerSectionProps) {
   const money = useMoney(analyzer.currency, locale, showDecimals);
   const unusual = Math.min(analyzer.unusual.length, MAX_UNUSUAL);
   const repeats = Math.min(analyzer.repeats.length, MAX_REPEATS);
   const hasPatterns = analyzer.patterns.count > 0;
-  const hasGroup = unusual > 0 || repeats > 0 || hasPatterns;
-  if (!analyzer.forecast && !hasGroup) return null;
-  const summary = analyzerSummary(unusual, repeats);
+  const rises = analyzer.priceRises.slice(0, MAX_REPEATS);
+  if (part === "habits") {
+    if (repeats === 0 && !hasPatterns) return null;
+    return (
+      <View>
+        {repeats > 0 ? (
+          <>
+            <GroupLabel>Repeat payments</GroupLabel>
+            <RepeatsCard analyzer={analyzer} money={money} />
+          </>
+        ) : null}
+        {hasPatterns ? (
+          <>
+            <GroupLabel>Your patterns</GroupLabel>
+            <PatternsCard analyzer={analyzer} weekStart={weekStart} money={money} />
+          </>
+        ) : null}
+      </View>
+    );
+  }
+  if (!analyzer.forecast && unusual === 0 && rises.length === 0) return null;
   return (
     <View>
       {analyzer.forecast ? (
@@ -499,41 +518,35 @@ function AnalyzerSection({
           <ForecastCard analyzer={analyzer} budget={budget} money={money} />
         </View>
       ) : null}
-      {hasGroup ? (
+      {unusual > 0 ? (
         <>
-          <View
-            className="flex-row items-baseline justify-between px-4 pb-0 pt-6"
-            accessible
-            accessibilityRole="header"
-            accessibilityLabel={`Analyzer, ${summary}`}
-          >
-            <Text variant="headline">Analyzer</Text>
-            <Text variant="footnote" tone="secondary" numeric>
-              {summary}
-            </Text>
-          </View>
-          {unusual > 0 ? (
-            <>
-              <GroupLabel>Unusual this month</GroupLabel>
-              <UnusualCard analyzer={analyzer} money={money} />
-            </>
-          ) : null}
-          {repeats > 0 ? (
-            <>
-              <GroupLabel>Repeat payments</GroupLabel>
-              <RepeatsCard analyzer={analyzer} money={money} />
-            </>
-          ) : null}
-          {hasPatterns ? (
-            <>
-              <GroupLabel>Your patterns</GroupLabel>
-              <PatternsCard
-                analyzer={analyzer}
-                weekStart={weekStart}
-                money={money}
-              />
-            </>
-          ) : null}
+          <GroupLabel>Unusual this month</GroupLabel>
+          <UnusualCard analyzer={analyzer} money={money} />
+        </>
+      ) : null}
+      {rises.length > 0 ? (
+        <>
+          <GroupLabel>Prices that went up</GroupLabel>
+          <Card className="mx-4 overflow-hidden p-0">
+            {rises.map((rise, i) => (
+              <View
+                key={`${rise.title}:${rise.dateKey}`}
+                className={`flex-row items-center justify-between px-4 py-3 ${i > 0 ? "border-t border-separator" : ""}`}
+              >
+                <View className="flex-1 pr-3">
+                  <Text variant="callout" numberOfLines={1}>
+                    {rise.title}
+                  </Text>
+                  <Text variant="footnote" tone="secondary" numeric numberOfLines={1}>
+                    {`${money(rise.from)} to ${money(rise.to)}`}
+                  </Text>
+                </View>
+                <Text variant="callout" tone="warning" numeric className="font-semibold">
+                  {`+${rise.percent}%`}
+                </Text>
+              </View>
+            ))}
+          </Card>
         </>
       ) : null}
     </View>

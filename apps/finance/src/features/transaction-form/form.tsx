@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useShallow } from "zustand/react/shallow";
-import { toDateKey } from "@studio/dates";
+import { keyToLocalMs, toDateKey } from "@studio/dates";
 
 import {
   AmountReadout,
@@ -120,6 +120,8 @@ export type FormParams = {
   amount?: string;
   currency?: string;
   ruleId?: string;
+  /** Day the transaction happened, when it wasn't today. */
+  date?: string;
   dev?: string;
 };
 
@@ -198,9 +200,9 @@ function TransactionForm({
       if (rule.kind === "transfer") draft.receives = rule.transferAmount;
       draft.appliedTitleNorm = normalizeTitle(draft.title);
     }
-    if (!source && !rule && params.title) {
-      draft.title = params.title;
-      draft.appliedTitleNorm = normalizeTitle(params.title);
+    if (!source && !rule && (params.title || (params.amount && !params.toAccountId))) {
+      draft.title = params.title ?? "";
+      draft.appliedTitleNorm = normalizeTitle(draft.title);
       const minor = Number(params.amount);
       const account = activeAccounts.find((a) => a.id === draft.accountId);
       const sameCurrency =
@@ -224,6 +226,7 @@ function TransactionForm({
       )
         draft.amount = minor;
     }
+    if (!source && !rule && params.date) draft.occurredAt = keyToLocalMs(params.date);
     if (devEnabled)
       draft = applyDevPreset(draft, params.dev, accountsAll, categoriesAll, {
         personId:

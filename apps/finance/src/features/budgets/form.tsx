@@ -1,17 +1,22 @@
+import {
+  currencySymbol,
+  formatMoneyForSpeech,
+  minorDigits,
+} from "@studio/money";
+import { haptic } from "@studio/theme";
+import {
+  AmountReadout,
+  Input,
+  ListGroup,
+  ListRow,
+  Pressable,
+  SegmentedControl,
+  showToast,
+  Text,
+} from "@studio/ui";
 import { useRouter } from "expo-router";
 import * as React from "react";
 import { Keyboard, View } from "react-native";
-
-import {
-  AmountReadout,
-  ListGroup,
-  ListRow,
-  showToast,
-  Input,
-  Text,
-  Pressable,
-  SegmentedControl,
-} from "@studio/ui";
 import { useActions } from "@/data/actions";
 import { useBudgets, useCategories, useSettings } from "@/data/hooks";
 import { ValidationError } from "@/db/errors";
@@ -22,12 +27,6 @@ import { EntryLayout } from "@/features/entry/entry-layout";
 import { FormRow, PickRow } from "@/features/entry/form-row";
 import { useSheetHeader } from "@/features/entry/sheet-header";
 import { useAmountEntry } from "@/features/entry/use-amount-entry";
-import {
-  currencySymbol,
-  formatMoneyForSpeech,
-  minorDigits,
-} from "@studio/money";
-import { haptic } from "@studio/theme";
 
 import { useCategoryRequest } from "./category-store";
 import {
@@ -265,6 +264,7 @@ export function BudgetForm({ mode, budgetId }: BudgetFormProps) {
             value={entry.view.display}
             expression={entry.view.expression}
             onPress={() => {
+              Keyboard.dismiss();
               setNameFocused(false);
               setKeypadOpen(true);
             }}

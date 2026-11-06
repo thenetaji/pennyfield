@@ -41,7 +41,7 @@ function apply(): void {
     const a = accentPresets[current.accent][scheme];
     const p = palettes[current.palette][scheme];
     const mono = current.categories === "mono";
-    const cats = (mono ? monoCategoryColors : categoryColors)[scheme];
+    const cats = mono ? monoCategoryColors(current.accent, scheme) : categoryColors[scheme];
     const catVars: Record<string, string> = {};
     for (const key of categoryKeys) {
       catVars[`--cat-${key}`] = cats[key];

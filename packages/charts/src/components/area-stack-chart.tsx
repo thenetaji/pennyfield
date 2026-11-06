@@ -288,7 +288,7 @@ function AreaStackChart({
                         cx={last[0]}
                         cy={last[1]}
                         r={3.5}
-                        color={colors.accent}
+                        color={colors.chart}
                       />
                     </>
                   ) : null}

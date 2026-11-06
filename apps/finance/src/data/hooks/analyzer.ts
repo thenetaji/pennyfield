@@ -1,5 +1,6 @@
 import { listCategories } from "@/db/repos/categories";
 import { analyzerLines } from "@/db/repos/insight-lines";
+import { priceRises, type PriceRise } from "@/lib/insights/price-rises";
 import { listRules, upcoming } from "@/db/repos/recurring";
 import type { CategoryRow } from "@/db/schema";
 import type { Db } from "@/db/types";
@@ -48,6 +49,7 @@ export interface Analyzer {
   /** Over the last 90 days. */
   patterns: Patterns;
   repeats: AnalyzerRepeat[];
+  priceRises: PriceRise[];
 }
 
 export function readAnalyzer(
@@ -132,5 +134,6 @@ export function readAnalyzer(
       ...r,
       category: category(r.categoryId),
     })),
+    priceRises: priceRises(pastOnly, todayKey),
   };
 }

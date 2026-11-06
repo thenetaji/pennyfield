@@ -1,6 +1,12 @@
 import { useLocalSearchParams, useRouter, type Href } from "expo-router";
 import * as React from "react";
-import { ScrollView, View } from "react-native";
+import {
+  ScrollView,
+  View,
+  type LayoutChangeEvent,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from "react-native";
 
 import { ReportEntryRow } from "@/features/report/entry";
 import { ReviewEntryCard } from "@/features/review/entry";
@@ -19,10 +25,11 @@ import {
   Chip,
   Pressable,
   SectionHeader,
-  SegmentedControl,
+  SymbolIcon,
   Text,
 } from "@studio/ui";
-import { Donut, DonutLegend } from "@studio/charts/components";
+import { Reveal, ScrollRevealProvider, useScrollReveal } from "@/components/app/scroll-reveal";
+import { Donut } from "@studio/charts/components";
 import {
   useAnalyzer,
   useBreakdown,
@@ -106,16 +113,29 @@ const LIST_TITLES: Record<BreakdownBy, string> = {
   merchant: "Merchants",
 };
 
-/** The deeper half of the screen shows one of these at a time. */
-const SECTIONS = ["flow", "trend", "compare", "payees", "worth"] as const;
-type Section = (typeof SECTIONS)[number];
-const SECTION_LABELS = [
-  "Flow",
-  "Trend",
-  "Compare",
-  "Payees",
-  "Net worth",
-] as const;
+/** The screen reads top to bottom as one story; each chapter mounts as the scroll nears it. */
+const CHAPTERS = ["trend", "flow", "payees", "worth"] as const;
+type Chapter = (typeof CHAPTERS)[number];
+/** How close to the bottom of what is mounted the next chapter starts. */
+const REVEAL_DISTANCE = 900;
+
+function chapterOfParam(section: string | undefined): Chapter | null {
+  if (section === "compare") return "trend";
+  return CHAPTERS.find((c) => c === section) ?? null;
+}
+
+function ChapterLabel({ title }: { title: string }) {
+  return (
+    <Text
+      variant="caption"
+      tone="tertiary"
+      accessibilityRole="header"
+      className="px-4 pt-10 uppercase tracking-[0.7px]"
+    >
+      {title}
+    </Text>
+  );
+}
 
 /** Category rows shown before "Show all". */
 const LIST_LIMIT = 6;
@@ -133,6 +153,7 @@ export default function InsightsScreen() {
   const settings = useSettings();
   const money = useMoneyContext();
   const today = useTodayKey();
+  const { colors } = useTokens();
   const openRange = useRangeStore((s) => s.open);
 
   const periodSettings = React.useMemo<PeriodSettings>(
@@ -155,9 +176,27 @@ export default function InsightsScreen() {
   const [scope, setScope] = React.useState<InsightsScope>(() =>
     parseScope(params),
   );
-  const [section, setSection] = React.useState<Section>(
-    () => SECTIONS.find((s) => s === firstParam(params.section)) ?? "flow",
+  const [linkedChapter] = React.useState(() =>
+    chapterOfParam(firstParam(params.section)),
   );
+  const [chaptersShown, setChaptersShown] = React.useState(() =>
+    linkedChapter ? CHAPTERS.indexOf(linkedChapter) + 1 : 1,
+  );
+  const showsChapter = (chapter: Chapter) =>
+    CHAPTERS.indexOf(chapter) < chaptersShown;
+  const scrollRef = React.useRef<ScrollView>(null);
+  const reveal = useScrollReveal();
+  const revealIfNear = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+    const left =
+      contentSize.height - contentOffset.y - layoutMeasurement.height;
+    if (left < REVEAL_DISTANCE)
+      setChaptersShown((n) => Math.min(n + 1, CHAPTERS.length));
+  };
+  const scrollToLinked = (chapter: Chapter, e: LayoutChangeEvent) => {
+    if (chapter === linkedChapter)
+      scrollRef.current?.scrollTo({ y: e.nativeEvent.layout.y, animated: false });
+  };
   const [showAll, setShowAll] = React.useState(false);
 
   const navKey = [
@@ -354,10 +393,6 @@ export default function InsightsScreen() {
     setScope(next);
     reset();
   };
-  const changeSection = (index: number) => {
-    const next = SECTIONS[index] ?? "flow";
-    if (next !== section) setSection(next);
-  };
   const openCategoryId = (id: string, categoryKind: "expense" | "income") =>
     router.push({
       pathname: "/category/[id]",
@@ -421,10 +456,17 @@ export default function InsightsScreen() {
   return (
     <View className="flex-1 bg-bg">
       <ScrollView
+        ref={scrollRef}
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{ paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
+        scrollEventThrottle={100}
+        onScroll={(e) => {
+          revealIfNear(e);
+          reveal.onScroll();
+        }}
       >
+        <ScrollRevealProvider value={reveal.register}>
         <PeriodControls
           type={view.type}
           label={periodLabel(period)}
@@ -501,7 +543,9 @@ export default function InsightsScreen() {
               </View>
               {showAnalyzer ? (
                 <Stagger index={1}>
+                  <ChapterLabel title="Is this normal?" />
                   <AnalyzerSection
+                    part="normal"
                     analyzer={analyzer}
                     budget={overallBudget}
                     weekStart={periodSettings.weekStart}
@@ -511,8 +555,14 @@ export default function InsightsScreen() {
                 </Stagger>
               ) : null}
               <Stagger index={1}>
-                <SectionHeader title={breakdownTitle(by, kind)} />
-                <Card className="mx-4 items-center px-0 pb-2 pt-3">
+                <ChapterLabel title="Where it went" />
+                <SectionHeader
+                  title={breakdownTitle(by, kind)}
+                  actionLabel={kind === "expense" ? "See as map" : undefined}
+                  onAction={() => router.push("/explore/map")}
+                />
+                <Reveal>
+<Card className="mx-4 items-center px-0 pb-2 pt-3">
                   <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
@@ -542,14 +592,8 @@ export default function InsightsScreen() {
                     }
                     emptyLabel="Nothing yet"
                   />
-                  <DonutLegend
-                    data={donut}
-                    selectedKey={selectedKey}
-                    onSelect={(key) =>
-                      setSelection(key === null ? null : { key })
-                    }
-                  />
                 </Card>
+</Reveal>
               </Stagger>
             </View>
           </GestureDetector>
@@ -559,6 +603,7 @@ export default function InsightsScreen() {
             actionLabel={selectedKey !== null ? "Show all" : undefined}
             onAction={() => setSelection(null)}
           />
+          <Reveal>
           <Card className="mx-4 p-0">
             {!byCategory && slices.length > 0 ? (
               <BreakdownList
@@ -605,30 +650,59 @@ export default function InsightsScreen() {
               </>
             )}
           </Card>
+          </Reveal>
 
-          <View className="px-4 pt-8">
-            <SegmentedControl
-              values={SECTION_LABELS}
-              selectedIndex={SECTIONS.indexOf(section)}
-              onChange={changeSection}
-              accessibilityLabel="Section"
+          {showsChapter("trend") ? (
+            <View onLayout={(e) => scrollToLinked("trend", e)}>
+              <ChapterLabel title="How it's changing" />
+            <Reveal>
+<TrendSection
+              insights={insights}
+              period={period}
+              kind={kind}
+              scope={scope}
+              by={by}
+              today={today}
+              settings={periodSettings}
+              locale={money.locale}
             />
-          </View>
-          {section === "flow" ? (
+</Reveal>
+              {comparison.current > 0 || comparison.previous > 0 ? (
+                <Reveal>
+<CompareCard
+                comparison={comparison}
+                kind={kind}
+                categories={lines.categories}
+                currency={currency}
+                locale={money.locale}
+                previousName={before}
+                onOpenCategory={(id) => openCategoryId(id, kind)}
+              />
+</Reveal>
+              ) : null}
+            </View>
+          ) : null}
+          {showsChapter("flow") ? (
+            <View onLayout={(e) => scrollToLinked("flow", e)}>
+              <ChapterLabel title="Money in and out" />
             <>
-              <FlowCard
+              <Reveal>
+<FlowCard
                 income={income}
                 spending={spending}
                 currency={currency}
                 locale={money.locale}
                 onOpenCategory={openCategoryId}
               />
+</Reveal>
               {cashFlow.income > 0 || cashFlow.spent > 0 ? (
-                <CashFlowCard
+                <Reveal>
+<CashFlowCard
                   flow={cashFlow}
                   currency={currency}
                   locale={money.locale}
                 />
+</Reveal>
               ) : null}
               {spending.total === 0 && income.total === 0 ? (
                 <Text
@@ -640,63 +714,70 @@ export default function InsightsScreen() {
                 </Text>
               ) : null}
             </>
+            </View>
           ) : null}
-          {section === "trend" ? (
-            <TrendSection
-              insights={insights}
-              period={period}
-              kind={kind}
-              scope={scope}
-              by={by}
-              today={today}
-              settings={periodSettings}
-              locale={money.locale}
-            />
-          ) : null}
-          {section === "compare" ? (
-            comparison.current > 0 || comparison.previous > 0 ? (
-              <CompareCard
-                comparison={comparison}
-                kind={kind}
-                categories={lines.categories}
-                currency={currency}
-                locale={money.locale}
-                previousName={before}
-                onOpenCategory={(id) => openCategoryId(id, kind)}
-              />
-            ) : (
-              <Text
-                variant="callout"
-                tone="secondary"
-                className="py-10 text-center"
-              >
-                Nothing to compare
-              </Text>
-            )
-          ) : null}
-          {section === "payees" ? (
+          {showsChapter("payees") ? (
+            <View onLayout={(e) => scrollToLinked("payees", e)}>
+              <ChapterLabel title="Who you pay, and when" />
+              {showAnalyzer ? (
+                <AnalyzerSection
+                  part="habits"
+                  analyzer={analyzer}
+                  budget={overallBudget}
+                  weekStart={periodSettings.weekStart}
+                  locale={money.locale}
+                  showDecimals={money.showDecimals}
+                />
+              ) : null}
             <PayeesCard
               data={lines}
               context={context}
               locale={money.locale}
               showDecimals={money.showDecimals}
             />
+            </View>
           ) : null}
-          {section === "worth" ? (
-            <NetWorthCard
+          {showsChapter("worth") ? (
+            <View onLayout={(e) => scrollToLinked("worth", e)}>
+              <ChapterLabel title="What you have" />
+            <Reveal>
+<NetWorthCard
               period={period}
               today={today}
               settings={periodSettings}
               locale={money.locale}
               initialStacked={firstParam(params.worth) === "stacked"}
             />
+</Reveal>
+            </View>
           ) : null}
 
-          <View className="gap-3 px-4 pt-8">
+          <ChapterLabel title="Go deeper" />
+          <View className="gap-3 px-4 pt-2">
+            <Card className="p-0">
+              <Pressable
+                role="button"
+                accessibilityLabel="Explore: money map, what if and more"
+                scale={0.99}
+                onPress={() => router.push("/explore")}
+                className="flex-row items-center justify-between px-4 py-3.5"
+              >
+                <View className="flex-1">
+                  <Text variant="callout" className="font-semibold">
+                    Explore
+                  </Text>
+                  <Text variant="footnote" tone="secondary">
+                    Money map, what if, year spiral and more
+                  </Text>
+                </View>
+                <SymbolIcon name="chevron.right" size={13} color={colors.textTertiary} weight="bold" />
+              </Pressable>
+            </Card>
             <ReportEntryRow />
             <ReviewEntryCard />
           </View>
         </Animated.View>
+        </ScrollRevealProvider>
       </ScrollView>
     </View>
   );

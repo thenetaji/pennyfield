@@ -14,7 +14,7 @@ type EntryLayoutProps = {
 function EntryLayout({ children, keypad }: EntryLayoutProps) {
   const keyboardInset = useKeyboardInset();
   return (
-    <View className="flex-1 bg-bg">
+    <View className="flex-1 overflow-hidden bg-bg">
       <View className="flex-1" style={{ paddingBottom: keyboardInset }}>
         <ScrollView
           className="flex-1"

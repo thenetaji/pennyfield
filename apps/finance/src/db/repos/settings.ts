@@ -28,6 +28,9 @@ export type SyncProviderId = "none" | "icloud" | "gdrive";
 /** What a transaction row's second line shows. */
 export type RowDetail = "memo" | "category" | "category_account" | "category_memo";
 
+export type SettingsStyle = "calm" | "glass" | "list";
+export const SETTINGS_STYLES: readonly SettingsStyle[] = ["calm", "glass", "list"];
+
 export const ROW_DETAILS: readonly RowDetail[] = [
   "memo",
   "category",
@@ -48,7 +51,7 @@ export interface SettingsMap {
   accent: AccentPresetKey;
   /** Surface palette: System (Apple neutral), Titanium or Paper. */
   palette: PaletteKey;
-  /** Categories in mono greys (default) or in colour. */
+  /** Categories in shades of the theme's hue (default) or in colour. */
   category_colors: CategoryMode;
   haptics: boolean;
   show_decimals: boolean;
@@ -77,12 +80,18 @@ export interface SettingsMap {
   reminder_budgets: boolean;
   /** Budget alerts already raised, as `budgetId:periodStart:threshold`; managed by the reminder scheduler. */
   reminder_budget_fired: string[];
+  /** Price rises already alerted, as `title:date`. */
+  reminder_price_fired: string[];
   sync_provider: SyncProviderId;
   /** Epoch ms of the last backup export or sync; null when never. */
   last_backup_at: number | null;
   row_detail: RowDetail;
   /** Which default look has been applied; see `applyLookDefaults`. */
   look_version: number;
+  /** How the Settings pages are drawn. */
+  settings_style: SettingsStyle;
+  /** Take-home pay per hour in the display currency's minor units, for showing costs as work time; null is off. */
+  hourly_pay: number | null;
 }
 
 export type SettingKey = keyof SettingsMap;
@@ -106,7 +115,7 @@ export const DEFAULT_SETTINGS: Readonly<SettingsMap> = {
   recent_searches: [],
   icon_style: "phosphor-duotone",
   icon_background: "graphite-accent",
-  category_colors: "colour",
+  category_colors: "mono",
   home_layout: DEFAULT_HOME_LAYOUT.map((s) => ({ ...s })),
   pockets: [],
   hide_amounts: false,
@@ -115,20 +124,23 @@ export const DEFAULT_SETTINGS: Readonly<SettingsMap> = {
   reminder_bills: true,
   reminder_budgets: true,
   reminder_budget_fired: [],
+  reminder_price_fired: [],
   sync_provider: "none",
   last_backup_at: null,
   row_detail: "memo",
   look_version: 0,
+  settings_style: "calm",
+  hourly_pay: null,
 };
 
-const LOOK_VERSION = 1;
-
-/** The defaults each look replaced; a setting still on its old default moves to the new one. */
-const PREVIOUS_LOOK: Partial<SettingsMap> = {
-  icon_style: "sf",
-  icon_background: "mono",
-  category_colors: "mono",
-};
+/** The defaults each look replaced, oldest first; a setting still on its old default moves to the new one. */
+const PREVIOUS_LOOKS: Partial<SettingsMap>[] = [
+  {
+    icon_style: "sf",
+    icon_background: "mono",
+  },
+  { category_colors: "colour" },
+];
 
 const ENUMS: Partial<Record<SettingKey, readonly unknown[]>> = {
   accent: Object.keys(accentPresets),
@@ -138,6 +150,7 @@ const ENUMS: Partial<Record<SettingKey, readonly unknown[]>> = {
   icon_background: ICON_BACKGROUNDS,
   sync_provider: SYNC_PROVIDER_IDS,
   row_detail: ROW_DETAILS,
+  settings_style: SETTINGS_STYLES,
 };
 
 export const SETTING_KEYS = Object.keys(DEFAULT_SETTINGS) as SettingKey[];
@@ -205,8 +218,10 @@ export function insertMissingDefaults(db: Db): void {
 
 /** Moves installs that never changed their look to the current defaults, once. */
 export function applyLookDefaults(db: Db): void {
-  if (getSetting(db, "look_version") >= LOOK_VERSION) return;
-  for (const [key, old] of Object.entries(PREVIOUS_LOOK) as [SettingKey, unknown][])
-    if (getSetting(db, key) === old) setSetting(db, key, DEFAULT_SETTINGS[key]);
-  setSetting(db, "look_version", LOOK_VERSION);
+  const from = getSetting(db, "look_version");
+  if (from >= PREVIOUS_LOOKS.length) return;
+  for (const look of PREVIOUS_LOOKS.slice(from))
+    for (const [key, old] of Object.entries(look) as [SettingKey, unknown][])
+      if (getSetting(db, key) === old) setSetting(db, key, DEFAULT_SETTINGS[key]);
+  setSetting(db, "look_version", PREVIOUS_LOOKS.length);
 }

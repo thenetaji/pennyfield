@@ -145,7 +145,7 @@ function PaceChart({
   const baseline = LANE + height;
   const count = data.length;
   const tint = color ?? colors.text;
-  const glow = colors.accent;
+  const glow = colors.chart;
   const reduced = useReducedMotion();
 
   const { actualPath, areaPath, pacePath, lastActual, yMax, ticks, peak } =

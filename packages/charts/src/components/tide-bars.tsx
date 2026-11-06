@@ -182,7 +182,7 @@ function TideBars({
                       current={bars[i]!.current}
                       lit={shown === null || shown === i}
                       fill={past}
-                      accent={colors.accent}
+                      accent={colors.chart}
                     />
                   ))}
                 </Group>

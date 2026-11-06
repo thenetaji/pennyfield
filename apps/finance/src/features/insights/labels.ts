@@ -246,12 +246,3 @@ export function previousName(period: Period): string {
       return `the previous ${periodLength(period)} days`;
   }
 }
-
-/** "3 unusual · 2 repeats"; habits alone read as "Your habits". */
-export function analyzerSummary(unusual: number, repeats: number): string {
-  const parts = [
-    unusual > 0 ? `${unusual} unusual` : null,
-    repeats > 0 ? `${repeats} ${repeats === 1 ? "repeat" : "repeats"}` : null,
-  ].filter(Boolean);
-  return parts.length > 0 ? parts.join(" · ") : "Your habits";
-}

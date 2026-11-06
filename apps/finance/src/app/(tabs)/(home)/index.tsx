@@ -1,8 +1,12 @@
 import { useRouter } from "expo-router";
 import * as React from "react";
+
+import { updateWidget } from "../../../../modules/finance-widget";
+import { useWorkTime } from "@/features/explore/shared";
 import { ScrollView, View } from "react-native";
 
 import { AddFab } from "@/components/app/add-fab";
+import { Reveal, ScrollRevealProvider, useScrollReveal } from "@/components/app/scroll-reveal";
 import { EmptyState, Card } from "@studio/ui";
 import {
   useAccounts,
@@ -21,11 +25,12 @@ import { AccountsCard } from "@/features/home/accounts-card";
 import { BudgetStatus } from "@/features/home/budget-status";
 import { QuickAdd } from "@/features/home/quick-add";
 import { Pockets } from "@/features/home/pockets";
-import { HomeSectionHeader } from "@/features/home/section-header";
+import { HomeChapter, HomeSectionHeader } from "@/features/home/section-header";
 import { SpendHero } from "@/features/home/spend-hero";
 import { HomeTopBar } from "@/features/home/top-bar";
 import { TopCategories } from "@/features/home/top-categories";
 import { UpcomingBills } from "@/features/home/upcoming-bills";
+import { WeekCard } from "@/features/home/week-card";
 import { TransactionListRow } from "@/features/transactions/transaction-list-row";
 import { useMoneyContext } from "@/features/transactions/use-money-context";
 import {
@@ -37,26 +42,21 @@ import {
 } from "@studio/dates";
 import { formatMoney } from "@studio/money";
 import { Stagger } from "@studio/motion";
-import type { HomeSectionId } from "@/lib/home/layout";
+import { HOME_CHAPTERS, type HomeSectionId } from "@/lib/home/layout";
+import { spendOutlook } from "@/lib/home/safe-to-spend";
 import { budgetPace, elapsedDays } from "@/lib/budgets/pace";
 
 const RECENT_COUNT = 5;
 /** Bills are looked up at least this far ahead, and always to the end of the month. */
 const BILLS_WINDOW_DAYS = 30;
 const STAGGER = { base: 200, step: 55 } as const;
-/** Gap above each section; quick add sits closer to the hero. */
-const SPACING: Record<HomeSectionId, string> = {
-  accounts: "mt-3",
-  quick_add: "mt-[22px]",
-  pockets: "mt-[26px]",
-  budgets: "mt-[26px]",
-  bills: "mt-[26px]",
-  top_categories: "mt-[26px]",
-  recent: "mt-[26px]",
-};
+/** Sections answering one question sit close; a new question gets room. */
+const GAP_WITHIN = "mt-5";
+const GAP_BETWEEN = "mt-10";
 
 export default function Home() {
   const router = useRouter();
+  const reveal = useScrollReveal();
   const money = useMoneyContext({ relativeDays: true });
   const today = useTodayKey();
   const [weekStart] = useSetting("week_start");
@@ -107,6 +107,31 @@ export default function Home() {
   const previous = parseKey(previousPeriod(month).from);
   const empty = recent.length === 0;
   const hasBills = occurrences.some((o) => o.rule.kind === "expense");
+  const outlook = spendOutlook({
+    spent: overall?.spent ?? spend.spent,
+    available: overall?.available ?? null,
+    upcoming: overall?.upcoming ?? 0,
+    daysLeft: diffDays(today, month.to) + 1,
+    elapsedDays: elapsedDays(month, today),
+    totalDays: elapsedDays(month, month.to),
+  });
+  const outlookText = !outlook
+    ? undefined
+    : outlook.type === "safe"
+      ? `You can spend ${fmt(outlook.perDay)} a day for ${outlook.daysLeft === 1 ? "today" : `the next ${outlook.daysLeft} days`}${outlook.afterBills ? ", after bills" : ""}`
+      : outlook.type === "over"
+        ? `${fmt(outlook.amount)} over budget${outlook.daysLeft > 1 ? ` with ${outlook.daysLeft} days to go` : ""}`
+        : `At this pace, about ${fmt(outlook.total)} by ${end.day} ${monthName(end.month)}`;
+
+  const workTime = useWorkTime()(spend.spent);
+  const outlookLine = [outlookText, workTime ? `This month has cost about ${workTime} of pay` : null]
+    .filter(Boolean)
+    .join("\n");
+  const widgetSpent = fmt(spend.spent);
+  const widgetLabel = `Spent in ${monthName(end.month)}`;
+  React.useEffect(() => {
+    updateWidget({ label: widgetLabel, spent: widgetSpent, outlook: outlookText ?? "" });
+  }, [widgetLabel, widgetSpent, outlookText]);
 
   const renderSection = (id: HomeSectionId): React.ReactNode => {
     switch (id) {
@@ -158,6 +183,14 @@ export default function Home() {
             showDecimals={money.showDecimals}
           />
         ) : null;
+      case "week":
+        return spend.week.length > 0 ? (
+          <WeekCard
+            spend={spend}
+            locale={locale}
+            showDecimals={money.showDecimals}
+          />
+        ) : null;
       case "recent":
         return (
           <>
@@ -190,7 +223,10 @@ export default function Home() {
         contentContainerClassName="px-4 pb-28"
         contentContainerStyle={empty ? { flexGrow: 1 } : undefined}
         showsVerticalScrollIndicator={false}
+        scrollEventThrottle={100}
+        onScroll={reveal.onScroll}
       >
+        <ScrollRevealProvider value={reveal.register}>
         {empty ? (
           <EmptyState
             icon="bill"
@@ -212,28 +248,37 @@ export default function Home() {
                 budgetAtRisk={overallAtRisk}
                 earned={fmt(spend.earned)}
                 earnedZero={spend.earned <= 0}
+                outlook={outlookLine}
                 locale={locale}
                 showDecimals={money.showDecimals}
               />
             </View>
             {layout
               .filter((section) => section.visible)
-              .map((section, index) => {
+              .flatMap((section) => {
                 const content = renderSection(section.id);
-                if (!content) return null;
+                return content ? [{ id: section.id, content }] : [];
+              })
+              .map(({ id, content }, index, shown) => {
+                const chapter = HOME_CHAPTERS[id];
+                const opensChapter =
+                  chapter !== HOME_CHAPTERS[shown[index - 1]?.id ?? id] ||
+                  index === 0;
                 return (
                   <Stagger
-                    key={section.id}
+                    key={id}
                     index={index}
                     {...STAGGER}
-                    className={SPACING[section.id]}
+                    className={opensChapter ? GAP_BETWEEN : GAP_WITHIN}
                   >
-                    {content}
+                    {opensChapter ? <HomeChapter title={chapter} /> : null}
+                    <Reveal>{content}</Reveal>
                   </Stagger>
                 );
               })}
           </>
         )}
+        </ScrollRevealProvider>
       </ScrollView>
       <AddFab />
     </View>

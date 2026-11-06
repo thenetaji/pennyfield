@@ -124,7 +124,7 @@ function TideChart({
   const { colors, isDark } = useTokens();
   const reduced = useReducedMotion();
   const [width, onLayout] = useChartWidth();
-  const accent = colors.accent;
+  const accent = colors.chart;
   const labelFont = useChartFont(12, "semibold");
   const [selected, setSelected] = React.useState<number | null>(null);
 

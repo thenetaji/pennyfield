@@ -1,0 +1,5 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": { "modules": ["FinanceWidgetModule"] },
+  "android": { "modules": ["expo.modules.financewidget.FinanceWidgetModule"] }
+}

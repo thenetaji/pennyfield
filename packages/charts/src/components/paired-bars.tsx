@@ -86,7 +86,7 @@ function PairedBars({
   const domain = barDomain(values, average, 3);
   const top = domain.top;
   const tintA = colorA ?? colors.income;
-  const tintB = colorB ?? colors.accent;
+  const tintB = colorB ?? colors.chart;
   const slot = count > 0 ? plotWidth / count : 0;
   const barWidth = Math.max(2, Math.min(22, (slot - 14 - PAIR_GAP) / 2));
   const growTransform = useDerivedValue(() => [

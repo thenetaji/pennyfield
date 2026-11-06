@@ -1,14 +1,21 @@
-import { useRouter } from "expo-router";
-import * as React from "react";
-import { Alert, View } from "react-native";
+import { addDays, type DateKey, keyToLocalMs, toDateKey } from "@studio/dates";
+import {
+  currencySymbol,
+  formatMoneyForSpeech,
+  minorDigits,
+} from "@studio/money";
+import { haptic } from "@studio/theme";
 
 import {
   AmountReadout,
+  Input,
   ListGroup,
   ListRow,
-  Input,
   SegmentedControl,
 } from "@studio/ui";
+import { useRouter } from "expo-router";
+import * as React from "react";
+import { Alert, Keyboard, View } from "react-native";
 import { useActions } from "@/data/actions";
 import {
   useAccounts,
@@ -27,14 +34,7 @@ import { useSheetHeader } from "@/features/entry/sheet-header";
 import { Stepper } from "@/features/entry/stepper";
 import { useAmountEntry } from "@/features/entry/use-amount-entry";
 import { DatePicker } from "@/features/transaction-form/date-picker";
-import { addDays, keyToLocalMs, toDateKey, type DateKey } from "@studio/dates";
 import type { Frequency } from "@/lib/recurring";
-import {
-  currencySymbol,
-  formatMoneyForSpeech,
-  minorDigits,
-} from "@studio/money";
-import { haptic } from "@studio/theme";
 
 const FREQUENCIES: readonly Frequency[] = [
   "daily",
@@ -204,6 +204,7 @@ export function RuleForm({ ruleId }: { ruleId: string }) {
             value={entry.view.display}
             expression={entry.view.expression}
             onPress={() => {
+              Keyboard.dismiss();
               setTextFocused(false);
               setKeypadOpen(true);
             }}

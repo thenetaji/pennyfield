@@ -1,9 +1,19 @@
+import { conversionContext } from "@/data/hooks/summary";
 import { listBudgetProgress } from "@/db/repos/budgets";
+import { analyzerLines } from "@/db/repos/insight-lines";
 import { listRules } from "@/db/repos/recurring";
 import { getAllSettings, setSetting } from "@/db/repos/settings";
 import type { Db } from "@/db/types";
-import { toDateKey } from "@studio/dates";
-import { planReminders, type PlannedNotification } from "./schedule";
+import { priceRises } from "@/lib/insights/price-rises";
+import { addDays, toDateKey } from "@studio/dates";
+import { convertWithRates } from "@studio/money";
+import {
+  planPriceAlerts,
+  planReminders,
+  type PlannedNotification,
+} from "./schedule";
+
+const PRICE_HISTORY_DAYS = 200;
 
 /** The slice of `expo-notifications` the scheduler uses; injectable for tests. */
 export interface NotificationsApi {
@@ -107,7 +117,8 @@ export async function rescheduleAll(
   // Budget alerts are one-shot and may still be pending (they fire seconds after being scheduled); keep those.
   const cancelStale = async () => {
     for (const id of await api.pendingIds())
-      if (!id.startsWith("budget:")) await api.cancel(id);
+      if (!id.startsWith("budget:") && !id.startsWith("price:"))
+        await api.cancel(id);
   };
   await cancelStale();
   if (permission !== "granted") return { scheduled: 0, permission };
@@ -140,7 +151,27 @@ export async function rescheduleAll(
     JSON.stringify(settings.reminder_budget_fired)
   )
     setSetting(db, "reminder_budget_fired", plan.fired);
-  return { scheduled: plan.notifications.length, permission };
+  let priceAlerts = 0;
+  if (settings.reminder_bills) {
+    const today = toDateKey(now);
+    const rate = conversionContext(db);
+    const prices = planPriceAlerts(
+      priceRises(
+        analyzerLines(db, { from: addDays(today, -PRICE_HISTORY_DAYS), to: today }).map((row) => ({
+          ...row,
+          amount: convertWithRates(row.amount, row.currency, rate.displayCurrency, rate.rates),
+        })),
+        today,
+      ).map((r) => ({ ...r, currency: rate.displayCurrency })),
+      settings.reminder_price_fired,
+      now,
+      { locale: options.locale },
+    );
+    for (const notification of prices.notifications) await api.schedule(notification);
+    priceAlerts = prices.notifications.length;
+    if (priceAlerts > 0) setSetting(db, "reminder_price_fired", prices.fired);
+  }
+  return { scheduled: plan.notifications.length + priceAlerts, permission };
 }
 
 let active = false;
