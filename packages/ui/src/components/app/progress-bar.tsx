@@ -43,12 +43,12 @@ function ProgressBar({
   const { colors } = useTokens();
   const ratio = Math.max(0, value);
   const fill = fixedColor
-    ? (color ?? colors.chart)
+    ? (color ?? colors.accent)
     : ratio > 1
       ? colors.expense
       : ratio >= 0.9
         ? colors.warning
-        : (color ?? colors.chart);
+        : (color ?? colors.accent);
   const reduced = useReducedMotion();
   const width = useSharedValue(reduced ? Math.min(ratio, 1) : 0);
   const pace = useSharedValue(reduced ? (marker ?? 0) : 0);

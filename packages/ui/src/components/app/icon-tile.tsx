@@ -1,16 +1,9 @@
 import { StyleSheet, View } from "react-native";
 
-import {
-  AppIcon,
-  clear,
-  gradientStyle,
-  useIconPrefs,
-  tileRadius,
-  tileSpec,
-} from "@studio/icons";
+import { AppIcon, useIconPrefs, tileRadius, tileSpec } from "@studio/icons";
 import type { IconBackground, IconStyle } from "@studio/icons";
 import type { CategoryColorKey } from "@studio/theme";
-import { categoryColors, useTokens } from "@studio/theme";
+import { useTokens } from "@studio/theme";
 
 type IconTileProps = {
   /** Concept id or a legacy SF Symbol name. */
@@ -24,8 +17,6 @@ type IconTileProps = {
   /** Force a treatment / icon style (appearance previews). Defaults to the user's choice. */
   background?: IconBackground;
   iconStyle?: IconStyle;
-  /** Full system colour on a solid tile, ignoring the mono category setting (Settings rows). */
-  vivid?: boolean;
 };
 
 function IconTile({
@@ -36,13 +27,12 @@ function IconTile({
   splitBadge = false,
   background,
   iconStyle,
-  vivid = false,
 }: IconTileProps) {
-  const { colors, category, isDark, scheme } = useTokens();
+  const { colors, category, categoryMode, isDark } = useTokens();
   const chosen = useIconPrefs((s) => s.background);
-  const spec = vivid
-    ? tileSpec("solid", isDark, categoryColors[scheme][color])
-    : tileSpec(background ?? chosen, isDark, category[color]);
+  // The faint end of the theme's shades is for chart marks; on a tinted tile a symbol needs the full colour.
+  const tone = categoryMode === "mono" ? colors.accent : category[color];
+  const spec = tileSpec(background ?? chosen, isDark, tone);
   const glyph = Math.round(size * spec.iconScale);
   const radius = tileRadius(size);
   const glyphNode = (
@@ -50,8 +40,6 @@ function IconTile({
       name={icon}
       size={glyph}
       color={spec.icon}
-      secondaryColor={spec.secondary}
-      secondaryOpacity={spec.secondaryOpacity}
       iconStyle={iconStyle}
     />
   );
@@ -66,7 +54,7 @@ function IconTile({
         {glyphNode}
       </View>
     );
-  } else if (spec.kind === "plain") {
+  } else {
     body = (
       <View
         style={{
@@ -75,76 +63,10 @@ function IconTile({
           borderRadius: radius,
           borderCurve: "continuous",
           backgroundColor: spec.base,
-          borderColor: spec.rim,
-          borderWidth: 1,
         }}
         className="items-center justify-center"
       >
         {glyphNode}
-      </View>
-    );
-  } else {
-    const halo = Math.round(glyph * 1.9);
-    body = (
-      <View
-        style={[
-          {
-            width: size,
-            height: size,
-            borderRadius: radius,
-            borderCurve: "continuous",
-          },
-          gradientStyle(spec.rimGradient ?? ""),
-        ]}
-      >
-        <View
-          style={[
-            {
-              position: "absolute",
-              top: 1,
-              left: 1,
-              right: 1,
-              bottom: 1,
-              borderRadius: radius - 1,
-              borderCurve: "continuous",
-              overflow: "hidden",
-            },
-            gradientStyle(spec.face ?? ""),
-          ]}
-          className="items-center justify-center"
-        >
-          <View
-            pointerEvents="none"
-            style={[
-              {
-                position: "absolute",
-                left: -size * 0.1,
-                top: -size * 0.55,
-                width: size * 1.2,
-                height: size * 0.85,
-                borderRadius: size,
-              },
-              gradientStyle(spec.sheen ?? ""),
-            ]}
-          />
-          {spec.halo ? (
-            <View
-              pointerEvents="none"
-              style={[
-                {
-                  position: "absolute",
-                  width: halo,
-                  height: halo,
-                  borderRadius: halo / 2,
-                },
-                gradientStyle(
-                  `radial-gradient(circle closest-side, ${spec.halo}, ${clear(spec.halo)})`,
-                ),
-              ]}
-            />
-          ) : null}
-          {glyphNode}
-        </View>
       </View>
     );
   }

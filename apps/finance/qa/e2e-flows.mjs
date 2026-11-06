@@ -706,7 +706,7 @@ export const flows = [
       await tabTo(page, "Insights");
       await expectLabel(page, "Forecast: about ", { exact: false });
       await goClient(page, "/insights?section=payees");
-      await expectText(page, "Your patterns");
+      await expectText(page, "Patterns");
       assert.match(
         await body(page),
         /Most on (Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)days/,
@@ -716,7 +716,7 @@ export const flows = [
         .locator('[aria-label="Previous period"]:visible')
         .first()
         .tap();
-      await expectNoText(page, "At this pace, by");
+      await expectNoText(page, "Projected by");
     },
   },
   {
@@ -730,7 +730,8 @@ export const flows = [
       });
       await save(page);
       await sheetClosed(page);
-      await tabTo(page, "Budgets");
+      await tabTo(page, "Advanced");
+      await tapText(page, "Budgets");
       await expectText(page, "No budgets");
       await tapText(page, "Add budget");
       await page.locator('[aria-label="Period"]').waitFor();
@@ -980,8 +981,8 @@ export const flows = [
         "decimals should be off by default",
       );
       await page.locator('[aria-label="Settings"]:visible').tap();
-      await tapText(page, "Look and feel");
-      await page.locator('[aria-label^="Appearance, "]:visible').first().tap();
+      await tapText(page, "Appearance");
+      await page.locator('[aria-label^="Theme and icons, "]:visible').first().tap();
       await tapText(page, "Dark");
       await page.waitForFunction(
         (before) =>
@@ -994,7 +995,7 @@ export const flows = [
       assert.notEqual(dark, light);
       await page.goBack();
       await page.goBack();
-      await tapText(page, "Entering money");
+      await tapText(page, "Transactions");
       await expectText(page, "Show decimals");
       await page
         .locator('input[aria-label="Show decimals"]')
@@ -1105,7 +1106,7 @@ export const flows = [
     async run({ page, base }) {
       await seeded(page, base, "demo");
       await page.locator('[aria-label="Settings"]:visible').tap();
-      await tapText(page, "Your data");
+      await tapText(page, "Data");
       await tapText(page, "Import and export");
       await expectText(page, "Erase all data");
       const dialogs = [];

@@ -29,12 +29,12 @@ function SlimBar({ view }: { view: BudgetView }) {
       style={{ backgroundColor: colors.fill }}
     >
       <View
-        style={{ width: pct(Math.min(view.ratio, 1)), backgroundColor: colors.chart }}
+        style={{ width: pct(Math.min(view.ratio, 1)), backgroundColor: colors.accent }}
       />
       <View
         style={{
           width: pct(view.upcomingRatio),
-          backgroundColor: withAlpha(colors.chart, 0.5),
+          backgroundColor: withAlpha(colors.accent, 0.5),
         }}
       />
       {over ? (
@@ -146,7 +146,7 @@ function BudgetStatus({
       <HomeSectionHeader
         title="Budgets"
         actionLabel="All"
-        onAction={() => router.navigate("/budgets")}
+        onAction={() => router.navigate("/advanced/budgets")}
       />
       <Card className="overflow-hidden rounded-[20px] p-0">
         {views.map((view, index) => (

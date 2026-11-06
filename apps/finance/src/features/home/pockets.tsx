@@ -114,7 +114,7 @@ function PocketRow({
             className="h-full rounded-full"
             style={{
               width: `${Math.round(share * 100)}%`,
-              backgroundColor: low ? colors.warning : colors.chart,
+              backgroundColor: low ? colors.warning : colors.accent,
             }}
           />
         </View>

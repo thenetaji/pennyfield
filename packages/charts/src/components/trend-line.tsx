@@ -130,7 +130,7 @@ function TrendLine({
   const top = LANE;
   const baseline = LANE + height;
   const count = Math.max(values.length, compare?.length ?? 0);
-  const tint = color ?? colors.chart;
+  const tint = color ?? colors.accent;
 
   const geometry = React.useMemo(() => {
     const all = [...values, ...(compare ?? [])].filter(

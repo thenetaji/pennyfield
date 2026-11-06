@@ -5,29 +5,25 @@ All notable changes to Finance. The format follows [Keep a Changelog](https://ke
 ## [0.6.0] - 2026-11-06
 
 ### Added
-- **Explore,** at the end of Insights: a place for new ways to see your money.
-- **Money map.** Every category as a tile sized by what you spent. Tap one to zoom into its payees, and slide through the last 12 months.
-- **What if.** Change your spending, add income or a big purchase and see where your balance goes over the next year, with a band showing how much your past months varied.
-- **Year spiral.** Every day you've tracked, one turn a year, so the same date lines up across years.
-- **Every transaction.** All your spending as moving particles, spread over time or gathered by category, with a WebGPU option that falls back to the standard view on phones that can't run it.
-- **Liquid budgets** that fill as you spend and lean as you tilt your phone, and a **coin jar** of what you saved that you can shake.
-- **Ask your money** on iPhones with Apple Intelligence. It answers from your own totals on the phone, and nothing is sent anywhere. **3D spending** on iOS 26.
-- **Your year as a poster** drawn from your own spending, and a **monthly recap** to swipe through and share.
-- **Safe to spend** on Home: what you can spend a day for the rest of the month after bills, or where this pace ends up if you have no budget.
-- **Type one line to add.** "uber 250 card yesterday" opens the Add sheet filled in.
-- **Widgets and shortcuts.** Home and Lock Screen widgets on iPhone, a home screen widget on Android, a Control Center button you can put on the Action Button, and "Add a transaction" for Siri.
-- **Price rise alerts.** Finance notices when a steady payment goes up, in Insights and as a notification.
-- **Hourly pay** in Settings shows what you spend as time at work.
+- **Advanced tab** replaces the Budgets tab, with Budgets, What if, Money map, Monthly recap and Ask.
+- **What if:** change your spending, income or a one-off purchase and see your forecast balance for the next year.
+- **Money map:** categories as tiles sized by spending. Tap one to see its payees.
+- **Monthly recap:** last month's summary, ready to share.
+- **Ask** (iPhones with Apple Intelligence): questions about your spending, answered on the phone.
+- **Daily spending amount** on Home, after upcoming bills.
+- **Quick add:** type "uber 250 card yesterday" to open a filled-in transaction.
+- **Widgets:** Home and Lock Screen on iPhone, home screen on Android. Add a Control Center button, an Action Button shortcut or use Siri.
+- **Price increase alerts** for regular payments.
+- **Hourly pay:** see costs in hours of work.
 
 ### Changed
-- **Settings is rebuilt** around a summary card, search and six group pages, without the coloured icons. Choose Calm, Glass or List at the bottom of Settings.
-- **Home follows the questions you ask as you scroll:** where you stand, what's ahead, where it went, what just happened and what you have. A Home you've rearranged stays as you set it.
-- **Insights is one continuous story** instead of tabs: is this normal, where it went, how it's changing, money in and out, who you pay and what you have.
-- **Charts are monochrome by default:** every chart uses shades of your theme's colour instead of a rainbow, and icons follow. Green and orange still mean money in and over budget. To get category colours back, go to Settings, Look and feel.
-- **Charts animate as you reach them:** sections on Home and Insights play their entrance when you scroll to them instead of off screen.
-- Scrubbing the Home chart gives a firmer bump as you cross your budget line.
-- Android 8 or newer is now required.
-- Fixes that don't need a new install can now reach your phone directly. The app checks for one when it opens and uses it the next time you open it. Your money data is never sent.
+- **New default look:** deep blue, with Teal, Plum, Bronze and Ink as alternatives. Charts and icons use shades of your theme colour. Multicolour categories are still in Settings.
+- **Fewer icon options:** Duotone (default) or Line.
+- **Larger buttons and switches** throughout, with the selected option filled in your theme colour.
+- **Settings** is organised into groups with search, in Calm, Glass or List style.
+- **Home and Insights** are reordered and grouped into clearer sections.
+- Charts animate when you scroll to them.
+- Small fixes can now reach your phone without a new install. The app checks when it opens and applies them the next time you open it. Your financial data isn't sent.
 
 ### Fixed
 - Adding or editing an account, budget, category or recurring rule, and Search, showed two titles, with the form sliding over the Cancel and Save bar.

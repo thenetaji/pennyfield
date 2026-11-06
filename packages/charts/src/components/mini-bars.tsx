@@ -74,7 +74,7 @@ function MiniBars({
     () => barSlots(0, width, count, 14, 44),
     [width, count],
   );
-  const tint = color ?? colors.chart;
+  const tint = color ?? colors.accent;
   const growTransform = useDerivedValue(() => [
     { translateY: baseline },
     { scaleY: grow.value },

@@ -105,7 +105,7 @@ function ForecastCard({
       accessibilityLabel={`Forecast: about ${money(f.projected)} by ${end}. ${verdict}.`}
     >
       <Text variant="footnote" tone="secondary">
-        At this pace, by {end}
+        Projected by {end}
       </Text>
       <Text
         variant="title1"
@@ -121,17 +121,17 @@ function ForecastCard({
         className="mt-4 h-3 flex-row overflow-hidden rounded-full"
         style={{ backgroundColor: colors.fill }}
       >
-        <View style={{ width: pct(f.spent), backgroundColor: colors.chart }} />
+        <View style={{ width: pct(f.spent), backgroundColor: colors.accent }} />
         <View
           style={{
             width: pct(f.upcoming),
-            backgroundColor: withAlpha(colors.chart, 0.5),
+            backgroundColor: withAlpha(colors.accent, 0.5),
           }}
         />
         <View
           style={{
             width: pct(everyday),
-            backgroundColor: withAlpha(colors.chart, 0.22),
+            backgroundColor: withAlpha(colors.accent, 0.22),
           }}
         />
         {budget > 0 ? (
@@ -150,15 +150,15 @@ function ForecastCard({
         ) : null}
       </View>
       <View className="mt-2.5 flex-row flex-wrap gap-x-4 gap-y-1">
-        <Legend color={colors.chart} label={`Spent ${money(f.spent)}`} />
+        <Legend color={colors.accent} label={`Spent ${money(f.spent)}`} />
         {f.upcoming > 0 ? (
           <Legend
-            color={withAlpha(colors.chart, 0.5)}
+            color={withAlpha(colors.accent, 0.5)}
             label={`Bills due ${money(f.upcoming)}`}
           />
         ) : null}
         <Legend
-          color={withAlpha(colors.chart, 0.22)}
+          color={withAlpha(colors.accent, 0.22)}
           label={`Everyday ${money(everyday)}`}
         />
       </View>
@@ -292,8 +292,8 @@ function PatternsCard({
                   height: Math.max(4, (d.amount / peak) * 52),
                   backgroundColor:
                     d.weekday === top.weekday
-                      ? colors.chart
-                      : withAlpha(colors.chart, 0.2),
+                      ? colors.accent
+                      : withAlpha(colors.accent, 0.2),
                 }}
               />
               <Text
@@ -330,7 +330,7 @@ function PatternsCard({
             key={d.part}
             style={{
               flex: Math.max(d.amount, 0),
-              backgroundColor: withAlpha(colors.chart, shades[i] ?? 0.2),
+              backgroundColor: withAlpha(colors.accent, shades[i] ?? 0.2),
             }}
           />
         ))}
@@ -339,7 +339,7 @@ function PatternsCard({
         {p.dayParts.map((d, i) => (
           <Legend
             key={d.part}
-            color={withAlpha(colors.chart, shades[i] ?? 0.2)}
+            color={withAlpha(colors.accent, shades[i] ?? 0.2)}
             label={`${DAY_PARTS[i]?.label} ${d.percent}%`}
           />
         ))}
@@ -503,7 +503,7 @@ function AnalyzerSection({
         ) : null}
         {hasPatterns ? (
           <>
-            <GroupLabel>Your patterns</GroupLabel>
+            <GroupLabel>Patterns</GroupLabel>
             <PatternsCard analyzer={analyzer} weekStart={weekStart} money={money} />
           </>
         ) : null}
@@ -526,7 +526,7 @@ function AnalyzerSection({
       ) : null}
       {rises.length > 0 ? (
         <>
-          <GroupLabel>Prices that went up</GroupLabel>
+          <GroupLabel>Price increases</GroupLabel>
           <Card className="mx-4 overflow-hidden p-0">
             {rises.map((rise, i) => (
               <View

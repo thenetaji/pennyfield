@@ -1,60 +1,44 @@
 import * as React from "react";
 import { ScrollView, View } from "react-native";
 
-import { IconTile, ListGroup, ListRow, Pressable, Text } from "@studio/ui";
+import { IconTile, ListGroup, ListRow, Pressable, SegmentedControl, Text } from "@studio/ui";
 import { useSetting } from "@/data/hooks";
-import { AppIcon, useIconPrefs } from "@studio/icons";
-import {
-  ICON_BACKGROUND_LABELS,
-  ICON_BACKGROUNDS,
-  ICON_STYLE_LABELS,
-  ICON_STYLES,
-  type IconBackground,
-  type IconStyle,
-} from "@studio/icons";
+import { AppIcon, useIconPrefs, type IconBackground, type IconStyle } from "@studio/icons";
 import {
   accentPresets,
   haptic,
-  palettes,
   useTokens,
   type AccentPresetKey,
   type CategoryColorKey,
-  type PaletteKey,
 } from "@studio/theme";
 
-const options = [
+const MODES = [
   { value: "system", label: "Automatic" },
   { value: "light", label: "Light" },
   { value: "dark", label: "Dark" },
 ] as const;
 
-const PALETTES: readonly { key: PaletteKey; label: string; detail: string }[] =
-  [
-    {
-      key: "titanium",
-      label: "Titanium",
-      detail: "Graphite and brushed metal, the default",
-    },
-    {
-      key: "system",
-      label: "System",
-      detail: "Clean white and black, like Apple's apps",
-    },
-    {
-      key: "paper",
-      label: "Paper",
-      detail: "Warm paper and ink, the original look",
-    },
-  ];
-
 const ACCENTS: readonly { key: AccentPresetKey; label: string }[] = [
-  { key: "titanium", label: "Titanium" },
-  { key: "ivory", label: "Ink" },
   { key: "blue", label: "Blue" },
-  { key: "brass", label: "Gold" },
-  { key: "slate", label: "Slate" },
-  { key: "sage", label: "Sage" },
-  { key: "copper", label: "Copper" },
+  { key: "teal", label: "Teal" },
+  { key: "plum", label: "Plum" },
+  { key: "bronze", label: "Bronze" },
+  { key: "ivory", label: "Ink" },
+];
+
+const CATEGORY_MODES = [
+  { value: "mono", label: "Theme colour", subtitle: "Shades of your theme colour" },
+  { value: "colour", label: "Multicolour", subtitle: "A different colour for each category" },
+] as const;
+
+const ICON_LOOKS: readonly {
+  label: string;
+  subtitle: string;
+  style: IconStyle;
+  background: IconBackground;
+}[] = [
+  { label: "Duotone", subtitle: "Two-tone, on a soft background", style: "phosphor-duotone", background: "soft" },
+  { label: "Line", subtitle: "Thin, with no background", style: "lucide", background: "glyph-only" },
 ];
 
 const SAMPLES: readonly { icon: string; color: CategoryColorKey }[] = [
@@ -66,160 +50,22 @@ const SAMPLES: readonly { icon: string; color: CategoryColorKey }[] = [
   { icon: "entertainment", color: "purple" },
 ];
 
-/** A miniature screen in the palette's own colours: background, a card with two lines and an accent pill. */
-function MiniScreen({
-  palette,
-  accent,
-  scheme,
-}: {
-  palette: PaletteKey;
-  accent: AccentPresetKey;
-  scheme: "light" | "dark";
-}) {
-  const p = palettes[palette][scheme];
-  const a = accentPresets[accent][scheme];
-  return (
-    <View
-      className="h-[84px] w-[46px] gap-1.5 p-1.5"
-      style={{ backgroundColor: p.bg }}
-    >
-      <View
-        className="h-1.5 w-5 rounded-full"
-        style={{ backgroundColor: p.text }}
-      />
-      <View
-        className="flex-1 gap-1 rounded-[7px] p-1.5"
-        style={{ backgroundColor: p.surface, borderCurve: "continuous" }}
-      >
-        <View
-          className="h-1 w-6 rounded-full"
-          style={{ backgroundColor: p.textSecondary }}
-        />
-        <View
-          className="h-1 w-4 rounded-full"
-          style={{ backgroundColor: p.textTertiary }}
-        />
-        <View className="flex-1" />
-        <View
-          className="h-2.5 w-full rounded-full"
-          style={{ backgroundColor: a.accent }}
-        />
-      </View>
-    </View>
-  );
-}
-
-/** The palette in light and dark side by side, so the choice reads the same whichever mode is on. */
-function PalettePreview({
-  palette,
-  accent,
-}: {
-  palette: PaletteKey;
-  accent: AccentPresetKey;
-}) {
-  const { colors } = useTokens();
-  return (
-    <View
-      className="flex-row overflow-hidden rounded-[14px]"
-      style={{
-        borderWidth: 1,
-        borderColor: colors.border,
-        borderCurve: "continuous",
-      }}
-    >
-      <MiniScreen palette={palette} accent={accent} scheme="light" />
-      <MiniScreen palette={palette} accent={accent} scheme="dark" />
-    </View>
-  );
-}
-
 function SectionTitle({ children }: { children: string }) {
   return (
-    <Text
-      variant="footnote"
-      tone="secondary"
-      className="px-8 pb-2"
-      accessibilityRole="header"
-    >
+    <Text variant="footnote" tone="secondary" className="px-8 pb-2" accessibilityRole="header">
       {children}
     </Text>
   );
 }
 
-type OptionCardProps = {
-  label: string;
-  detail: string;
-  selected: boolean;
-  onPress: () => void;
-  children: React.ReactNode;
-};
-
-function OptionCard({
-  label,
-  detail,
-  selected,
-  onPress,
-  children,
-}: OptionCardProps) {
-  const { colors } = useTokens();
-  return (
-    <Pressable
-      role="radio"
-      accessibilityState={{ selected }}
-      accessibilityLabel={`${label}, ${detail}`}
-      popWhen={selected}
-      onPress={onPress}
-      className="gap-3 rounded-[18px] bg-surface px-4 py-3.5"
-      style={{
-        borderWidth: 1.5,
-        borderColor: selected ? colors.accent : colors.border,
-      }}
-    >
-      <View className="flex-row items-center">
-        <View className="flex-1">
-          <Text variant="body">{label}</Text>
-          <Text variant="subhead" tone="secondary">
-            {detail}
-          </Text>
-        </View>
-        {selected ? (
-          <View className="h-6 w-6 items-center justify-center rounded-full bg-accent">
-            <AppIcon name="check" size={13} color={colors.onAccent} />
-          </View>
-        ) : (
-          <View
-            className="h-6 w-6 rounded-full"
-            style={{ borderWidth: 1.5, borderColor: colors.separator }}
-          />
-        )}
-      </View>
-      {children}
-    </Pressable>
-  );
-}
-
 export default function Appearance() {
-  const { colors, category, scheme } = useTokens();
+  const { colors, scheme } = useTokens();
   const [theme, setTheme] = useSetting("theme");
   const [accent, setAccent] = useSetting("accent");
-  const [palette, setPalette] = useSetting("palette");
   const [categoryColors, setCategoryColors] = useSetting("category_colors");
   const [style, setStyle] = useSetting("icon_style");
-  const [background, setBackground] = useSetting("icon_background");
+  const [, setBackground] = useSetting("icon_background");
   const store = useIconPrefs();
-
-  const pickStyle = (next: IconStyle) => {
-    if (next === style) return;
-    haptic("selection");
-    store.setStyle(next);
-    setStyle(next);
-  };
-  const pickBackground = (next: IconBackground) => {
-    if (next === background) return;
-    haptic("selection");
-    store.setBackground(next);
-    setBackground(next);
-  };
 
   return (
     <ScrollView
@@ -229,62 +75,66 @@ export default function Appearance() {
     >
       <View className="px-4">
         <View
-          className="flex-row justify-between rounded-[22px] bg-surface px-5 py-6"
+          className="flex-row justify-between rounded-[20px] bg-surface px-5 py-5"
           style={{ borderWidth: 1, borderColor: colors.border }}
           accessibilityLabel="Icon preview"
         >
           {SAMPLES.map((sample) => (
-            <IconTile
-              key={sample.icon}
-              icon={sample.icon}
-              color={sample.color}
-              size={42}
-            />
+            <IconTile key={sample.icon} icon={sample.icon} color={sample.color} size={42} />
           ))}
         </View>
       </View>
 
       <View>
-        <SectionTitle>Look</SectionTitle>
-        <View className="gap-2.5 px-4" accessibilityRole="radiogroup">
-          {PALETTES.map(({ key, label, detail }) => {
-            const on = palette === key;
+        <SectionTitle>Appearance</SectionTitle>
+        <View className="px-4">
+          <SegmentedControl
+            accessibilityLabel="Appearance"
+            values={MODES.map((mode) => mode.label)}
+            selectedIndex={MODES.findIndex((mode) => mode.value === theme)}
+            onChange={(index) => setTheme(MODES[index]!.value)}
+          />
+        </View>
+      </View>
+
+      <View>
+        <SectionTitle>Theme</SectionTitle>
+        <View
+          className="mx-4 flex-row justify-between rounded-[20px] bg-surface px-3 py-4"
+          style={{ borderWidth: 1, borderColor: colors.border }}
+          accessibilityRole="radiogroup"
+        >
+          {ACCENTS.map(({ key, label }) => {
+            const on = accent === key;
+            const fill = accentPresets[key][scheme];
             return (
               <Pressable
                 key={key}
                 role="radio"
-                accessibilityLabel={`${label}, ${detail}`}
+                accessibilityLabel={label}
                 accessibilityState={{ selected: on }}
                 popWhen={on}
                 onPress={() => {
                   if (on) return;
                   haptic("selection");
-                  setPalette(key);
+                  setAccent(key);
                 }}
-                className="flex-row items-center gap-4 rounded-[18px] bg-surface px-4 py-3"
-                style={{
-                  borderWidth: 1.5,
-                  borderColor: on ? colors.accent : colors.border,
-                  borderCurve: "continuous",
-                }}
+                className="flex-1 items-center gap-1.5"
               >
-                <PalettePreview palette={key} accent={accent} />
-                <View className="min-w-0 flex-1">
-                  <Text variant="headline">{label}</Text>
-                  <Text variant="subhead" tone="secondary">
-                    {detail}
-                  </Text>
-                </View>
-                {on ? (
-                  <View className="h-6 w-6 items-center justify-center rounded-full bg-accent">
-                    <AppIcon name="check" size={13} color={colors.onAccent} />
-                  </View>
-                ) : (
+                <View
+                  className="h-11 w-11 items-center justify-center rounded-full"
+                  style={{ borderWidth: 2, borderColor: on ? fill.accent : "transparent" }}
+                >
                   <View
-                    className="h-6 w-6 rounded-full"
-                    style={{ borderWidth: 1.5, borderColor: colors.separator }}
-                  />
-                )}
+                    className="h-8 w-8 items-center justify-center rounded-full"
+                    style={{ backgroundColor: fill.accent }}
+                  >
+                    {on ? <AppIcon name="check" size={14} color={fill.onAccent} /> : null}
+                  </View>
+                </View>
+                <Text variant="caption" tone={on ? "default" : "secondary"} numberOfLines={1}>
+                  {label}
+                </Text>
               </Pressable>
             );
           })}
@@ -294,20 +144,7 @@ export default function Appearance() {
       <View>
         <SectionTitle>Categories</SectionTitle>
         <ListGroup>
-          {(
-            [
-              {
-                value: "mono",
-                label: "Mono",
-                subtitle: "Shades of grey, told apart by symbol",
-              },
-              {
-                value: "colour",
-                label: "Colour",
-                subtitle: "A colour for each category",
-              },
-            ] as const
-          ).map((option) => (
+          {CATEGORY_MODES.map((option) => (
             <ListRow
               key={option.value}
               label={option.label}
@@ -328,131 +165,29 @@ export default function Appearance() {
       </View>
 
       <View>
-        <SectionTitle>Mode</SectionTitle>
+        <SectionTitle>Icons</SectionTitle>
         <ListGroup>
-          {options.map((option) => (
+          {ICON_LOOKS.map((look) => (
             <ListRow
-              key={option.value}
-              label={option.label}
+              key={look.style}
+              label={look.label}
+              subtitle={look.subtitle}
               trailing={
-                theme === option.value ? (
+                style === look.style ? (
                   <AppIcon name="check" size={16} color={colors.accent} />
                 ) : undefined
               }
               onPress={() => {
+                if (style === look.style) return;
                 haptic("selection");
-                setTheme(option.value);
+                store.setStyle(look.style);
+                store.setBackground(look.background);
+                setStyle(look.style);
+                setBackground(look.background);
               }}
             />
           ))}
         </ListGroup>
-      </View>
-
-      <View>
-        <SectionTitle>Accent</SectionTitle>
-        <View
-          className="mx-4 flex-row flex-wrap justify-around gap-y-4 rounded-[18px] bg-surface px-2 py-4"
-          style={{ borderWidth: 1, borderColor: colors.border }}
-          accessibilityRole="radiogroup"
-        >
-          {ACCENTS.map(({ key, label }) => {
-            const on = accent === key;
-            const fill = accentPresets[key][scheme];
-            return (
-              <Pressable
-                key={key}
-                role="radio"
-                accessibilityLabel={label}
-                accessibilityState={{ selected: on }}
-                popWhen={on}
-                onPress={() => {
-                  if (on) return;
-                  haptic("selection");
-                  setAccent(key);
-                }}
-                className="w-1/4 items-center gap-1.5"
-              >
-                <View
-                  className="h-11 w-11 items-center justify-center rounded-full"
-                  style={{
-                    borderWidth: 2,
-                    borderColor: on ? fill.accent : "transparent",
-                  }}
-                >
-                  <View
-                    className="h-8 w-8 items-center justify-center rounded-full"
-                    style={{ backgroundColor: fill.accent }}
-                  >
-                    {on ? (
-                      <AppIcon name="check" size={14} color={fill.onAccent} />
-                    ) : null}
-                  </View>
-                </View>
-                <Text
-                  variant="caption"
-                  tone={on ? "default" : "secondary"}
-                  numberOfLines={1}
-                >
-                  {label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
-
-      <View>
-        <SectionTitle>Icon style</SectionTitle>
-        <View className="gap-2.5 px-4" accessibilityRole="radiogroup">
-          {ICON_STYLES.map((value) => (
-            <OptionCard
-              key={value}
-              label={ICON_STYLE_LABELS[value].label}
-              detail={ICON_STYLE_LABELS[value].detail}
-              selected={style === value}
-              onPress={() => pickStyle(value)}
-            >
-              <View className="flex-row justify-between px-1">
-                {SAMPLES.map((sample) => (
-                  <AppIcon
-                    key={sample.icon}
-                    name={sample.icon}
-                    size={26}
-                    color={category[sample.color]}
-                    iconStyle={value}
-                  />
-                ))}
-              </View>
-            </OptionCard>
-          ))}
-        </View>
-      </View>
-
-      <View>
-        <SectionTitle>Icon tiles</SectionTitle>
-        <View className="gap-2.5 px-4" accessibilityRole="radiogroup">
-          {ICON_BACKGROUNDS.map((value) => (
-            <OptionCard
-              key={value}
-              label={ICON_BACKGROUND_LABELS[value].label}
-              detail={ICON_BACKGROUND_LABELS[value].detail}
-              selected={background === value}
-              onPress={() => pickBackground(value)}
-            >
-              <View className="flex-row justify-between px-1">
-                {SAMPLES.slice(0, 4).map((sample) => (
-                  <IconTile
-                    key={sample.icon}
-                    icon={sample.icon}
-                    color={sample.color}
-                    size={46}
-                    background={value}
-                  />
-                ))}
-              </View>
-            </OptionCard>
-          ))}
-        </View>
       </View>
     </ScrollView>
   );

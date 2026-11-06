@@ -142,7 +142,7 @@ describe("feature settings", () => {
     const db = createTestDb();
     expect(getAllSettings(db)).toMatchObject({
       icon_style: "phosphor-duotone",
-      icon_background: "graphite-accent",
+      icon_background: "soft",
       hide_amounts: false,
       reminder_daily_enabled: false,
       reminder_daily_time: "21:00",
@@ -175,6 +175,22 @@ describe("feature settings", () => {
     expect(getSetting(db, "reminder_daily_time")).toBe("07:30");
   });
 
+  it("moves themes and icon looks that were removed to the current defaults", () => {
+    const db = createTestDb({ seed: false });
+    db.insert(settings)
+      .values([
+        { key: "accent", value: '"titanium"' },
+        { key: "palette", value: '"paper"' },
+        { key: "icon_style", value: '"solar"' },
+        { key: "icon_background", value: '"graphite-accent"' },
+      ])
+      .run();
+    expect(getSetting(db, "accent")).toBe("blue");
+    expect(getSetting(db, "palette")).toBe("system");
+    expect(getSetting(db, "icon_style")).toBe("phosphor-duotone");
+    expect(getSetting(db, "icon_background")).toBe("soft");
+  });
+
   it("falls back to the default for stored values that are no longer valid", () => {
     const db = createTestDb({ seed: false });
     db.insert(settings)
@@ -186,36 +202,20 @@ describe("feature settings", () => {
       ])
       .run();
     expect(getSetting(db, "icon_style")).toBe("phosphor-duotone");
-    expect(getSetting(db, "icon_background")).toBe("graphite-accent");
+    expect(getSetting(db, "icon_background")).toBe("soft");
     expect(getSetting(db, "sync_provider")).toBe("none");
     expect(getSetting(db, "reminder_daily_time")).toBe("21:00");
   });
 });
 
 describe("applyLookDefaults", () => {
-  it("moves an untouched look to the new defaults once, and keeps a chosen one", () => {
+  it("moves colourful categories to the new default once", () => {
     const db = createTestDb({ seed: false });
-    setSetting(db, "icon_style", "sf");
-    setSetting(db, "icon_background", "solid");
     setSetting(db, "category_colors", "colour");
     applyLookDefaults(db);
-    expect(getSetting(db, "icon_style")).toBe("phosphor-duotone");
-    expect(getSetting(db, "icon_background")).toBe("solid");
     expect(getSetting(db, "category_colors")).toBe("mono");
-    setSetting(db, "icon_style", "sf");
     setSetting(db, "category_colors", "colour");
     applyLookDefaults(db);
-    expect(getSetting(db, "icon_style")).toBe("sf");
     expect(getSetting(db, "category_colors")).toBe("colour");
-  });
-
-  it("only applies the looks an install hasn't had yet", () => {
-    const db = createTestDb({ seed: false });
-    setSetting(db, "look_version", 1);
-    setSetting(db, "icon_style", "sf");
-    setSetting(db, "category_colors", "colour");
-    applyLookDefaults(db);
-    expect(getSetting(db, "icon_style")).toBe("sf");
-    expect(getSetting(db, "category_colors")).toBe("mono");
   });
 });

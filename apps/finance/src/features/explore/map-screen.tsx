@@ -48,7 +48,7 @@ function Tile({
         scale={0.98}
         onPress={onPress}
         className="flex-1 justify-between overflow-hidden rounded-[16px] p-2.5"
-        style={{ backgroundColor: withAlpha(colors.chart, strength) }}
+        style={{ backgroundColor: withAlpha(colors.accent, strength) }}
       >
         {tile.width >= 44 && tile.height >= 44 ? (
           <IconTile icon={tile.icon ?? "tag.fill"} color={key} size={roomy ? 32 : 24} />
@@ -115,7 +115,7 @@ function TimeScrubber({
                 width: "100%",
                 height: Math.max(3, (total / peak) * 50),
                 borderRadius: 4,
-                backgroundColor: i === selected ? colors.chart : colors.fill,
+                backgroundColor: i === selected ? colors.accent : colors.fill,
               }}
             />
             <Text variant="caption" tone={i === selected ? "default" : "tertiary"}>
@@ -247,7 +247,7 @@ export default function MapScreen() {
       </View>
       <Card className="rounded-[20px] px-4 pb-3 pt-3">
         <Text variant="caption" tone="secondary" className="pb-1">
-          Slide through the year
+          Last 12 months
         </Text>
         <TimeScrubber
           labels={labels}

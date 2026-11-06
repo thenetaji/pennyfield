@@ -40,14 +40,14 @@ export default function RecapScreen() {
   const biggest = report.biggest[0];
   const pages: Page[] = [
     {
-      eyebrow: `${month} in money`,
+      eyebrow: `${month} spending`,
       headline: money(report.current.spent),
-      line: `across ${report.transactionCount} ${report.transactionCount === 1 ? "entry" : "entries"}`,
+      line: `${report.transactionCount} ${report.transactionCount === 1 ? "transaction" : "transactions"}`,
     },
     ...(top
       ? [
           {
-            eyebrow: "Most of it went to",
+            eyebrow: "Top category",
             headline: top.category?.name ?? "Uncategorised",
             line: money(top.current),
           },
@@ -56,7 +56,7 @@ export default function RecapScreen() {
     ...(biggest
       ? [
           {
-            eyebrow: "Your biggest single spend",
+            eyebrow: "Biggest expense",
             headline: biggest.title.trim() || "No title",
             line: money(biggest.amount),
           },
@@ -65,22 +65,22 @@ export default function RecapScreen() {
     ...(report.noSpend.days.length > 0
       ? [
           {
-            eyebrow: "Days you spent nothing",
+            eyebrow: "No-spend days",
             headline: String(report.noSpend.days.length),
             line:
               report.noSpend.longest.length > 1
-                ? `Your longest run was ${report.noSpend.longest.length} days`
+                ? `Longest streak: ${report.noSpend.longest.length} days`
                 : undefined,
           },
         ]
       : []),
     {
-      eyebrow: "Money left over",
+      eyebrow: "Net",
       headline: money(Math.abs(report.current.net)),
       line:
         report.current.net >= 0
-          ? "You earned more than you spent"
-          : "You spent more than you earned",
+          ? "Earned more than you spent"
+          : "Spent more than you earned",
     },
   ];
 
@@ -134,7 +134,7 @@ export default function RecapScreen() {
       </View>
       <View className="absolute left-0 right-0 px-8" style={{ bottom: insets.bottom + 20 }}>
         <Button variant="secondary" onPress={share}>
-          Share this page
+          Share
         </Button>
       </View>
     </View>

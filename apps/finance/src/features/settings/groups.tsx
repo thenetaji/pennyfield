@@ -1,5 +1,6 @@
 import type { Href } from "expo-router";
 
+import type { AccentPresetKey } from "@studio/theme";
 import { useAccounts, useSetting } from "@/data/hooks";
 import type { RowDetail, SettingsStyle } from "@/db/repos/settings";
 import { backupTimeLabel } from "@/features/backup/format";
@@ -44,7 +45,7 @@ const ROW_LABELS: Record<RowDetail, string> = {
 };
 
 export const ROW_OPTIONS: readonly Option<RowDetail>[] = [
-  { value: "memo", label: "Memo, or category when there is none" },
+  { value: "memo", label: "Memo or category" },
   { value: "category", label: "Category" },
   { value: "category_memo", label: "Category and memo" },
   { value: "category_account", label: "Category and account" },
@@ -64,7 +65,13 @@ export const STYLE_LABELS: Record<SettingsStyle, string> = {
 };
 
 const THEME_LABELS = { system: "Auto", light: "Light", dark: "Dark" };
-const PALETTE_LABELS = { system: "System", titanium: "Titanium", paper: "Paper" };
+const ACCENT_LABELS: Record<AccentPresetKey, string> = {
+  blue: "Blue",
+  teal: "Teal",
+  plum: "Plum",
+  bronze: "Bronze",
+  ivory: "Ink",
+};
 
 /** Every Settings row, in one place, so each style and the search show the same things. */
 export function useSettingGroups(): SettingGroup[] {
@@ -74,7 +81,7 @@ export function useSettingGroups(): SettingGroup[] {
   const [monthStart] = useSetting("month_start");
   const [defaultAccountId] = useSetting("default_account_id");
   const [theme] = useSetting("theme");
-  const [palette] = useSetting("palette");
+  const [accent] = useSetting("accent");
   const [haptics, setHaptics] = useSetting("haptics");
   const [showDecimals, setShowDecimals] = useSetting("show_decimals");
   const [lockEnabled] = useSetting("lock_enabled");
@@ -84,7 +91,7 @@ export function useSettingGroups(): SettingGroup[] {
   const [lastBackup] = useSetting("last_backup_at");
   const [style] = useSetting("settings_style");
 
-  const look = `${PALETTE_LABELS[palette]}, ${THEME_LABELS[theme]}`;
+  const look = `${ACCENT_LABELS[accent]}, ${THEME_LABELS[theme]}`;
   const privacy =
     [lockEnabled && "Face ID", hideAmounts && "Hidden"]
       .filter(Boolean)
@@ -99,7 +106,7 @@ export function useSettingGroups(): SettingGroup[] {
     {
       id: "money",
       title: "Money",
-      summary: "Accounts, categories, recurring and more",
+      summary: "Accounts, categories, recurring",
       rows: [
         {
           key: "accounts",
@@ -117,7 +124,7 @@ export function useSettingGroups(): SettingGroup[] {
     },
     {
       id: "entry",
-      title: "Entering money",
+      title: "Transactions",
       summary: displayCurrency,
       rows: [
         {
@@ -151,9 +158,9 @@ export function useSettingGroups(): SettingGroup[] {
     },
     {
       id: "calendar",
-      title: "Calendar and time",
+      title: "Date and time",
       summary: `Month starts on the ${ordinal(monthStart)}`,
-      note: "Monthly totals and budgets restart on the month's first day, so set it to your payday if you like. Hourly pay shows what things cost in hours of work; it stays on this device.",
+      note: "Set the month start to your payday to match your pay cycle. Add hourly pay to see costs in hours of work.",
       rows: [
         {
           key: "week",
@@ -178,12 +185,12 @@ export function useSettingGroups(): SettingGroup[] {
     },
     {
       id: "look",
-      title: "Look and feel",
+      title: "Appearance",
       summary: look,
       rows: [
         {
           key: "appearance",
-          label: "Appearance",
+          label: "Theme and icons",
           words: "theme dark light color colour icon accent palette",
           value: look,
           href: "/settings/appearance",
@@ -232,9 +239,9 @@ export function useSettingGroups(): SettingGroup[] {
     },
     {
       id: "data",
-      title: "Your data",
+      title: "Data",
       summary: backedUp ? `Backed up ${backedUp}` : "Not backed up yet",
-      note: "Your money data never leaves this device unless you back it up or export it. The app only checks online for updates.",
+      note: "Your data stays on this device unless you back it up or export it. The app goes online only to check for updates.",
       rows: [
         {
           key: "backup",

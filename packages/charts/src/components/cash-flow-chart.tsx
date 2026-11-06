@@ -146,7 +146,7 @@ function CashFlowChart({
       : `${accessibilityLabel}. ${formatLabel(selected)}`;
   const px = scale.pxPerUnit;
   const mint = colors.income;
-  const brass = colors.chart;
+  const brass = colors.accent;
   const upClip = {
     x: 0,
     y: LANE - 2,

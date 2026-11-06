@@ -39,14 +39,7 @@ export type SemanticColors = {
   overlayText: string;
 };
 
-export type AccentPresetKey =
-  | "blue"
-  | "titanium"
-  | "brass"
-  | "slate"
-  | "sage"
-  | "copper"
-  | "ivory";
+export type AccentPresetKey = "blue" | "teal" | "plum" | "bronze" | "ivory";
 
 /** The accent is one token group: fill, link text, soft tint, text on the fill, pressed fill. */
 export type AccentColors = Pick<
@@ -58,102 +51,68 @@ export const accentPresets: Record<
   AccentPresetKey,
   Record<Scheme, AccentColors>
 > = {
-  // Apple system blue: the accessible light variant for text, the system tint for fills.
   blue: {
     light: {
-      accent: "#007AFF",
-      accentText: "#0066D6",
-      accentSoft: "rgba(0,122,255,0.12)",
+      accent: "#2F5FD0",
+      accentText: "#2A55BE",
+      accentSoft: "rgba(47,95,208,0.12)",
       onAccent: "#FFFFFF",
-      accentDeep: "#0062CC",
+      accentDeep: "#1E3A8A",
     },
     dark: {
-      accent: "#0A84FF",
-      accentText: "#409CFF",
-      accentSoft: "rgba(10,132,255,0.18)",
-      onAccent: "#FFFFFF",
-      accentDeep: "#0071E3",
+      accent: "#7DA2F0",
+      accentText: "#7DA2F0",
+      accentSoft: "rgba(125,162,240,0.16)",
+      onAccent: "#0B1430",
+      accentDeep: "#5C84DC",
     },
   },
-  // Natural titanium: a warm metallic grey, brighter in dark mode where it is the hero.
-  titanium: {
+  teal: {
     light: {
-      accent: "#5F584F",
-      accentText: "#5F584F",
-      accentSoft: "rgba(95,88,79,0.1)",
+      accent: "#137C78",
+      accentText: "#0F6B68",
+      accentSoft: "rgba(19,124,120,0.12)",
       onAccent: "#FFFFFF",
-      accentDeep: "#4E4840",
+      accentDeep: "#0F4C4A",
     },
     dark: {
-      accent: "#D9D2C5",
-      accentText: "#D9D2C5",
-      accentSoft: "rgba(217,210,197,0.14)",
-      onAccent: "#121110",
-      accentDeep: "#BDB5A7",
+      accent: "#5CC4BD",
+      accentText: "#5CC4BD",
+      accentSoft: "rgba(92,196,189,0.16)",
+      onAccent: "#06201F",
+      accentDeep: "#3FA69F",
     },
   },
-  brass: {
+  plum: {
     light: {
-      accent: "#C69E58",
-      accentText: "#936923",
-      accentSoft: "rgba(198,158,88,0.14)",
-      onAccent: "#15120B",
-      accentDeep: "#BA904C",
+      accent: "#7A3B96",
+      accentText: "#6B3186",
+      accentSoft: "rgba(122,59,150,0.12)",
+      onAccent: "#FFFFFF",
+      accentDeep: "#4A1D5E",
     },
     dark: {
-      accent: "#DEC084",
-      accentText: "#DEC084",
-      accentSoft: "rgba(222,192,132,0.14)",
-      onAccent: "#15120B",
-      accentDeep: "#BA904C",
+      accent: "#C79ADB",
+      accentText: "#C79ADB",
+      accentSoft: "rgba(199,154,219,0.16)",
+      onAccent: "#1E0B27",
+      accentDeep: "#A879BE",
     },
   },
-  slate: {
+  bronze: {
     light: {
-      accent: "#56708E",
-      accentText: "#435A75",
-      accentSoft: "rgba(86,112,142,0.12)",
+      accent: "#8F6A3A",
+      accentText: "#7A5A30",
+      accentSoft: "rgba(143,106,58,0.12)",
       onAccent: "#FFFFFF",
-      accentDeep: "#4A6280",
+      accentDeep: "#5A3D1E",
     },
     dark: {
-      accent: "#A9BCD3",
-      accentText: "#A9BCD3",
-      accentSoft: "rgba(169,188,211,0.14)",
-      onAccent: "#0E131A",
-      accentDeep: "#8296AF",
-    },
-  },
-  sage: {
-    light: {
-      accent: "#5F7A57",
-      accentText: "#4B6345",
-      accentSoft: "rgba(95,122,87,0.12)",
-      onAccent: "#FFFFFF",
-      accentDeep: "#536C4C",
-    },
-    dark: {
-      accent: "#B2C7A8",
-      accentText: "#B2C7A8",
-      accentSoft: "rgba(178,199,168,0.14)",
-      onAccent: "#10160E",
-      accentDeep: "#8DA582",
-    },
-  },
-  copper: {
-    light: {
-      accent: "#A86A52",
-      accentText: "#8A533E",
-      accentSoft: "rgba(168,106,82,0.12)",
-      onAccent: "#FFFFFF",
-      accentDeep: "#955D47",
-    },
-    dark: {
-      accent: "#DDAA93",
-      accentText: "#DDAA93",
-      accentSoft: "rgba(221,170,147,0.14)",
-      onAccent: "#1C110C",
-      accentDeep: "#BC856D",
+      accent: "#D9BC8F",
+      accentText: "#D9BC8F",
+      accentSoft: "rgba(217,188,143,0.16)",
+      onAccent: "#1C130A",
+      accentDeep: "#BC9E70",
     },
   },
   // Ink: black on light, white on dark. The mono accent.
@@ -176,15 +135,15 @@ export const accentPresets: Record<
 };
 
 /** Default accent; `setAccent` re-skins at runtime. global.css `--tint*` mirror this default. */
-export const accentPreset: AccentPresetKey = "titanium";
+export const accentPreset: AccentPresetKey = "blue";
 
 /** The surface family: every non-accent token. `setPalette` switches it at runtime. */
-export type PaletteKey = "system" | "titanium" | "paper";
+export type PaletteKey = "system";
 
 export type PaletteColors = Omit<SemanticColors, keyof AccentColors>;
 
 /** Default palette; global.css mirrors it. */
-export const palettePreset: PaletteKey = "titanium";
+export const palettePreset: PaletteKey = "system";
 
 export const palettes: Record<PaletteKey, Record<Scheme, PaletteColors>> = {
   // Apple's own apps (Wallet, Health): grouped grey background, white cards, system label greys.
@@ -222,105 +181,30 @@ export const palettes: Record<PaletteKey, Record<Scheme, PaletteColors>> = {
       overlayText: "#000000",
     },
   },
-  // Titanium: graphite and brushed-metal greys, made for dark mode first.
-  titanium: {
-    light: {
-      bg: "#ECEBE8",
-      surface: "#FAFAF8",
-      elevated: "#FFFFFF",
-      border: "rgba(40,36,30,0.09)",
-      separator: "rgba(40,36,30,0.12)",
-      text: "#1C1B19",
-      textSecondary: "#6B6862",
-      textTertiary: "#A19D96",
-      income: "#2E7D4F",
-      expense: "#C4302B",
-      warning: "#B9580D",
-      fill: "#E0DEDA",
-      overlay: "#1C1B19",
-      overlayText: "#F4F2EE",
-    },
-    dark: {
-      bg: "#0A0A0B",
-      surface: "#161617",
-      elevated: "#1F1F21",
-      border: "rgba(225,218,205,0.08)",
-      separator: "rgba(225,218,205,0.09)",
-      text: "#F4F2EE",
-      textSecondary: "#A8A49C",
-      textTertiary: "#6E6B66",
-      income: "#7FD1A0",
-      expense: "#F07A72",
-      warning: "#E9B25C",
-      fill: "#232325",
-      overlay: "#F4F2EE",
-      overlayText: "#1C1B19",
-    },
-  },
-  // The original warm paper and black.
-  paper: {
-    light: {
-      bg: "#F5F3EF",
-      surface: "#FFFFFF",
-      elevated: "#FFFFFF",
-      border: "rgba(22,19,16,0.07)",
-      separator: "rgba(22,19,16,0.07)",
-      text: "#161310",
-      textSecondary: "#66635D",
-      textTertiary: "#9B9891",
-      income: "#048B56",
-      expense: "#C92F36",
-      warning: "#C9690C",
-      fill: "#EAE8E3",
-      overlay: "#161310",
-      overlayText: "#F5F3EF",
-    },
-    dark: {
-      bg: "#000000",
-      surface: "#100F0D",
-      elevated: "#191816",
-      border: "rgba(255,255,255,0.07)",
-      separator: "rgba(255,255,255,0.06)",
-      text: "#F8F7F2",
-      textSecondary: "#A4A19B",
-      textTertiary: "#686660",
-      income: "#64D8A4",
-      expense: "#F66C6D",
-      warning: "#FA9947",
-      fill: "#1E1D1A",
-      overlay: "#F5F3EF",
-      overlayText: "#161310",
-    },
-  },
 };
 
-/** Each accent's chart hue, richer than the accent itself so a grey accent like Titanium still reads as a colour. */
+/** Each accent's hue, the source of its shades. */
 const CHART_TINTS: Record<AccentPresetKey, { hue: number; saturation: number }> = {
-  blue: { hue: 211, saturation: 68 },
-  titanium: { hue: 33, saturation: 34 },
-  brass: { hue: 38, saturation: 48 },
-  slate: { hue: 212, saturation: 30 },
-  sage: { hue: 106, saturation: 26 },
-  copper: { hue: 17, saturation: 40 },
+  blue: { hue: 222, saturation: 64 },
+  teal: { hue: 177, saturation: 73 },
+  plum: { hue: 282, saturation: 43 },
+  bronze: { hue: 34, saturation: 42 },
   ivory: { hue: 240, saturation: 3 },
 };
 // Strongest first: dark on light surfaces, light on dark ones. The last step still holds about 3:1.
 const RAMP_LIGHTNESS: Record<Scheme, readonly number[]> = {
-  light: [24, 31, 38, 45, 52, 58],
+  light: [30, 38, 46, 52, 60, 68],
   dark: [86, 77, 68, 60, 51, 42],
 };
 
 type ChartColors = {
-  /** The main mark on any chart. */
-  chart: string;
   /** Near black in the theme's hue, for full-bleed dark canvases. */
   chartInk: string;
 };
 
-function chartColors(preset: AccentPresetKey, scheme: Scheme): ChartColors {
+function chartColors(preset: AccentPresetKey): ChartColors {
   const { hue, saturation } = CHART_TINTS[preset];
   return {
-    chart: monoRamp(preset, scheme)[scheme === "dark" ? 1 : 2]!,
     chartInk: hslToHex(hue, saturation / 2, 7),
   };
 }
@@ -333,7 +217,7 @@ export function buildColors(
   return {
     ...palettes[palette][scheme],
     ...accentPresets[preset][scheme],
-    ...chartColors(preset, scheme),
+    ...chartColors(preset),
   };
 }
 
@@ -366,7 +250,7 @@ export function configureTheme(overrides: ThemeOverrides): void {
     Object.assign(
       colors[scheme],
       accent,
-      chartColors(overrides.accentPreset ?? accentPreset, scheme),
+      chartColors(overrides.accentPreset ?? accentPreset),
     );
   }
 }

@@ -220,16 +220,9 @@ function Navigator() {
         <Stack.Screen name="payees" options={push("Payees")} />
         <Stack.Screen name="payee" options={push("Payee")} />
         <Stack.Screen name="insights-more" options={push("More insights")} />
-        <Stack.Screen name="explore/index" options={push("Explore")} />
         <Stack.Screen name="explore/map" options={push("Money map")} />
         <Stack.Screen name="explore/what-if" options={push("What if")} />
-        <Stack.Screen name="explore/spiral" options={push("Year spiral")} />
-        <Stack.Screen name="explore/particles" options={push("Every transaction")} />
-        <Stack.Screen name="explore/three-d" options={push("3D spending")} />
-        <Stack.Screen name="explore/ask" options={push("Ask your money")} />
-        <Stack.Screen name="explore/liquid" options={push("Liquid budgets")} />
-        <Stack.Screen name="explore/jar" options={push("Coin jar")} />
-        <Stack.Screen name="explore/poster" options={push("Your year")} />
+        <Stack.Screen name="explore/ask" options={push("Ask")} />
         <Stack.Screen
           name="recap/[month]"
           options={{ headerShown: false, presentation: "fullScreenModal" }}

@@ -543,7 +543,7 @@ export default function InsightsScreen() {
               </View>
               {showAnalyzer ? (
                 <Stagger index={1}>
-                  <ChapterLabel title="Is this normal?" />
+                  <ChapterLabel title="This month" />
                   <AnalyzerSection
                     part="normal"
                     analyzer={analyzer}
@@ -555,7 +555,7 @@ export default function InsightsScreen() {
                 </Stagger>
               ) : null}
               <Stagger index={1}>
-                <ChapterLabel title="Where it went" />
+                <ChapterLabel title="Spending" />
                 <SectionHeader
                   title={breakdownTitle(by, kind)}
                   actionLabel={kind === "expense" ? "See as map" : undefined}
@@ -654,7 +654,7 @@ export default function InsightsScreen() {
 
           {showsChapter("trend") ? (
             <View onLayout={(e) => scrollToLinked("trend", e)}>
-              <ChapterLabel title="How it's changing" />
+              <ChapterLabel title="Trends" />
             <Reveal>
 <TrendSection
               insights={insights}
@@ -684,7 +684,7 @@ export default function InsightsScreen() {
           ) : null}
           {showsChapter("flow") ? (
             <View onLayout={(e) => scrollToLinked("flow", e)}>
-              <ChapterLabel title="Money in and out" />
+              <ChapterLabel title="Cash flow" />
             <>
               <Reveal>
 <FlowCard
@@ -718,7 +718,7 @@ export default function InsightsScreen() {
           ) : null}
           {showsChapter("payees") ? (
             <View onLayout={(e) => scrollToLinked("payees", e)}>
-              <ChapterLabel title="Who you pay, and when" />
+              <ChapterLabel title="Payees" />
               {showAnalyzer ? (
                 <AnalyzerSection
                   part="habits"
@@ -739,7 +739,7 @@ export default function InsightsScreen() {
           ) : null}
           {showsChapter("worth") ? (
             <View onLayout={(e) => scrollToLinked("worth", e)}>
-              <ChapterLabel title="What you have" />
+              <ChapterLabel title="Net worth" />
             <Reveal>
 <NetWorthCard
               period={period}
@@ -752,27 +752,8 @@ export default function InsightsScreen() {
             </View>
           ) : null}
 
-          <ChapterLabel title="Go deeper" />
+          <ChapterLabel title="More" />
           <View className="gap-3 px-4 pt-2">
-            <Card className="p-0">
-              <Pressable
-                role="button"
-                accessibilityLabel="Explore: money map, what if and more"
-                scale={0.99}
-                onPress={() => router.push("/explore")}
-                className="flex-row items-center justify-between px-4 py-3.5"
-              >
-                <View className="flex-1">
-                  <Text variant="callout" className="font-semibold">
-                    Explore
-                  </Text>
-                  <Text variant="footnote" tone="secondary">
-                    Money map, what if, year spiral and more
-                  </Text>
-                </View>
-                <SymbolIcon name="chevron.right" size={13} color={colors.textTertiary} weight="bold" />
-              </Pressable>
-            </Card>
             <ReportEntryRow />
             <ReviewEntryCard />
           </View>

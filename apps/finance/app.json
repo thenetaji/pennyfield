@@ -69,8 +69,7 @@
       "@react-native-community/datetimepicker",
       "@studio/config/plugins/with-scene-lifecycle",
       "@bacons/apple-targets",
-      "./plugins/with-add-shortcut",
-      "react-native-webgpu"
+      "./plugins/with-add-shortcut"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -6,7 +6,6 @@ import {
   FALLBACK_CONCEPT,
   iconXml,
   isKnownIcon,
-  sfSymbolFor,
 } from "./registry";
 import { ICON_STYLES } from "./types";
 
@@ -16,7 +15,7 @@ describe("icon registry", () => {
   });
 
   it("has artwork for every concept in every svg style", () => {
-    for (const style of ICON_STYLES.filter((s) => s !== "sf")) {
+    for (const style of ICON_STYLES) {
       for (const c of conceptMeta) {
         const xml = iconXml(style, c.id);
         expect(xml).toContain("<svg");
@@ -45,12 +44,6 @@ describe("icon registry", () => {
   it("falls back to a tag for unknown names", () => {
     expect(conceptFor("definitely.not.a.symbol")).toBe(FALLBACK_CONCEPT);
     expect(conceptFor("")).toBe(FALLBACK_CONCEPT);
-    expect(sfSymbolFor("definitely.not.a.symbol")).toBe("tag.fill");
-  });
-
-  it("keeps SF names and maps concept ids to symbols", () => {
-    expect(sfSymbolFor("cart.fill")).toBe("cart.fill");
-    expect(sfSymbolFor("groceries")).toBe("cart.fill");
   });
 
   it("recolours the duotone layer", () => {

@@ -60,12 +60,12 @@ function ForecastChart({ points, baseline }: { points: WhatIfPoint[]; baseline: 
               <LinearGradient
                 start={vec(0, 0)}
                 end={vec(0, HEIGHT)}
-                colors={[withAlpha(colors.chart, 0.3), withAlpha(colors.chart, 0)]}
+                colors={[withAlpha(colors.accent, 0.3), withAlpha(colors.accent, 0)]}
               />
             </Path>
-            <Path path={band} color={withAlpha(colors.chart, 0.18)} opacity={draw} />
+            <Path path={band} color={withAlpha(colors.accent, 0.18)} opacity={draw} />
             <Path path={line(baseline, (p) => p.mid)} color={colors.textTertiary} style="stroke" strokeWidth={1.5} end={draw} />
-            <Path path={line(points, (p) => p.mid)} color={colors.chart} style="stroke" strokeWidth={2.5} strokeCap="round" end={draw} />
+            <Path path={line(points, (p) => p.mid)} color={colors.accent} style="stroke" strokeWidth={2.5} strokeCap="round" end={draw} />
           </Group>
         </Canvas>
       ) : null}
@@ -117,7 +117,7 @@ export default function WhatIfScreen() {
     return (
       <View className="flex-1 items-center justify-center bg-bg px-8">
         <Text variant="callout" tone="secondary" className="text-center">
-          What if needs at least one finished month of entries to go on.
+          Needs at least one full month of data.
         </Text>
       </View>
     );
@@ -130,23 +130,23 @@ export default function WhatIfScreen() {
     >
       <View>
         <Text variant="subhead" tone="secondary">
-          {`By ${endMonth} next year`}
+          {`Balance by ${endMonth} next year`}
         </Text>
         <Text variant="hero" numeric>
           {money(Math.max(0, end?.mid ?? 0))}
         </Text>
         <Text variant="subhead" tone={gap >= 0 ? "income" : "secondary"} numeric>
           {runsOut !== null
-            ? `At this rate your money runs out in ${runsOut} ${runsOut === 1 ? "month" : "months"}`
+            ? `Runs out in ${runsOut} ${runsOut === 1 ? "month" : "months"}`
             : gap === 0
-              ? "This is where you're heading now"
+              ? "Based on your recent months"
               : `${money(Math.abs(gap))} ${gap > 0 ? "more" : "less"} than now${hours ? `, about ${hours} of work` : ""}`}
         </Text>
       </View>
       <Card className="px-3 py-4">
         <ForecastChart points={points} baseline={baseline} />
         <Text variant="caption" tone="tertiary" className="px-1 pt-2">
-          The grey line is your current path. The band shows how much your past months varied.
+          Grey is your current path. The shaded band is your usual range.
         </Text>
       </Card>
       <Card className="gap-4 px-4 py-4">
@@ -169,7 +169,7 @@ export default function WhatIfScreen() {
           onChange={setExtraIncome}
         />
         <Slider
-          label="One big purchase now"
+          label="One-off purchase"
           shown={money(oneOff)}
           value={oneOff}
           min={0}
