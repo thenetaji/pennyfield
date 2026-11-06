@@ -27,6 +27,7 @@ All notable changes to Finance. The format follows [Keep a Changelog](https://ke
 - **Charts animate as you reach them:** sections on Home and Insights play their entrance when you scroll to them instead of off screen.
 - Scrubbing the Home chart gives a firmer bump as you cross your budget line.
 - Android 8 or newer is now required.
+- Fixes that don't need a new install can now reach your phone directly. The app checks for one when it opens and uses it the next time you open it. Your money data is never sent.
 
 ### Fixed
 - Adding or editing an account, budget, category or recurring rule, and Search, showed two titles, with the form sliding over the Cancel and Save bar.

@@ -234,7 +234,7 @@ export function useSettingGroups(): SettingGroup[] {
       id: "data",
       title: "Your data",
       summary: backedUp ? `Backed up ${backedUp}` : "Not backed up yet",
-      note: "Nothing leaves this device unless you back it up or export it.",
+      note: "Your money data never leaves this device unless you back it up or export it. The app only checks online for updates.",
       rows: [
         {
           key: "backup",

@@ -75,6 +75,23 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "owner": "lfreedallens-team",
+    "extra": {
+      "eas": {
+        "projectId": "bf203770-3d1d-4943-a405-3d5751f7bc59"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/bf203770-3d1d-4943-a405-3d5751f7bc59",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0,
+      "requestHeaders": {
+        "expo-channel-name": "production"
+      }
     }
   }
 }
