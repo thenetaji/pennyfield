@@ -65,7 +65,7 @@ export function Slider({
           style={{ height: 36, justifyContent: "center" }}
         >
           <View style={{ height: 6, borderRadius: 3, backgroundColor: colors.fill }}>
-            <View style={{ width: left + THUMB / 2, height: 6, borderRadius: 3, backgroundColor: colors.chart }} />
+            <View style={{ width: left + THUMB / 2, height: 6, borderRadius: 3, backgroundColor: colors.accent }} />
           </View>
           <View
             style={{

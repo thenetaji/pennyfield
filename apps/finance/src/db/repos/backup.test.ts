@@ -124,7 +124,7 @@ describe("restoreBackup", () => {
   it("replaces existing data and keeps device settings", () => {
     const source = demoWithExtras();
     setSetting(source, "theme", "light");
-    setSetting(source, "icon_style", "solar");
+    setSetting(source, "icon_style", "lucide");
     setSetting(source, "hide_amounts", true);
     setSetting(source, "week_start", 7);
     const json = serializeBackup(exportBackup(source, { now: NOW }));
@@ -140,13 +140,13 @@ describe("restoreBackup", () => {
     });
     setSetting(target, "theme", "dark");
     setSetting(target, "icon_style", "lucide");
-    setSetting(target, "icon_background", "tonal");
+    setSetting(target, "icon_background", "glyph-only");
     setSetting(target, "last_backup_at", 123);
     restoreBackup(target, json);
 
     expect(getSetting(target, "theme")).toBe("dark");
     expect(getSetting(target, "icon_style")).toBe("lucide");
-    expect(getSetting(target, "icon_background")).toBe("tonal");
+    expect(getSetting(target, "icon_background")).toBe("glyph-only");
     expect(getSetting(target, "hide_amounts")).toBe(false);
     expect(getSetting(target, "last_backup_at")).toBe(123);
     // Non-device settings come from the backup.

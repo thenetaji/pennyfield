@@ -8,7 +8,7 @@ const tabs = [
   { name: "(home)", title: "Home", symbol: "home" },
   { name: "activity", title: "Activity", symbol: "activity" },
   { name: "insights", title: "Insights", symbol: "insights" },
-  { name: "budgets", title: "Budgets", symbol: "budgets" },
+  { name: "advanced", title: "Advanced", symbol: "grid" },
 ] as const;
 
 export default function TabsLayout() {

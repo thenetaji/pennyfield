@@ -44,7 +44,7 @@ function SummaryCard({ skin }: { skin: RowSkin }) {
         <Text variant="footnote" style={{ color: skin.secondary }}>
           {lastBackup
             ? `Last backup ${backupTimeLabel(lastBackup)}`
-            : "Kept on this device, not backed up yet"}
+            : "On this device, not backed up"}
         </Text>
       </View>
       <SymbolIcon name="chevron.right" size={13} color={skin.tertiary} weight="bold" />

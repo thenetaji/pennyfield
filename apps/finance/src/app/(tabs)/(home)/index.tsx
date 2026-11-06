@@ -118,13 +118,13 @@ export default function Home() {
   const outlookText = !outlook
     ? undefined
     : outlook.type === "safe"
-      ? `You can spend ${fmt(outlook.perDay)} a day for ${outlook.daysLeft === 1 ? "today" : `the next ${outlook.daysLeft} days`}${outlook.afterBills ? ", after bills" : ""}`
+      ? `${fmt(outlook.perDay)} ${outlook.daysLeft === 1 ? "left for today" : `a day for ${outlook.daysLeft} days`}${outlook.afterBills ? ", after bills" : ""}`
       : outlook.type === "over"
         ? `${fmt(outlook.amount)} over budget${outlook.daysLeft > 1 ? ` with ${outlook.daysLeft} days to go` : ""}`
-        : `At this pace, about ${fmt(outlook.total)} by ${end.day} ${monthName(end.month)}`;
+        : `On track for ${fmt(outlook.total)} by ${end.day} ${monthName(end.month)}`;
 
   const workTime = useWorkTime()(spend.spent);
-  const outlookLine = [outlookText, workTime ? `This month has cost about ${workTime} of pay` : null]
+  const outlookLine = [outlookText, workTime ? `About ${workTime} of work` : null]
     .filter(Boolean)
     .join("\n");
   const widgetSpent = fmt(spend.spent);
@@ -231,7 +231,7 @@ export default function Home() {
           <EmptyState
             icon="bill"
             title="No transactions yet"
-            message="Add what you spend and Home shows this month's total, your pace and where it all went."
+            message="Add your first transaction to get started."
             actionLabel="Add transaction"
             onAction={() => router.push("/transaction/new")}
           />

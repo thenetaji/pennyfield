@@ -10,7 +10,7 @@ type Colors = ReturnType<typeof useTokens>["colors"];
 export function paceColor(status: PaceStatus, colors: Colors): string {
   if (status === "over") return colors.expense;
   if (status === "at_risk") return colors.warning;
-  return colors.chart;
+  return colors.accent;
 }
 
 const ICON: Record<PaceStatus, string> = {

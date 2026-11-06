@@ -39,7 +39,7 @@ export default function AskScreen() {
     setTurns((all) =>
       all.map((turn, i) =>
         i === all.length - 1
-          ? { ...turn, answer: answer ?? "Couldn't answer that on this phone. Try asking another way." }
+          ? { ...turn, answer: answer ?? "Couldn't answer that. Try rephrasing." }
           : turn,
       ),
     );
@@ -59,7 +59,7 @@ export default function AskScreen() {
         contentContainerClassName="gap-3 px-4 pb-6 pt-2"
       >
         <Text variant="subhead" tone="secondary">
-          Answered on this phone from your own totals, and nothing is sent anywhere. It can get things wrong, so check anything important.
+          Answers are generated on this phone and nothing is sent. They can be wrong.
         </Text>
         {turns.length === 0 ? (
           <View className="flex-row flex-wrap gap-2">
@@ -84,10 +84,10 @@ export default function AskScreen() {
           value={text}
           onChangeText={setText}
           onSubmitEditing={() => void ask(text)}
-          placeholder="Ask about your money"
+          placeholder="Ask about your spending"
           placeholderTextColor={colors.textTertiary}
           returnKeyType="send"
-          accessibilityLabel="Ask about your money"
+          accessibilityLabel="Ask about your spending"
           className="h-11 flex-1 rounded-full bg-surface px-4"
           style={{ color: colors.text, fontSize: 17 }}
         />

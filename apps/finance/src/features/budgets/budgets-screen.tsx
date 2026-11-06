@@ -2,7 +2,7 @@ import { useRouter } from "expo-router";
 import * as React from "react";
 import { ScrollView, View } from "react-native";
 
-import { EmptyState, showToast, Card, Pressable, Text } from "@studio/ui";
+import { EmptyState, showToast, Card } from "@studio/ui";
 import { useActions } from "@/data/actions";
 import { useBudgets, useCategories, useTodayKey } from "@/data/hooks";
 import type { BudgetInput } from "@/db/repos/budgets";
@@ -82,18 +82,6 @@ export function BudgetsScreen() {
         contentInsetAdjustmentBehavior="automatic"
         contentContainerClassName="gap-4 px-4 pb-10 pt-2"
       >
-        <Pressable
-          role="button"
-          accessibilityLabel="See budgets as liquid"
-          hitSlop={8}
-          scale={0.97}
-          className="self-end"
-          onPress={() => router.push("/explore/liquid")}
-        >
-          <Text variant="footnote" tone="accent" className="font-semibold">
-            See as liquid
-          </Text>
-        </Pressable>
         {overall.map((view, i) => (
           <Stagger key={view.id} index={i}>
             <BudgetCard view={view} onPress={() => open(view.id)} />

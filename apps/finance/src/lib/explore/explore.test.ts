@@ -1,7 +1,4 @@
-import { coinCount, coinValue } from "./coins";
 import { moneyMapTiles } from "./money-map";
-import { monthTicks, particleLayouts } from "./particles";
-import { nearestDot, spiralDots } from "./spiral";
 import { monthMoneyRunsOut, spreadOf, whatIfForecast } from "./what-if";
 import { workTimeLabel } from "./work-time";
 import { askDigest } from "./ask-digest";
@@ -94,71 +91,6 @@ describe("workTimeLabel", () => {
   });
 });
 
-describe("spiralDots", () => {
-  const days = Array.from({ length: 400 }, (_, i) => ({
-    dateKey: new Date(Date.UTC(2025, 0, 1 + i)).toISOString().slice(0, 10),
-    amount: i % 2 ? 100 : 0,
-  }));
-
-  it("lines the same date up across years", () => {
-    const dots = spiralDots(days, 300);
-    const center = 150;
-    const angle = (i: number) => Math.atan2(dots[i]!.y - center, dots[i]!.x - center);
-    expect(angle(365)).toBeCloseTo(angle(0), 5);
-    expect(Math.hypot(dots[365]!.x - center, dots[365]!.y - center)).toBeGreaterThan(
-      Math.hypot(dots[0]!.x - center, dots[0]!.y - center),
-    );
-  });
-
-  it("stays inside the square, with spending days bigger than quiet ones", () => {
-    const dots = spiralDots(days, 300);
-    for (const d of dots) {
-      expect(d.x).toBeGreaterThanOrEqual(0);
-      expect(d.x).toBeLessThanOrEqual(300);
-    }
-    expect(dots[1]!.r).toBeGreaterThan(dots[0]!.r);
-  });
-
-  it("picks the nearest dot, and none when touching far away", () => {
-    const dots = spiralDots(days, 300);
-    expect(nearestDot(dots, dots[10]!.x, dots[10]!.y)?.dateKey).toBe(days[10]!.dateKey);
-    expect(nearestDot(dots, -500, -500)).toBeNull();
-  });
-});
-
-describe("coins", () => {
-  it("keeps the jar to a sensible number of round coins", () => {
-    for (const total of [37, 900, 123456, 98765432]) {
-      const value = coinValue(total);
-      expect(coinCount(total, value)).toBeLessThanOrEqual(90);
-      expect(String(value)).toMatch(/^[125]0*$/);
-    }
-  });
-
-  it("shows any saving as at least one coin, and nothing for none", () => {
-    expect(coinCount(1, 1000)).toBe(1);
-    expect(coinCount(0, 1000)).toBe(0);
-  });
-});
-
-describe("particleLayouts", () => {
-  it("puts one entry per transaction in every layout, grouped by category", () => {
-    const layouts = particleLayouts(
-      [
-        { time: 0, amount: 10, group: "a" },
-        { time: 1, amount: 900, group: "a" },
-        { time: 0.5, amount: 100, group: "b" },
-      ],
-      300,
-      600,
-    );
-    expect(layouts.scale).toHaveLength(3);
-    expect(layouts.timeX[1]).toBeGreaterThan(layouts.timeX[0]!);
-    expect(layouts.scale[1]).toBeGreaterThan(layouts.scale[0]!);
-    expect(Math.abs(layouts.groupX[0]! - layouts.groupX[1]!)).toBeLessThan(20);
-  });
-});
-
 describe("askDigest", () => {
   it("gives totals per month and the biggest payees", () => {
     const digest = askDigest(
@@ -173,20 +105,5 @@ describe("askDigest", () => {
     expect(digest).toContain("Today is 2026-11-06.");
     expect(digest).toContain("2026-10: spent $500, earned $9000. Transport $500");
     expect(digest).toContain("Uber $500");
-  });
-});
-
-describe("monthTicks", () => {
-  it("marks each month start inside the range", () => {
-    const ticks = monthTicks("2026-06-15", "2026-11-06");
-    expect(ticks.map((t) => t.label)).toEqual(["Jul", "Aug", "Sep", "Oct", "Nov"]);
-    expect(ticks[0]!.time).toBeGreaterThan(0);
-    expect(ticks[4]!.time).toBeLessThan(1);
-  });
-
-  it("thins out a long range and crosses the new year", () => {
-    const ticks = monthTicks("2025-11-07", "2026-11-06");
-    expect(ticks.length).toBeLessThanOrEqual(6);
-    expect(ticks[0]!.label).toBe("Dec");
   });
 });

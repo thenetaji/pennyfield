@@ -30,14 +30,14 @@ export const HOME_SECTION_LABELS: Record<HomeSectionId, string> = {
 
 /** The question each section answers; Home prints it when the question changes on the way down. */
 export const HOME_CHAPTERS: Record<HomeSectionId, string> = {
-  budgets: "What's ahead",
-  bills: "What's ahead",
-  top_categories: "Where it went",
-  week: "What just happened",
-  quick_add: "What just happened",
-  recent: "What just happened",
-  accounts: "What you have",
-  pockets: "What you have",
+  budgets: "Coming up",
+  bills: "Coming up",
+  top_categories: "Spending",
+  week: "Activity",
+  quick_add: "Activity",
+  recent: "Activity",
+  accounts: "Accounts",
+  pockets: "Accounts",
 };
 
 /** The default before the sections followed that story; a layout still in this order moves to the new one. */

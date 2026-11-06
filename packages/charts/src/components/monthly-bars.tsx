@@ -246,7 +246,7 @@ function MonthlyBars({
                         tickY={tick}
                         index={i}
                         lit={viewed === null || viewed === i}
-                        barColor={colors.chart}
+                        barColor={colors.accent}
                         tickColor={
                           pinned
                             ? withAlpha(colors.income, 0.75)

@@ -82,7 +82,7 @@ export function setAccent(key: AccentPresetKey): void {
   apply();
 }
 
-/** Switch the surface palette (System, Titanium, Paper) at runtime. */
+/** Switch the surface palette at runtime. */
 export function setPalette(key: PaletteKey): void {
   if (key === current.palette || !palettes[key]) return;
   current = { ...current, palette: key };

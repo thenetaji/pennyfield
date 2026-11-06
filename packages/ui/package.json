@@ -20,7 +20,6 @@
     "@studio/theme": "workspace:*"
   },
   "peerDependencies": {
-    "@react-native-segmented-control/segmented-control": "*",
     "@rn-primitives/slot": "*",
     "class-variance-authority": "*",
     "clsx": "*",

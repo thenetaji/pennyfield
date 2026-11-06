@@ -135,7 +135,7 @@ export function BudgetForm({ mode, budgetId }: BudgetFormProps) {
   const close = () => {
     if (router.canDismiss()) router.dismiss();
     else if (router.canGoBack()) router.back();
-    else router.replace("/budgets");
+    else router.replace("/advanced/budgets");
   };
 
   const save = () => {

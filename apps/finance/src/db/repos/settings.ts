@@ -49,7 +49,7 @@ export interface SettingsMap {
   theme: "system" | "light" | "dark";
   /** Accent colour preset. */
   accent: AccentPresetKey;
-  /** Surface palette: System (Apple neutral), Titanium or Paper. */
+  /** Surface palette. */
   palette: PaletteKey;
   /** Categories in shades of the theme's hue (default) or in colour. */
   category_colors: CategoryMode;
@@ -99,8 +99,8 @@ export type SettingKey = keyof SettingsMap;
 export const DEFAULT_SETTINGS: Readonly<SettingsMap> = {
   display_currency: "USD",
   theme: "system",
-  accent: "titanium",
-  palette: "titanium",
+  accent: "blue",
+  palette: "system",
   haptics: true,
   show_decimals: false,
   week_start: 1,
@@ -113,8 +113,8 @@ export const DEFAULT_SETTINGS: Readonly<SettingsMap> = {
   onboarding_done: false,
   schema_seeded: false,
   recent_searches: [],
-  icon_style: "phosphor-duotone",
-  icon_background: "graphite-accent",
+  icon_style: "phosphor-fill",
+  icon_background: "solid",
   category_colors: "mono",
   home_layout: DEFAULT_HOME_LAYOUT.map((s) => ({ ...s })),
   pockets: [],
@@ -133,14 +133,12 @@ export const DEFAULT_SETTINGS: Readonly<SettingsMap> = {
   hourly_pay: null,
 };
 
-/** The defaults each look replaced, oldest first; a setting still on its old default moves to the new one. */
-const PREVIOUS_LOOKS: Partial<SettingsMap>[] = [
-  {
-    icon_style: "sf",
-    icon_background: "mono",
-  },
-  { category_colors: "colour" },
-];
+const LOOK_VERSION = 2;
+
+/** The defaults each look replaced; a setting still on its old default moves to the new one. Values no longer offered fall back to their defaults when read. */
+const PREVIOUS_LOOK: Partial<SettingsMap> = {
+  category_colors: "colour",
+};
 
 const ENUMS: Partial<Record<SettingKey, readonly unknown[]>> = {
   accent: Object.keys(accentPresets),
@@ -218,10 +216,8 @@ export function insertMissingDefaults(db: Db): void {
 
 /** Moves installs that never changed their look to the current defaults, once. */
 export function applyLookDefaults(db: Db): void {
-  const from = getSetting(db, "look_version");
-  if (from >= PREVIOUS_LOOKS.length) return;
-  for (const look of PREVIOUS_LOOKS.slice(from))
-    for (const [key, old] of Object.entries(look) as [SettingKey, unknown][])
-      if (getSetting(db, key) === old) setSetting(db, key, DEFAULT_SETTINGS[key]);
-  setSetting(db, "look_version", PREVIOUS_LOOKS.length);
+  if (getSetting(db, "look_version") >= LOOK_VERSION) return;
+  for (const [key, old] of Object.entries(PREVIOUS_LOOK) as [SettingKey, unknown][])
+    if (getSetting(db, key) === old) setSetting(db, key, DEFAULT_SETTINGS[key]);
+  setSetting(db, "look_version", LOOK_VERSION);
 }

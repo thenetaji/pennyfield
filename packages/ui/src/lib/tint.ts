@@ -9,7 +9,7 @@ const STEP_MS = 24;
 
 /**
  * Follows `target` with a short linear crossfade (200 ms) and returns the colour to render. For native props that
- * cannot take an animated value (the iOS segmented control); everything else should animate on the UI thread. Only
+ * cannot take an animated value; everything else should animate on the UI thread. Only
  * the calling component re-renders, about eight times per change. Instant under Reduce Motion.
  */
 export function useTweenedColor(target: string, duration = 200): string {

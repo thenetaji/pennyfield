@@ -1,3 +1,4 @@
+import { View } from "react-native";
 import * as React from "react";
 
 import { IconTile } from "./icon-tile";
@@ -28,7 +29,7 @@ function Chip({
   accessibilityLabel,
 }: ChipProps) {
   const { colors } = useTokens();
-  const iconColor = selected ? colors.accentText : colors.textSecondary;
+  const iconColor = selected ? colors.onAccent : colors.textSecondary;
   return (
     <Pressable
       role="button"
@@ -39,27 +40,32 @@ function Chip({
       hitSlop={{ top: 6, bottom: 6 }}
       onPress={onPress}
       className={cn(
-        "h-8 flex-row items-center gap-1.5 self-start rounded-full border px-3",
-        selected
-          ? "border-accent bg-accent-soft"
-          : "border-transparent bg-fill",
+        "h-10 flex-row items-center gap-1.5 self-start rounded-full px-4",
+        selected ? "bg-accent" : "bg-fill",
       )}
     >
-      {icon ? <AppIcon name={icon} size={14} color={iconColor} /> : null}
+      {icon ? <AppIcon name={icon} size={16} color={iconColor} /> : null}
       <Text
-        variant="callout"
-        tone={selected ? "accent" : "default"}
+        variant="subhead"
+        className="font-medium"
+        style={selected ? { color: colors.onAccent } : undefined}
         numberOfLines={1}
       >
         {label}
       </Text>
       {hint ? (
-        <Text variant="callout" tone="secondary" numeric numberOfLines={1}>
+        <Text
+          variant="subhead"
+          tone={selected ? "default" : "secondary"}
+          style={selected ? { color: colors.onAccent, opacity: 0.8 } : undefined}
+          numeric
+          numberOfLines={1}
+        >
           {hint}
         </Text>
       ) : null}
       {trailingIcon ? (
-        <AppIcon name={trailingIcon} size={10} color={iconColor} />
+        <AppIcon name={trailingIcon} size={11} color={iconColor} />
       ) : null}
     </Pressable>
   );
@@ -91,17 +97,22 @@ function CategoryChip({
       hitSlop={{ top: 6, bottom: 6 }}
       onPress={onPress}
       className={cn(
-        "h-8 flex-row items-center gap-1.5 self-start rounded-full border pl-1.5 pr-3",
-        selected
-          ? "border-accent bg-accent-soft"
-          : "border-transparent bg-fill",
+        "h-10 flex-row items-center gap-2 self-start rounded-full pl-2 pr-4",
+        selected ? "bg-accent" : "bg-fill",
       )}
     >
-      <IconTile icon={icon} color={color} size={22} />
+      {selected ? (
+        <View className="h-[26px] w-[26px] items-center justify-center">
+          <AppIcon name={icon} size={18} color={colors.onAccent} />
+        </View>
+      ) : (
+        <IconTile icon={icon} color={color} size={26} />
+      )}
       <Text
-        variant="callout"
+        variant="subhead"
+        className="font-medium"
         numberOfLines={1}
-        style={selected ? { color: colors.accentText } : { color: colors.text }}
+        style={selected ? { color: colors.onAccent } : { color: colors.text }}
       >
         {name}
       </Text>

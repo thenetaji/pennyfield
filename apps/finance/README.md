@@ -15,9 +15,21 @@ A local-first expense tracker for iPhone. It has Dime's calm interface plus the 
    ```
 3. Scan the QR code with the iPhone Camera.
 
-No Mac and no Apple Developer account are needed for this. Your data stays on the phone, in SQLite.
+No Mac and no Apple Developer account are needed for this. Your data stays on the phone, in SQLite. The only thing the app asks the internet for is whether an update exists, which Expo's servers answer and which shares your IP address, platform and app version, never your money data.
 
 **Demo data**: in a dev build, open Settings → About → Load demo data to load six months of realistic entries.
+
+## Updates
+
+JS-only changes can reach installed apps without a new build, using [EAS Update](https://docs.expo.dev/eas-update/introduction/):
+
+```sh
+pnpm --filter finance publish:update --message "What changed"
+```
+
+This needs a login to the Expo account in `app.json`. Only apps with the same `version` receive an update, so bump `version` and ship a new build whenever native code changes.
+
+If you fork this, change `owner`, `extra.eas.projectId` and `updates.url` in `app.json`, or remove `updates`. Otherwise your builds receive this project's updates.
 
 ## What's in v1
 

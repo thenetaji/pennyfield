@@ -113,7 +113,7 @@ function SpendCurve({
   const font = useChartFont(11, "medium");
   const labelFont = useChartFont(12, "semibold");
   const [selected, setSelected] = React.useState<number | null>(null);
-  const tint = color ?? colors.chart;
+  const tint = color ?? colors.accent;
   const total = LANE + height + AXIS;
   const top = LANE + 4;
   const baseline = LANE + height;

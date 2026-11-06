@@ -12,7 +12,7 @@
     "e2e": "node tooling/qa/e2e.mjs",
     "screenshots": "node tooling/qa/screenshots.mjs",
     "typegen": "node tooling/qa/typegen.mjs",
-    "icons": "node packages/icons/scripts/build-icons.mjs --tab-icons apps/finance --tabs home,activity,insights,budgets",
+    "icons": "node packages/icons/scripts/build-icons.mjs",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "commitlint": "commitlint --edit"

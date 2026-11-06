@@ -21,9 +21,9 @@ const buttonVariants = cva(
         barSecondary: "",
       },
       size: {
-        sm: "h-9 min-w-[44px] px-3",
-        md: "h-11 px-4",
-        lg: "h-[52px] px-6",
+        sm: "h-10 min-w-[44px] px-4",
+        md: "h-12 px-5",
+        lg: "h-14 px-6",
       },
     },
     defaultVariants: { variant: "primary", size: "md" },
