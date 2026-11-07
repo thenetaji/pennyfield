@@ -19,11 +19,11 @@ const MODES = [
 ] as const;
 
 const ACCENTS: readonly { key: AccentPresetKey; label: string }[] = [
+  { key: "ivory", label: "Ink" },
   { key: "blue", label: "Blue" },
   { key: "teal", label: "Teal" },
   { key: "plum", label: "Plum" },
   { key: "bronze", label: "Bronze" },
-  { key: "ivory", label: "Ink" },
 ];
 
 const CATEGORY_MODES = [

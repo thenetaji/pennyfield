@@ -56,7 +56,6 @@ If you fork this, change `owner`, `extra.eas.projectId` and `updates.url` in `ap
 
 ## Before the App Store
 
-- A real support address in `FEEDBACK_EMAIL` (`apps/finance/src/constants/app.ts`).
 - The final name and app icon.
 - The Apple Developer account, then `eas build -p ios` and `eas submit`.
 

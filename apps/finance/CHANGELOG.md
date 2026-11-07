@@ -17,8 +17,9 @@ All notable changes to Finance. The format follows [Keep a Changelog](https://ke
 - **Hourly pay:** see costs in hours of work.
 
 ### Changed
-- **New default look:** deep blue, with Teal, Plum, Bronze and Ink as alternatives. Charts and icons use shades of your theme colour. Multicolour categories are still in Settings.
+- **New default look:** Ink, with Blue, Teal, Plum and Bronze as alternatives. Charts and icons use shades of your theme colour. Multicolour categories are still in Settings.
 - **Fewer icon options:** Solid (default) or Line.
+- **About** now shows the app icon and version, with Check for updates, Report a bug and Source code.
 - **Larger buttons and switches** throughout, with the selected option filled in your theme colour.
 - **Settings** is organised into groups with search, in Calm, Glass or List style.
 - **Home and Insights** are reordered and grouped into clearer sections.

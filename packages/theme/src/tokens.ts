@@ -135,7 +135,7 @@ export const accentPresets: Record<
 };
 
 /** Default accent; `setAccent` re-skins at runtime. global.css `--tint*` mirror this default. */
-export const accentPreset: AccentPresetKey = "blue";
+export const accentPreset: AccentPresetKey = "ivory";
 
 /** The surface family: every non-accent token. `setPalette` switches it at runtime. */
 export type PaletteKey = "system";
