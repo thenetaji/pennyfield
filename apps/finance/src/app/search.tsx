@@ -13,7 +13,7 @@ import {
 } from "@studio/ui";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import * as React from "react";
-import { Platform, ScrollView, TextInput, View } from "react-native";
+import { Platform, TextInput, View } from "react-native";
 import { useSearchTransactions, useSetting, useTodayKey } from "@/data/hooks";
 import { merchantTotals } from "@/features/activity/merchants";
 import { pushRecentSearch } from "@/features/search/recent-searches";
@@ -186,10 +186,7 @@ export default function Search() {
           contentContainerStyle={{ paddingBottom: 32 }}
         />
       ) : recent.length > 0 ? (
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          contentContainerClassName="pt-4"
-        >
+        <View className="pt-4">
           <ListGroup header="Recent searches">
             {recent.slice(0, 5).map((entry) => (
               <ListRow
@@ -202,7 +199,7 @@ export default function Search() {
               />
             ))}
           </ListGroup>
-        </ScrollView>
+        </View>
       ) : null}
     </View>
   );

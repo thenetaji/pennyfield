@@ -13,7 +13,7 @@ All notable changes to Finance. The format follows [Keep a Changelog](https://ke
 
 ### Fixed
 - Category icons in the add sheet were hard to see in the Ink look.
-- Extra gap above search results.
+- Search results and recent searches no longer slide over the search bar.
 
 ## [0.6.0] - 2026-11-06
 
