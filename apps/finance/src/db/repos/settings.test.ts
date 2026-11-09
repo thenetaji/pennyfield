@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 /** @jest-environment node */
 import { createTestDb } from "../test-helpers";
 import { deleteRate, convert, getRate, listRates, setRate } from "./fx";
@@ -53,6 +54,7 @@ describe("settings", () => {
         "hourly_pay",
         "reminder_price_fired",
         "look_version",
+        "categories_version",
       ].sort(),
     );
   });
@@ -107,8 +109,37 @@ describe("settings", () => {
     seedDefaults(db);
     expect(getSetting(db, "theme")).toBe("dark");
     expect(getSetting(db, "schema_seeded")).toBe(true);
-    expect(db.select().from(categories).all()).toHaveLength(19);
+    expect(db.select().from(categories).all()).toHaveLength(27);
     expect(db.select().from(settings).all()).toHaveLength(SETTING_KEYS.length);
+  });
+
+  it("adds new default categories to an older install once, keeping the user's own", () => {
+    const db = createTestDb();
+    db.delete(categories).where(eq(categories.name, "Fuel")).run();
+    db.update(categories)
+      .set({ name: "Petrol" })
+      .where(eq(categories.name, "Rent"))
+      .run();
+    setSetting(db, "categories_version", 0);
+    seedDefaults(db);
+    const names = db
+      .select()
+      .from(categories)
+      .all()
+      .map((c) => c.name);
+    expect(names).toContain("Fuel");
+    expect(names).toContain("Rent");
+    expect(names).toContain("Petrol");
+    expect(names.filter((n) => n === "Groceries")).toHaveLength(1);
+    db.delete(categories).where(eq(categories.name, "Fuel")).run();
+    seedDefaults(db);
+    expect(
+      db
+        .select()
+        .from(categories)
+        .all()
+        .map((c) => c.name),
+    ).not.toContain("Fuel");
   });
 });
 

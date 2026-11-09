@@ -108,7 +108,7 @@ export function useTransactionActions(): TransactionActions {
         return;
       }
       Alert.prompt(
-        item.memo ? "Edit memo" : "Add a memo",
+        item.memo ? "Edit note" : "Add a note",
         item.title || undefined,
         [
           { text: "Cancel", style: "cancel" },
@@ -117,7 +117,7 @@ export function useTransactionActions(): TransactionActions {
             onPress: (text?: string) => {
               const memo = (text ?? "").trim();
               if (memo !== item.memo.trim())
-                update(item, { memo }, memo ? "Memo saved" : "Memo removed");
+                update(item, { memo }, memo ? "Note saved" : "Note removed");
             },
           },
         ],
@@ -183,7 +183,7 @@ export function useTransactionActions(): TransactionActions {
       const can = quickActionsFor(item);
       const choices: Choice[] = [
         { label: "Edit", run: () => edit(id) },
-        { label: item.memo.trim() ? "Edit memo" : "Add memo", run: () => editMemo(id) },
+        { label: item.memo.trim() ? "Edit note" : "Add note", run: () => editMemo(id) },
       ];
       if (can.category)
         choices.push({ label: "Change category", run: () => pickCategory(item) });

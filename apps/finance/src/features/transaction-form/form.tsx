@@ -853,7 +853,7 @@ function TransactionForm({
               variant="inline"
               value={draft.title}
               onChangeText={(title) => get().patch({ title })}
-              placeholder="Title"
+              placeholder="Title, like Swiggy or Rent"
               accessibilityLabel="Title"
               autoCapitalize="sentences"
               returnKeyType="done"
@@ -1097,8 +1097,8 @@ function TransactionForm({
               variant="inline"
               value={draft.memo}
               onChangeText={(memo) => get().patch({ memo })}
-              placeholder="Memo"
-              accessibilityLabel="Memo"
+              placeholder="Note (optional)"
+              accessibilityLabel="Note"
               multiline
               numberOfLines={1}
               autoCapitalize="sentences"

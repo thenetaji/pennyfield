@@ -150,7 +150,7 @@ export default function Search() {
             autoFocus
             value={query}
             onChangeText={setQuery}
-            placeholder="Title, memo or amount"
+            placeholder="Title, note or amount"
             placeholderTextColor={colors.textTertiary}
             selectionColor={colors.accent}
             cursorColor={colors.accent}
@@ -182,6 +182,7 @@ export default function Search() {
           header={header}
           footer={footer}
           keyboardDismissMode="on-drag"
+          contentInsetAdjustmentBehavior="never"
           contentContainerStyle={{ paddingBottom: 32 }}
         />
       ) : recent.length > 0 ? (

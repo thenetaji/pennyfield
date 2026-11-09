@@ -38,14 +38,14 @@ export type SettingGroup = {
 export type PickerId = "week" | "month" | "account" | "rows";
 
 const ROW_LABELS: Record<RowDetail, string> = {
-  memo: "Memo",
+  memo: "Note",
   category: "Category",
   category_memo: "Category, memo",
   category_account: "Category, account",
 };
 
 export const ROW_OPTIONS: readonly Option<RowDetail>[] = [
-  { value: "memo", label: "Memo or category" },
+  { value: "memo", label: "Note or category" },
   { value: "category", label: "Category" },
   { value: "category_memo", label: "Category and memo" },
   { value: "category_account", label: "Category and account" },

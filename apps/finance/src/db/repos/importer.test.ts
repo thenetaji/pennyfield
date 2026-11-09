@@ -41,13 +41,13 @@ describe("importTransactions", () => {
     );
     expect(result).toMatchObject({
       imported: 9,
-      newCategories: 4,
+      newCategories: 3,
       categories: 8,
       newAccounts: 1,
     });
-    expect(listCategories(db).length).toBe(before + 4);
+    expect(listCategories(db).length).toBe(before + 3);
     const created = listCategories(db).filter((c) => c.icon === "tag.fill");
-    expect(created).toHaveLength(4);
+    expect(created).toHaveLength(3);
     expect(created.every((c) => c.color !== "gray")).toBe(true);
     expect(listAccounts(db)).toHaveLength(1);
     expect(db.select().from(transactions).all()).toHaveLength(9);

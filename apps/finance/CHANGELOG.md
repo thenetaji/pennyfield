@@ -2,6 +2,19 @@
 
 All notable changes to Finance. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.6.0 update - 2026-11-09
+
+### Added
+- **More default categories:** Fuel, Rent, EMI & Loans, Insurance, Family and Personal care for spending; Interest and Business for income. Existing installs get the ones they don't have yet.
+- Short notes on the category and tag pickers explaining what each is for.
+
+### Changed
+- "Memo" is now "Note", and the Title field shows an example.
+
+### Fixed
+- Category icons in the add sheet were hard to see in the Ink look.
+- Extra gap above search results.
+
 ## [0.6.0] - 2026-11-06
 
 ### Added

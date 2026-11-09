@@ -59,13 +59,14 @@ describe("eraseAllData", () => {
     expect(n(budgets)).toBe(0);
     expect(n(fxRates)).toBe(0);
     expect(n(titleMemory)).toBe(0);
-    expect(n(categories)).toBe(19);
-    expect(listCategories(db, "expense")).toHaveLength(13);
+    expect(n(categories)).toBe(27);
+    expect(listCategories(db, "expense")).toHaveLength(19);
     expect(getAllSettings(db)).toEqual({
       ...DEFAULT_SETTINGS,
       theme: "dark",
       schema_seeded: true,
       look_version: 2,
+      categories_version: 1,
     });
   });
 });

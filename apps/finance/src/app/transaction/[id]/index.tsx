@@ -222,7 +222,7 @@ export default function TransactionDetail() {
         {memo ? (
           <Pressable
             role="button"
-            accessibilityLabel={`Memo, ${memo}`}
+            accessibilityLabel={`Note, ${memo}`}
             accessibilityHint="Edits the memo"
             onPress={() => actions.editMemo(item.id)}
             className="mt-3 max-w-full rounded-[14px] bg-fill px-4 py-2.5"

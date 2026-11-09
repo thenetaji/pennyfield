@@ -47,7 +47,11 @@ export function TagsScreen() {
     return (
       <View className="flex-1 justify-center bg-bg pb-24">
         <Stack.Screen options={{ title: "Tags" }} />
-        <EmptyState message="No tags" icon="tag" />
+        <EmptyState
+          title="No tags"
+          message="Tags group payments across categories, like a trip or an event. Add them from Tags when you add a payment."
+          icon="tag"
+        />
       </View>
     );
   }
