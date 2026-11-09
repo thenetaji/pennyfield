@@ -233,7 +233,7 @@ describe("validateBackup", () => {
       expect(fromText.summary).toMatchObject({
         exportedAt: NOW,
         transactions: 0,
-        categories: 19,
+        categories: 27,
         schemaVersion: SCHEMA_VERSION,
       });
     expect(reason(doc)).toBe("ok");

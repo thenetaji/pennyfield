@@ -19,6 +19,8 @@ type TransactionDayListProps = {
   empty?: React.ReactElement | null;
   contentContainerStyle?: StyleProp<ViewStyle>;
   keyboardDismissMode?: "none" | "on-drag" | "interactive";
+  /** "never" in sheets with their own header, where iOS would add a status-bar gap. */
+  contentInsetAdjustmentBehavior?: "automatic" | "never";
   /** Scrolls to this day (or the nearest earlier one) whenever it changes. */
   focusDay?: string | null;
 };
@@ -37,6 +39,7 @@ function TransactionDayList({
   empty,
   contentContainerStyle,
   keyboardDismissMode,
+  contentInsetAdjustmentBehavior = "automatic",
   focusDay,
 }: TransactionDayListProps) {
   const listRef = React.useRef<React.ComponentRef<typeof FlashList<ListEntry>>>(null);
@@ -114,7 +117,7 @@ function TransactionDayList({
       ListHeaderComponent={header}
       ListFooterComponent={footer}
       ListEmptyComponent={empty}
-      contentInsetAdjustmentBehavior="automatic"
+      contentInsetAdjustmentBehavior={contentInsetAdjustmentBehavior}
       keyboardDismissMode={keyboardDismissMode}
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={contentContainerStyle}

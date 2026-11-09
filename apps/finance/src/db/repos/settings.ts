@@ -88,6 +88,8 @@ export interface SettingsMap {
   row_detail: RowDetail;
   /** Which default look has been applied; see `applyLookDefaults`. */
   look_version: number;
+  /** Version of the default category list last merged into this install. */
+  categories_version: number;
   /** How the Settings pages are drawn. */
   settings_style: SettingsStyle;
   /** Take-home pay per hour in the display currency's minor units, for showing costs as work time; null is off. */
@@ -129,6 +131,7 @@ export const DEFAULT_SETTINGS: Readonly<SettingsMap> = {
   last_backup_at: null,
   row_detail: "memo",
   look_version: 0,
+  categories_version: 0,
   settings_style: "calm",
   hourly_pay: null,
 };

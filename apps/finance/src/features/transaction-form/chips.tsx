@@ -8,7 +8,7 @@ import {
 } from "react-native-reanimated";
 
 import { AppIcon } from "@studio/icons";
-import { Pressable, Text } from "@studio/ui";
+import { IconTile, Pressable, Text } from "@studio/ui";
 import { durations, type CategoryColorKey } from "@studio/theme";
 import { useTokens } from "@studio/theme";
 
@@ -18,8 +18,8 @@ type FormChipProps = {
   trailingIcon?: string;
   hint?: string;
   selected?: boolean;
-  /** Solid tile colour for a mini category circle behind a white glyph. */
-  ink?: string;
+  /** Category colour: draws the icon as a small category tile instead of a plain glyph. */
+  tile?: CategoryColorKey;
   onPress?: () => void;
   accessibilityLabel?: string;
   /** Lets the chip truncate inside a row instead of overflowing. */
@@ -35,7 +35,7 @@ function FormChip({
   trailingIcon,
   hint,
   selected = false,
-  ink,
+  tile,
   onPress,
   accessibilityLabel,
   shrink = false,
@@ -58,7 +58,7 @@ function FormChip({
       ["rgba(0,0,0,0)", colors.accent],
     ),
   }));
-  const iconColor = selected ? colors.accentText : colors.textSecondary;
+  const iconColor = selected ? colors.accentText : colors.text;
   return (
     <Pressable
       role="button"
@@ -85,19 +85,9 @@ function FormChip({
         background as ViewStyle,
       ]}
     >
-      {icon && ink ? (
-        <View
-          style={{
-            width: 22,
-            height: 22,
-            borderRadius: 11,
-            backgroundColor: ink,
-            alignItems: "center",
-            justifyContent: "center",
-            marginLeft: -6,
-          }}
-        >
-          <AppIcon name={icon} size={12} color="#FFFFFF" />
+      {icon && tile ? (
+        <View style={{ marginLeft: -6 }}>
+          <IconTile icon={icon} color={tile} size={22} />
         </View>
       ) : icon ? (
         <AppIcon name={icon} size={iconOnly ? 15 : 14} color={iconColor} />
@@ -105,7 +95,7 @@ function FormChip({
       {iconOnly ? null : (
         <Text
           variant="callout"
-          tone={selected && !ink ? "accent" : "default"}
+          tone={selected && !tile ? "accent" : "default"}
           numberOfLines={1}
           className="shrink"
         >
@@ -139,12 +129,11 @@ function CategoryPill({
   selected = false,
   onPress,
 }: CategoryPillProps) {
-  const { ink } = useTokens();
   return (
     <FormChip
       label={name}
       icon={icon}
-      ink={ink[color]}
+      tile={color}
       selected={selected}
       onPress={onPress}
     />

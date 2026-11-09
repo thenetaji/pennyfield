@@ -95,8 +95,8 @@ describe("live hooks", () => {
       };
     });
     expect(hooks.value.theme).toBe("system");
-    expect(hooks.value.expense).toHaveLength(13);
-    expect(hooks.value.income).toHaveLength(6);
+    expect(hooks.value.expense).toHaveLength(19);
+    expect(hooks.value.income).toHaveLength(8);
     act(() => hooks.value.setTheme("dark"));
     await flush();
     expect(hooks.value.theme).toBe("dark");

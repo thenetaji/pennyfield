@@ -84,6 +84,10 @@ export function TagsSheet() {
               returnKeyType="done"
               onSubmitEditing={creating ? create : undefined}
             />
+            <Text variant="footnote" tone="secondary" className="px-1 pt-2">
+              Optional labels across categories, like a trip, an event or office.
+              A payment can have several.
+            </Text>
           </View>
         </>
       }

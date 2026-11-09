@@ -36,7 +36,7 @@ describe("seedDemoData", () => {
     expect(first.tx).toBeGreaterThan(150);
     expect(db.select({ n: count() }).from(accounts).get()?.n).toBe(4);
     expect(db.select({ n: count() }).from(budgets).get()?.n).toBe(5);
-    expect(db.select({ n: count() }).from(categories).get()?.n).toBe(19);
+    expect(db.select({ n: count() }).from(categories).get()?.n).toBe(27);
     expect(getSetting(db, "display_currency")).toBe("INR");
     expect(listRates(db)).toHaveLength(1);
     expect(

@@ -254,15 +254,15 @@ export function RuleForm({ ruleId }: { ruleId: string }) {
               onSelect={setToAccountId}
             />
           ) : null}
-          <FormRow label="Memo">
+          <FormRow label="Note">
             <Input
               variant="inline"
               value={memo}
               onChangeText={setMemo}
-              placeholder="Memo"
+              placeholder="Note"
               autoCapitalize="sentences"
               returnKeyType="done"
-              accessibilityLabel="Memo"
+              accessibilityLabel="Note"
               className="h-6 min-h-0 flex-1 py-0 text-right"
               {...focusProps}
             />

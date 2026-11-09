@@ -30,7 +30,7 @@ describe("categories", () => {
   it("seeds the spec categories with exact icons and colours, in order", () => {
     const db = createTestDb();
     const expense = listCategories(db, "expense");
-    expect(expense).toHaveLength(13);
+    expect(expense).toHaveLength(19);
     expect(expense[0]).toMatchObject({
       name: "Food & Drink",
       icon: "fork.knife",
@@ -42,7 +42,7 @@ describe("categories", () => {
       icon: "arrow.triangle.2.circlepath",
       color: "indigo",
     });
-    expect(expense[12]).toMatchObject({
+    expect(expense[18]).toMatchObject({
       name: "Other",
       icon: "ellipsis.circle.fill",
       color: "gray",
@@ -54,6 +54,8 @@ describe("categories", () => {
       "Investments",
       "Refunds",
       "Gifts",
+      "Interest",
+      "Business",
       "Other income",
     ]);
     expect(income[2]).toMatchObject({
@@ -70,7 +72,7 @@ describe("categories", () => {
       icon: "pawprint.fill",
       color: "orange",
     });
-    expect(pets).toMatchObject({ name: "Pets", sortOrder: 13 });
+    expect(pets).toMatchObject({ name: "Pets", sortOrder: 19 });
     updateCategory(db, pets.id, { name: "Pet care", color: "lime" });
     expect(getCategory(db, pets.id)).toMatchObject({
       name: "Pet care",

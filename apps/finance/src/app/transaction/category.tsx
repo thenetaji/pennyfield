@@ -75,6 +75,11 @@ export default function CategorySheet() {
       }
       bodyClassName="flex-row flex-wrap px-2 pb-8 pt-2"
     >
+      <Text variant="footnote" tone="secondary" className="w-full px-3 pb-3">
+        {kind === "income"
+          ? "Where this money came from. Each entry has one, and Insights add up by category."
+          : "What this money was spent on. Each payment has one, and Insights and budgets add up by category."}
+      </Text>
       {categories.map((category) => {
         const selected = category.id === current;
         return (
