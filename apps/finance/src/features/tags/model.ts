@@ -100,3 +100,92 @@ export function categoryBreakdown(
   const top = rows[0]?.amount ?? 0;
   return rows.map((row) => ({ ...row, share: top > 0 ? row.amount / top : 0 }));
 }
+
+/** Expense categories with these names count as income tax: kept out of costs and taken off after profit. */
+const TAX_CATEGORY = /^(income\s+)?tax(es)?$/i;
+
+export const isTaxCategory = (name: string): boolean =>
+  TAX_CATEGORY.test(name.trim());
+
+interface ProfitItem extends BreakdownItem {
+  dateKey: string;
+}
+
+export interface ProfitMonth {
+  /** `YYYY-MM`. */
+  month: string;
+  revenue: number;
+  costs: number;
+  profit: number;
+}
+
+export interface ProfitSummary {
+  revenue: number;
+  /** Expenses other than income tax. */
+  costs: number;
+  tax: number;
+  profit: number;
+  afterTax: number;
+  /** Profit / revenue; null without revenue. */
+  margin: number | null;
+  /** Profit / costs; null without costs. */
+  roi: number | null;
+  /** Newest first. */
+  months: ProfitMonth[];
+}
+
+/** Revenue, costs and profit for a tag's income and expenses, in the display currency. */
+export function profitSummary(
+  items: readonly ProfitItem[],
+  convert: (minor: number, currency: string) => number,
+): ProfitSummary {
+  let revenue = 0;
+  let costs = 0;
+  let tax = 0;
+  const months = new Map<string, ProfitMonth>();
+  const month = (key: string) => {
+    const id = key.slice(0, 7);
+    const row = months.get(id) ?? {
+      month: id,
+      revenue: 0,
+      costs: 0,
+      profit: 0,
+    };
+    months.set(id, row);
+    return row;
+  };
+  for (const item of items) {
+    if (item.kind === "income") {
+      const v = convert(item.amount, item.currency);
+      revenue += v;
+      month(item.dateKey).revenue += v;
+      continue;
+    }
+    if (item.kind !== "expense") continue;
+    const lines =
+      item.splits.length > 1
+        ? item.splits.map((l) => ({ amount: l.amount, name: l.category.name }))
+        : [{ amount: item.amount, name: item.category?.name ?? "" }];
+    for (const line of lines) {
+      const v = convert(line.amount, item.currency);
+      if (isTaxCategory(line.name)) tax += v;
+      else {
+        costs += v;
+        month(item.dateKey).costs += v;
+      }
+    }
+  }
+  const profit = revenue - costs;
+  return {
+    revenue,
+    costs,
+    tax,
+    profit,
+    afterTax: profit - tax,
+    margin: revenue > 0 ? profit / revenue : null,
+    roi: costs > 0 ? profit / costs : null,
+    months: [...months.values()]
+      .map((m) => ({ ...m, profit: m.revenue - m.costs }))
+      .sort((a, b) => b.month.localeCompare(a.month)),
+  };
+}

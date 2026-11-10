@@ -2,6 +2,11 @@
 
 All notable changes to Finance. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.6.0 update - 2026-11-10
+
+### Added
+- **Profit on tags:** a tag with both income and spending shows revenue, costs, profit, margin and ROI for the month, the year or all time, with a monthly list. Spending in a category called Tax or Income tax is kept out of costs and shown as profit after tax.
+
 ## 0.6.0 update - 2026-11-09
 
 ### Added
