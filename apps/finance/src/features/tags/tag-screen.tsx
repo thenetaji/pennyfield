@@ -2,17 +2,33 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import * as React from "react";
 import { Alert, ScrollView, View } from "react-native";
 
-import { Amount, ListGroup, ListRow, showToast, Card, Text } from "@studio/ui";
+import {
+  Amount,
+  ListGroup,
+  ListRow,
+  SegmentedControl,
+  showToast,
+  Card,
+  Text,
+} from "@studio/ui";
 import { useActions } from "@/data/actions";
 import {
   useRateLookup,
+  useSettings,
   useTagTotals,
+  useTodayKey,
   useTagTransactions,
   useTags,
 } from "@/data/hooks";
 import { TransactionListRow } from "@/features/transactions/transaction-list-row";
 import { useMoneyContext } from "@/features/transactions/use-money-context";
-import { ALL_DATES } from "@studio/dates";
+import {
+  ALL_DATES,
+  isInPeriod,
+  monthShort,
+  periodFor,
+  type Period,
+} from "@studio/dates";
 import {
   convertWithRates,
   formatMoney,
@@ -21,10 +37,17 @@ import {
 import { Stagger } from "@studio/motion";
 import { haptic, useTokens } from "@studio/theme";
 
-import { categoryBreakdown, tagColorKey } from "./model";
+import { categoryBreakdown, profitSummary, tagColorKey } from "./model";
 import { TagPill } from "./tag-pill";
 
 const ALL = { from: ALL_DATES.from, to: ALL_DATES.to };
+const SCOPES = ["Month", "Year", "All time"] as const;
+
+const percent = (ratio: number | null) =>
+  ratio === null ? "–" : `${Math.round(ratio * 100)}%`;
+
+const monthTitle = (month: string) =>
+  `${monthShort(Number(month.slice(5, 7)))} ${month.slice(0, 4)}`;
 
 /** One tag: total spend, where it went by category, and its transactions. */
 export function TagScreen() {
@@ -40,17 +63,40 @@ export function TagScreen() {
   const tag = tags.find((t) => t.id === id);
   const total = totals.find((t) => t.tag.id === id);
   const leaving = React.useRef(false);
+  const settings = useSettings();
+  const today = useTodayKey();
+  const [scope, setScope] = React.useState(0);
+  const period = React.useMemo<Period | null>(
+    () =>
+      scope === 2
+        ? null
+        : periodFor(scope === 0 ? "month" : "year", today, {
+            weekStart: settings.week_start,
+            monthStart: settings.month_start,
+          }),
+    [scope, today, settings.week_start, settings.month_start],
+  );
+  const convert = React.useCallback(
+    (minor: number, from: string) =>
+      convertWithRates(minor, from, money.displayCurrency, rates),
+    [money.displayCurrency, rates],
+  );
+  const summary = React.useMemo(
+    () =>
+      profitSummary(
+        period ? items.filter((i) => isInPeriod(period, i.dateKey)) : items,
+        convert,
+      ),
+    [items, period, convert],
+  );
 
   React.useEffect(() => {
     if (!tag && !leaving.current && router.canGoBack()) router.back();
   }, [tag, router]);
 
   const breakdown = React.useMemo(
-    () =>
-      categoryBreakdown(items, (minor, currency) =>
-        convertWithRates(minor, currency, money.displayCurrency, rates),
-      ),
-    [items, money.displayCurrency, rates],
+    () => categoryBreakdown(items, convert),
+    [items, convert],
   );
 
   if (!tag) return <View className="flex-1 bg-bg" />;
@@ -64,6 +110,14 @@ export function TagScreen() {
       decimals,
     });
   const count = total?.count ?? 0;
+  // A tag with money both in and out reads as a business or project.
+  const business = (total?.earned ?? 0) > 0 && (total?.spent ?? 0) > 0;
+  const signed = (minor: number) =>
+    formatMoney(minor, currency, {
+      locale: money.locale,
+      sign: "auto",
+      decimals,
+    });
 
   const remove = () =>
     Alert.alert(`Delete ${tag.name}?`, "Transactions keep everything else.", [
@@ -90,28 +144,92 @@ export function TagScreen() {
       <Stack.Screen options={{ title: "" }} />
       <Stagger index={0} className="items-center gap-1 px-6 pt-4">
         <TagPill name={tag.name} color={tag.color} size="md" />
-        <View className="pt-2">
-          <Amount
-            value={fmt(total?.spent ?? 0)}
-            variant="hero"
-            animate="intro"
-            accessibilityLabel={`${tag.name}, spent ${formatMoneyForSpeech(total?.spent ?? 0, currency, { sign: "none", locale: money.locale })}`}
-          />
-        </View>
-        <Text variant="footnote" tone="secondary" numeric>
-          {count === 0
-            ? "No transactions"
-            : count === 1
-              ? "1 transaction"
-              : `${count} transactions`}
-          {total && total.earned > 0 ? ` · ${fmt(total.earned)} earned` : ""}
-        </Text>
+        {business ? (
+          <>
+            <View className="pt-2">
+              <Amount
+                value={signed(summary.profit)}
+                variant="hero"
+                animate="intro"
+                accessibilityLabel={`${tag.name}, profit ${formatMoneyForSpeech(summary.profit, currency, { locale: money.locale })}`}
+              />
+            </View>
+            <Text variant="footnote" tone="secondary" numeric>
+              {`Profit · ${fmt(summary.revenue)} in · ${fmt(summary.costs)} out`}
+            </Text>
+          </>
+        ) : (
+          <>
+            <View className="pt-2">
+              <Amount
+                value={fmt(total?.spent ?? 0)}
+                variant="hero"
+                animate="intro"
+                accessibilityLabel={`${tag.name}, spent ${formatMoneyForSpeech(total?.spent ?? 0, currency, { sign: "none", locale: money.locale })}`}
+              />
+            </View>
+            <Text variant="footnote" tone="secondary" numeric>
+              {count === 0
+                ? "No transactions"
+                : count === 1
+                  ? "1 transaction"
+                  : `${count} transactions`}
+              {total && total.earned > 0
+                ? ` · ${fmt(total.earned)} earned`
+                : ""}
+            </Text>
+          </>
+        )}
       </Stagger>
+
+      {business ? (
+        <Stagger index={1} className="gap-4">
+          <View className="px-4">
+            <SegmentedControl
+              values={SCOPES}
+              selectedIndex={scope}
+              onChange={setScope}
+              accessibilityLabel="Period"
+            />
+          </View>
+          <ListGroup
+            footer={
+              summary.tax > 0
+                ? undefined
+                : "Put income tax in a category called Tax or Income tax to see profit after tax."
+            }
+          >
+            <ListRow label="Revenue" value={fmt(summary.revenue)} />
+            <ListRow label="Costs" value={fmt(summary.costs)} />
+            <ListRow label="Profit" value={signed(summary.profit)} />
+            <ListRow label="Margin" value={percent(summary.margin)} />
+            <ListRow label="ROI" value={percent(summary.roi)} />
+            {summary.tax > 0 ? (
+              <ListRow label="Income tax" value={fmt(summary.tax)} />
+            ) : null}
+            {summary.tax > 0 ? (
+              <ListRow label="After tax" value={signed(summary.afterTax)} />
+            ) : null}
+          </ListGroup>
+          {scope > 0 && summary.months.length > 1 ? (
+            <ListGroup header="By month">
+              {summary.months.slice(0, 12).map((m) => (
+                <ListRow
+                  key={m.month}
+                  label={monthTitle(m.month)}
+                  subtitle={`${fmt(m.revenue)} in · ${fmt(m.costs)} out`}
+                  value={signed(m.profit)}
+                />
+              ))}
+            </ListGroup>
+          ) : null}
+        </Stagger>
+      ) : null}
 
       {breakdown.length > 0 ? (
         <Stagger index={1}>
           <Text variant="footnote" tone="secondary" className="px-8 pb-2">
-            By category
+            {business ? "Costs by category" : "By category"}
           </Text>
           <Card className="mx-4 gap-4">
             {breakdown.slice(0, 5).map((row) => (
