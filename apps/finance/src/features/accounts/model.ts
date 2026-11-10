@@ -88,3 +88,29 @@ export function toAccountView(
     ].join(", "),
   };
 }
+
+/** The entry that brings a balance to what was counted: spending when there is less, income when there is more. */
+export function balanceCorrection(
+  balance: number,
+  counted: number,
+): { kind: "expense" | "income"; amount: number } | null {
+  if (counted === balance) return null;
+  return counted < balance
+    ? { kind: "expense", amount: balance - counted }
+    : { kind: "income", amount: counted - balance };
+}
+
+/** "Other" (or "Other income") for the kind, else its last category. */
+export function correctionCategory(
+  categories: readonly {
+    id: string;
+    kind: string;
+    name: string;
+    archivedAt: number | null;
+  }[],
+  kind: "expense" | "income",
+): string | null {
+  const own = categories.filter((c) => c.kind === kind && !c.archivedAt);
+  const other = own.find((c) => /^other( income)?$/i.test(c.name.trim()));
+  return (other ?? own[own.length - 1])?.id ?? null;
+}

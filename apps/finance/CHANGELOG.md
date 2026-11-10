@@ -5,6 +5,8 @@ All notable changes to Finance. The format follows [Keep a Changelog](https://ke
 ## 0.6.0 update - 2026-11-10
 
 ### Added
+- **Accounts remembered per type:** expenses, income and transfers each open on the account you last used for them, and a transfer opens on your last from/to pair.
+- **Count cash / Update balance** on an account: type the real amount and the difference is added as one entry.
 - **Profit on tags:** a tag with both income and spending shows revenue, costs, profit, margin and ROI for the month, the year or all time, with a monthly list. Spending in a category called Tax or Income tax is kept out of costs and shown as profit after tax.
 
 ## 0.6.0 update - 2026-11-09

@@ -11,6 +11,7 @@ import {
   emptyDraft,
   isSaveDisabled,
   kindChangePatch,
+  rememberAccounts,
   lendTitle,
   lendToggle,
   MAX_SPLIT_LINES,
@@ -149,6 +150,63 @@ describe("defaults", () => {
     expect(
       kindChangePatch(draft, "transfer", accounts, categories),
     ).toMatchObject({ categoryId: null, transferAccountId: "a2" });
+  });
+});
+
+describe("remembered accounts", () => {
+  const last = {
+    expense: "a1",
+    income: "a2",
+    transfer: "a2",
+    transfer_to: "a1",
+  };
+  const input = {
+    params: {},
+    lastKind: "expense" as const,
+    lastAccountId: "a3",
+    defaultAccountId: "a1",
+    accounts,
+    categories,
+  };
+
+  it("opens each kind on its own last account and the last transfer pair", () => {
+    expect(
+      resolveDefaults({
+        ...input,
+        lastAccounts: last,
+        params: { kind: "income" },
+      }).accountId,
+    ).toBe("a2");
+    expect(
+      resolveDefaults({
+        ...input,
+        lastAccounts: last,
+        params: { kind: "transfer" },
+      }),
+    ).toMatchObject({ accountId: "a2", transferAccountId: "a1" });
+  });
+
+  it("switches account when the kind changes, ignoring unknown ids", () => {
+    const draft = {
+      accountId: "a1",
+      categoryId: null,
+      transferAccountId: null,
+    };
+    expect(
+      kindChangePatch(draft, "income", accounts, categories, last),
+    ).toMatchObject({ accountId: "a2", receives: null });
+    expect(
+      kindChangePatch(draft, "income", accounts, categories, { income: "gone" })
+        .accountId,
+    ).toBeUndefined();
+  });
+
+  it("records the account per kind and the transfer destination, not lending", () => {
+    expect(rememberAccounts({}, "transfer", "a1", "a2")).toEqual({
+      transfer: "a1",
+      transfer_to: "a2",
+    });
+    expect(rememberAccounts(last, "lent", "a1", null)).toBe(last);
   });
 });
 

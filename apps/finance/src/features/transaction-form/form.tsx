@@ -70,6 +70,7 @@ import {
   isSaveDisabled,
   KIND_SEGMENTS,
   kindChangePatch,
+  rememberAccounts,
   lendTitle,
   lendToggle,
   newReceiptKey,
@@ -179,6 +180,7 @@ function TransactionForm({
       lastKind: settings.last_kind,
       lastAccountId: settings.last_account_id,
       defaultAccountId: settings.default_account_id,
+      lastAccounts: settings.last_accounts,
       accounts: activeAccounts,
       categories: categoriesAll,
     });
@@ -200,7 +202,11 @@ function TransactionForm({
       if (rule.kind === "transfer") draft.receives = rule.transferAmount;
       draft.appliedTitleNorm = normalizeTitle(draft.title);
     }
-    if (!source && !rule && (params.title || (params.amount && !params.toAccountId))) {
+    if (
+      !source &&
+      !rule &&
+      (params.title || (params.amount && !params.toAccountId))
+    ) {
       draft.title = params.title ?? "";
       draft.appliedTitleNorm = normalizeTitle(draft.title);
       const minor = Number(params.amount);
@@ -226,7 +232,8 @@ function TransactionForm({
       )
         draft.amount = minor;
     }
-    if (!source && !rule && params.date) draft.occurredAt = keyToLocalMs(params.date);
+    if (!source && !rule && params.date)
+      draft.occurredAt = keyToLocalMs(params.date);
     if (devEnabled)
       draft = applyDevPreset(draft, params.dev, accountsAll, categoriesAll, {
         personId:
@@ -410,7 +417,30 @@ function TransactionForm({
           // After a refill, the next entry is most likely a spend from the pocket.
           actions.settings.set("last_kind", "expense");
           actions.settings.set("last_account_id", d.transferAccountId);
+          actions.settings.set(
+            "last_accounts",
+            rememberAccounts(
+              rememberAccounts(
+                settings.last_accounts,
+                d.kind,
+                d.accountId,
+                d.transferAccountId,
+              ),
+              "expense",
+              d.transferAccountId,
+              null,
+            ),
+          );
         } else {
+          actions.settings.set(
+            "last_accounts",
+            rememberAccounts(
+              settings.last_accounts,
+              d.kind,
+              d.accountId,
+              d.transferAccountId,
+            ),
+          );
           if (
             d.kind === "expense" ||
             d.kind === "income" ||
@@ -521,7 +551,15 @@ function TransactionForm({
     const kind: TransactionKind =
       segment === "lend" ? (isLendingKind(s.kind) ? s.kind : "lent") : segment;
     if (kind === s.kind) return;
-    s.patch(kindChangePatch(s, kind, activeAccounts, categoriesAll));
+    s.patch(
+      kindChangePatch(
+        s,
+        kind,
+        activeAccounts,
+        categoriesAll,
+        settings.last_accounts,
+      ),
+    );
     s.setFocus("amount");
     setEntry(createKeypadState(fromDigits, s.amount));
   };
@@ -620,7 +658,9 @@ function TransactionForm({
     ) {
       get().patch({ amount: row.lastAmount });
       if (get().focus === "amount")
-        setEntry(createKeypadState(minorDigits(row.lastCurrency), row.lastAmount));
+        setEntry(
+          createKeypadState(minorDigits(row.lastCurrency), row.lastAmount),
+        );
     }
   };
 

@@ -55,6 +55,7 @@ describe("settings", () => {
         "reminder_price_fired",
         "look_version",
         "categories_version",
+        "last_accounts",
       ].sort(),
     );
   });
