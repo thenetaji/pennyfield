@@ -9,6 +9,7 @@ import {
 } from "@studio/dates";
 import { convertMinor } from "@studio/money";
 import type { RecurringInput } from "@/db/repos/recurring";
+import type { LastAccounts } from "@/db/repos/settings";
 import type { SplitInput, TransactionInput } from "@/db/repos/transactions";
 import {
   isLendingKind,
@@ -165,8 +166,19 @@ export interface DefaultsInput {
   lastKind: TransactionKind;
   lastAccountId: string | null;
   defaultAccountId: string | null;
+  lastAccounts?: LastAccounts;
   accounts: readonly { id: string }[];
   categories: readonly { id: string; kind: string }[];
+}
+
+/** The remembered account for a kind; lending kinds have none of their own. */
+function rememberedAccount(
+  last: LastAccounts | undefined,
+  kind: TransactionKind,
+): string | undefined {
+  return kind === "expense" || kind === "income" || kind === "transfer"
+    ? last?.[kind]
+    : undefined;
 }
 
 export interface ResolvedDefaults {
@@ -188,12 +200,21 @@ export function resolveDefaults(input: DefaultsInput): ResolvedDefaults {
   const has = (id: string | null | undefined): id is string =>
     !!id && accounts.some((a) => a.id === id);
   const accountId =
-    [params.accountId, input.lastAccountId, input.defaultAccountId].find(has) ??
+    [
+      params.accountId,
+      rememberedAccount(input.lastAccounts, kind),
+      input.lastAccountId,
+      input.defaultAccountId,
+    ].find(has) ??
     accounts[0]?.id ??
     null;
   const transferAccountId =
     kind === "transfer"
-      ? pickOtherAccount(accounts, accountId, params.toAccountId ?? null)
+      ? pickOtherAccount(
+          accounts,
+          accountId,
+          params.toAccountId ?? input.lastAccounts?.transfer_to ?? null,
+        )
       : null;
   const category = params.categoryId
     ? input.categories.find((c) => c.id === params.categoryId)
@@ -219,13 +240,19 @@ export function pickOtherAccount(
   return accounts.find((a) => a.id !== accountId)?.id ?? null;
 }
 
-/** Fields to patch when the kind changes: categories and splits belong to one kind. */
+/** Fields to patch when the kind changes: categories and splits belong to one kind; each kind brings back its last account. */
 export function kindChangePatch(
   draft: Pick<Draft, "accountId" | "categoryId" | "transferAccountId">,
   kind: TransactionKind,
   accounts: readonly { id: string }[],
   categories: readonly { id: string; kind: string }[],
+  lastAccounts?: LastAccounts,
 ): Partial<Draft> {
+  const remembered = rememberedAccount(lastAccounts, kind);
+  const accountId =
+    remembered && accounts.some((a) => a.id === remembered)
+      ? remembered
+      : draft.accountId;
   const keepCategory =
     (kind === "expense" || kind === "income") &&
     categories.some((c) => c.id === draft.categoryId && c.kind === kind);
@@ -234,10 +261,36 @@ export function kindChangePatch(
     categoryId: keepCategory ? draft.categoryId : null,
     splits: null,
     ...(isLendingKind(kind) ? { repeat: null } : {}),
+    ...(accountId !== draft.accountId ? { accountId, receives: null } : {}),
     transferAccountId:
       kind === "transfer"
-        ? pickOtherAccount(accounts, draft.accountId, draft.transferAccountId)
+        ? pickOtherAccount(
+            accounts,
+            accountId,
+            lastAccounts?.transfer_to ?? draft.transferAccountId,
+          )
         : draft.transferAccountId,
+  };
+}
+
+/** The remembered accounts after saving an entry of this kind. */
+export function rememberAccounts(
+  last: LastAccounts,
+  kind: TransactionKind,
+  accountId: string | null,
+  transferAccountId: string | null,
+): LastAccounts {
+  if (
+    !accountId ||
+    (kind !== "expense" && kind !== "income" && kind !== "transfer")
+  )
+    return last;
+  return {
+    ...last,
+    [kind]: accountId,
+    ...(kind === "transfer" && transferAccountId
+      ? { transfer_to: transferAccountId }
+      : {}),
   };
 }
 

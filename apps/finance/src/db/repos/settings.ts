@@ -26,10 +26,15 @@ export { ICON_BACKGROUNDS, ICON_STYLES };
 export type { IconBackground, IconStyle };
 export type SyncProviderId = "none" | "icloud" | "gdrive";
 /** What a transaction row's second line shows. */
-export type RowDetail = "memo" | "category" | "category_account" | "category_memo";
+export type RowDetail =
+  "memo" | "category" | "category_account" | "category_memo";
 
 export type SettingsStyle = "calm" | "glass" | "list";
-export const SETTINGS_STYLES: readonly SettingsStyle[] = ["calm", "glass", "list"];
+export const SETTINGS_STYLES: readonly SettingsStyle[] = [
+  "calm",
+  "glass",
+  "list",
+];
 
 export const ROW_DETAILS: readonly RowDetail[] = [
   "memo",
@@ -43,6 +48,10 @@ export const SYNC_PROVIDER_IDS: readonly SyncProviderId[] = [
   "icloud",
   "gdrive",
 ];
+
+export type LastAccounts = Partial<
+  Record<"expense" | "income" | "transfer" | "transfer_to", string>
+>;
 
 export interface SettingsMap {
   display_currency: string;
@@ -90,6 +99,8 @@ export interface SettingsMap {
   look_version: number;
   /** Version of the default category list last merged into this install. */
   categories_version: number;
+  /** Account last used per entry type, and the last transfer's destination. */
+  last_accounts: LastAccounts;
   /** How the Settings pages are drawn. */
   settings_style: SettingsStyle;
   /** Take-home pay per hour in the display currency's minor units, for showing costs as work time; null is off. */
@@ -132,6 +143,7 @@ export const DEFAULT_SETTINGS: Readonly<SettingsMap> = {
   row_detail: "memo",
   look_version: 0,
   categories_version: 0,
+  last_accounts: {},
   settings_style: "calm",
   hourly_pay: null,
 };
@@ -169,6 +181,11 @@ function decode<K extends SettingKey>(
     if (key === "home_layout")
       return normalizeHomeLayout(value) as SettingsMap[K];
     if (key === "pockets") return normalizePockets(value) as SettingsMap[K];
+    if (
+      key === "last_accounts" &&
+      (typeof value !== "object" || value === null || Array.isArray(value))
+    )
+      return DEFAULT_SETTINGS[key];
     if (
       key === "reminder_daily_time" &&
       !/^([01]\d|2[0-3]):[0-5]\d$/.test(String(value))
@@ -220,7 +237,10 @@ export function insertMissingDefaults(db: Db): void {
 /** Moves installs that never changed their look to the current defaults, once. */
 export function applyLookDefaults(db: Db): void {
   if (getSetting(db, "look_version") >= LOOK_VERSION) return;
-  for (const [key, old] of Object.entries(PREVIOUS_LOOK) as [SettingKey, unknown][])
+  for (const [key, old] of Object.entries(PREVIOUS_LOOK) as [
+    SettingKey,
+    unknown,
+  ][])
     if (getSetting(db, key) === old) setSetting(db, key, DEFAULT_SETTINGS[key]);
   setSetting(db, "look_version", LOOK_VERSION);
 }

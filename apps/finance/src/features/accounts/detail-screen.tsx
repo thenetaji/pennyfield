@@ -14,6 +14,7 @@ import {
 import { MonthPill } from "@/features/activity/month-pill";
 import { TransactionDayList } from "@/features/transactions/transaction-day-list";
 import { useMoneyContext } from "@/features/transactions/use-money-context";
+import { CountBalance } from "./count-balance";
 import {
   monthName,
   monthShort,
@@ -47,6 +48,7 @@ export default function AccountDetailScreen() {
   );
   const [choice, setChoice] = React.useState<string | null>(null);
   const [picking, setPicking] = React.useState(false);
+  const [counting, setCounting] = React.useState(false);
 
   const account = accounts.find((a) => a.id === id);
   const allTime = choice === ALL;
@@ -110,19 +112,35 @@ export default function AccountDetailScreen() {
           </Text>
         ) : null}
       </View>
-      <View className="px-4">
-        <Button
-          variant="secondary"
-          onPress={() =>
-            router.push({
-              pathname: "/transaction/new",
-              params: { kind: "transfer", accountId: account.id },
-            })
-          }
-        >
-          Transfer
-        </Button>
-      </View>
+      {counting ? (
+        <CountBalance
+          account={account}
+          locale={money.locale}
+          onClose={() => setCounting(false)}
+        />
+      ) : (
+        <View className="flex-row gap-2 px-4">
+          <Button
+            variant="secondary"
+            className="flex-1"
+            onPress={() =>
+              router.push({
+                pathname: "/transaction/new",
+                params: { kind: "transfer", accountId: account.id },
+              })
+            }
+          >
+            Transfer
+          </Button>
+          <Button
+            variant="secondary"
+            className="flex-1"
+            onPress={() => setCounting(true)}
+          >
+            {account.type === "cash" ? "Count cash" : "Update balance"}
+          </Button>
+        </View>
+      )}
       <BalanceCard
         accountId={account.id}
         title="Balance over time"
