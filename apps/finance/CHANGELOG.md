@@ -2,6 +2,11 @@
 
 All notable changes to Finance. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.6.0 update - 2026-11-11 (3)
+
+### Fixed
+- An expense titled "Income tax" or "Tax" now counts as income tax on the Business and tag pages, whatever its category.
+
 ## 0.6.0 update - 2026-11-11 (2)
 
 ### Changed

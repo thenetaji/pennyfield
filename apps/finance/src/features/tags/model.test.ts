@@ -101,6 +101,18 @@ describe("profitSummary", () => {
   const toInr = (minor: number, currency: string) =>
     currency === "USD" ? minor * 85 : minor;
 
+  it("counts an entry titled Income tax as tax whatever its category", () => {
+    const s = profitSummary(
+      [
+        row("income", 10000, "2026-11-01", "Business"),
+        { ...row("expense", 4210, "2026-11-10", "Taxes & fees"), title: "Income tax" },
+        { ...row("expense", 4128, "2026-11-03", "Taxes & fees"), title: "Cleartax" },
+      ],
+      toInr,
+    );
+    expect(s).toMatchObject({ costs: 4128, tax: 4210, afterTax: 10000 - 4128 - 4210 });
+  });
+
   it("keeps income tax out of costs, takes it off after profit and groups by month", () => {
     const s = profitSummary(
       [
