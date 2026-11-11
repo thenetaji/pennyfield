@@ -263,6 +263,7 @@ function sidestore(ipaPath) {
     };
     source.apps.push(entry);
   }
+  entry.name = expo.name;
   entry.versions = entry.versions.filter((v) => v.version !== env.VERSION);
   entry.versions.unshift({
     version: env.VERSION,

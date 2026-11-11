@@ -93,10 +93,10 @@
       ]
     },
     {
-      "name": "Finance",
+      "name": "Pennyfield",
       "bundleIdentifier": "com.thenetaji.cadence",
       "developerName": "thenetaji",
-      "localizedDescription": "Finance",
+      "localizedDescription": "Pennyfield",
       "iconURL": "https://raw.githubusercontent.com/thenetaji/studio/main/apps/finance/assets/images/icon.png",
       "versions": [
         {
