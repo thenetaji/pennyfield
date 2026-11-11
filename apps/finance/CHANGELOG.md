@@ -2,6 +2,13 @@
 
 All notable changes to Finance. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.7.0] - 2026-11-11
+
+### Changed
+- **The app is now called Pennyfield.** Same app, same data; it updates in place.
+
+Includes every 0.6.0 update below: business and personal, the Business page, groups, select many entries and Archive.
+
 ## 0.6.0 update - 2026-11-11 (5)
 
 ### Added
