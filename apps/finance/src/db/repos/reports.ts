@@ -1,6 +1,19 @@
-import { and, between, eq, inArray, sql, type SQL } from "drizzle-orm";
+import {
+  and,
+  between,
+  eq,
+  inArray,
+  sql,
+  type SQL,
+} from "drizzle-orm";
+import type { AnySQLiteColumn } from "drizzle-orm/sqlite-core";
 import type { FlatLine, InsightsScope } from "@/lib/insights";
-import { transactionSplits, transactionTags, transactions } from "../schema";
+import {
+  categories,
+  transactionSplits,
+  transactionTags,
+  transactions,
+} from "../schema";
 import type { Db } from "../types";
 
 /**
@@ -27,7 +40,7 @@ export function spendLines(
         between(transactions.dateKey, range.from, range.to),
         inArray(transactions.kind, [...kinds]),
         eq(transactions.isSplit, false),
-        ...scopeConditions(scope),
+        ...scopeConditions(scope, transactions.categoryId),
       ),
     )
     .all();
@@ -48,7 +61,7 @@ export function spendLines(
       and(
         between(transactions.dateKey, range.from, range.to),
         inArray(transactions.kind, [...kinds]),
-        ...scopeConditions(scope),
+        ...scopeConditions(scope, transactionSplits.categoryId),
       ),
     )
     .all();
@@ -67,9 +80,18 @@ export function spendLines(
   return lines;
 }
 
-/** Extra WHERE terms on `transactions` for an Insights scope (account, tag). */
-export function scopeConditions(scope: InsightsScope | undefined): SQL[] {
+/** 'business' or 'personal' for a row: the entry's override, else its line's category. */
+export function sideOf(categoryColumn: AnySQLiteColumn): SQL<string> {
+  return sql<string>`coalesce(${transactions.side}, case when (select ${categories.isBusiness} from ${categories} where ${categories.id} = ${categoryColumn}) = 1 then 'business' else 'personal' end)`;
+}
+
+/** Extra WHERE terms on `transactions` for an Insights scope (account, tag, side). */
+export function scopeConditions(
+  scope: InsightsScope | undefined,
+  categoryColumn: AnySQLiteColumn = transactions.categoryId,
+): SQL[] {
   const out: SQL[] = [];
+  if (scope?.side) out.push(sql`${sideOf(categoryColumn)} = ${scope.side}`);
   if (scope?.accountId) out.push(eq(transactions.accountId, scope.accountId));
   if (scope?.tagId)
     out.push(

@@ -4,12 +4,12 @@ import { InteractionManager, Platform, View } from "react-native";
 
 import {
   Card,
-  Chip,
   IconTile,
   Input,
   ListGroup,
   SegmentedControl,
   SheetScroll,
+  Switch,
   Text,
 } from "@studio/ui";
 import { useActions } from "@/data/actions";
@@ -35,7 +35,7 @@ const GRID_PLACEHOLDER = 420;
 
 type CategoryFormProps = { id: string };
 
-/** Create (`id` is "new") or edit a category: live preview, name, kind (locked after creation), group, colour and icon. */
+/** Create (`id` is "new") or edit a category: live preview, name, kind (locked after creation), business, colour and icon. */
 export function CategoryForm({ id }: CategoryFormProps) {
   const router = useRouter();
   const actions = useActions();
@@ -54,13 +54,7 @@ export function CategoryForm({ id }: CategoryFormProps) {
   const [kind, setKind] = React.useState<CategoryKind>(
     source?.kind ?? (params.kind === "income" ? "income" : "expense"),
   );
-  const [group, setGroup] = React.useState(source?.groupName ?? "");
-  const groups = React.useMemo(() => {
-    const seen = new Set<string>();
-    for (const c of all)
-      if (c.kind === kind && c.groupName) seen.add(c.groupName);
-    return [...seen];
-  }, [all, kind]);
+  const [business, setBusiness] = React.useState(source?.isBusiness ?? false);
   const [icon, setIcon] = React.useState(source?.icon ?? "tag.fill");
   // A new category suggests the next unused swatch for its kind until a colour is picked.
   const [picked, setPicked] = React.useState<CategoryColorKey | null>(
@@ -102,7 +96,7 @@ export function CategoryForm({ id }: CategoryFormProps) {
           name,
           icon,
           color,
-          groupName: group,
+          isBusiness: business,
         });
       else
         actions.categories.create({
@@ -110,7 +104,7 @@ export function CategoryForm({ id }: CategoryFormProps) {
           kind,
           icon,
           color,
-          groupName: group,
+          isBusiness: business,
         });
     } catch (error) {
       haptic("error");
@@ -177,33 +171,18 @@ export function CategoryForm({ id }: CategoryFormProps) {
             className="h-6 min-h-0 flex-1 py-0 text-right"
           />
         </FormRow>
-        <FormRow label="Group">
-          <Input
-            variant="inline"
-            value={group}
-            onChangeText={setGroup}
-            placeholder="None"
-            returnKeyType="done"
-            autoCapitalize="words"
-            autoCorrect={false}
-            maxLength={24}
-            accessibilityLabel="Group"
-            className="h-6 min-h-0 flex-1 py-0 text-right"
+        <FormRow label="Business">
+          <Switch
+            value={business}
+            onValueChange={setBusiness}
+            accessibilityLabel="Business"
           />
         </FormRow>
       </ListGroup>
-      {groups.length > 0 ? (
-        <View className="-mt-1 flex-row flex-wrap gap-2 px-8">
-          {groups.map((g) => (
-            <Chip
-              key={g}
-              label={g}
-              selected={g === group.trim()}
-              onPress={() => setGroup(g === group.trim() ? "" : g)}
-            />
-          ))}
-        </View>
-      ) : null}
+      <Text variant="footnote" tone="secondary" className="-mt-2 px-8">
+        Entries here count as business on Home and in Insights. You can still
+        change a single entry.
+      </Text>
       <View className="px-4">
         <Text
           variant="footnote"

@@ -44,6 +44,8 @@ export interface HomeSpend {
   series: HomeSpendPoint[];
   /** Daily spend for the last seven days, oldest first, ending today (reaches into the previous period). */
   week: number[];
+  /** Business money this period, kept out of every figure above; null when there is none. */
+  business: { earned: number; spent: number } | null;
 }
 
 export function cumulative(amounts: readonly number[]): number[] {
@@ -125,10 +127,19 @@ export function readHomeSpend(
 ): HomeSpend {
   const ctx: ConversionContext = conversionContext(db);
   const previous = previousPeriod(period);
-  const lines: FlatLine[] = spendLines(db, {
-    from: previous.from,
-    to: period.to,
-  });
+  const lines: FlatLine[] = spendLines(
+    db,
+    { from: previous.from, to: period.to },
+    { side: "personal" },
+  );
+  const businessLines = spendLines(db, period, { side: "business" });
+  const business =
+    businessLines.length === 0
+      ? null
+      : {
+          earned: sumLines(businessLines, "income", period, ctx),
+          spent: sumLines(businessLines, "expense", period, ctx),
+        };
   const amounts = (p: Period) =>
     buildSeries(lines, "expense", p, ctx, { granularity: "day" }).map(
       (x) => x.amount,
@@ -152,6 +163,7 @@ export function readHomeSpend(
     previousTotal: sumLines(lines, "expense", previous, ctx),
     dayIndex,
     week: trailingDays(previousDaily, currentDaily, dayIndex),
+    business,
     ...core,
   };
 }
@@ -215,7 +227,7 @@ export function buildAllTime(
 export function readAllTime(db: Db, todayKey: string): AllTimeSpend {
   const ctx = conversionContext(db);
   return buildAllTime(
-    spendLines(db, { from: "0000-01-01", to: todayKey }),
+    spendLines(db, { from: "0000-01-01", to: todayKey }, { side: "personal" }),
     todayKey,
     ctx,
   );

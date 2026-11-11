@@ -9,7 +9,7 @@ import { DONUT_LIMIT, OTHER_KEY, type Formatting } from "./model";
 
 export const BREAKDOWN_LABELS: Record<BreakdownBy, string> = {
   category: "Category",
-  group: "Group",
+  group: "Business / personal",
   tag: "Tag",
   account: "Account",
   merchant: "Merchant",

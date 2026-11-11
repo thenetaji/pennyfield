@@ -17,7 +17,7 @@ export type {
 /** This period's spend against the previous one at the same day, for the Home hero. */
 export function useHomeSpend(period: Period, todayKey: string): HomeSpend {
   return useLiveData(
-    ["transactions", "transaction_splits", "fx_rates", "settings"],
+    ["transactions", "transaction_splits", "categories", "fx_rates", "settings"],
     `${period.from}:${period.to}:${todayKey}`,
     (db) => readHomeSpend(db, period, todayKey),
   );
@@ -26,7 +26,7 @@ export function useHomeSpend(period: Period, todayKey: string): HomeSpend {
 /** Every month since the first transaction, for the Home hero's "All time" view. */
 export function useAllTimeSpend(todayKey: string): AllTimeSpend {
   return useLiveData(
-    ["transactions", "transaction_splits", "fx_rates", "settings"],
+    ["transactions", "transaction_splits", "categories", "fx_rates", "settings"],
     todayKey,
     (db) => readAllTime(db, todayKey),
   );

@@ -33,6 +33,7 @@ export const useDraftStore = create<DraftState>((set) => ({
   splits: null,
   appliedTitleNorm: null,
   personId: null,
+  side: null,
   tagIds: [],
   receipts: [],
   sessionId: 0,
@@ -62,6 +63,7 @@ export const selectDraft = (s: DraftState): Draft => ({
   splits: s.splits,
   appliedTitleNorm: s.appliedTitleNorm,
   personId: s.personId,
+  side: s.side,
   tagIds: s.tagIds,
   receipts: s.receipts,
 });

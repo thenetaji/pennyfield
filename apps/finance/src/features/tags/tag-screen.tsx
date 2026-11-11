@@ -17,6 +17,7 @@ import {
   useSettings,
   useTagTotals,
   useTodayKey,
+  useBusinessTransactions,
   useTagTransactions,
   useTags,
 } from "@/data/hooks";
@@ -49,9 +50,10 @@ const percent = (ratio: number | null) =>
 const monthTitle = (month: string) =>
   `${monthShort(Number(month.slice(5, 7)))} ${month.slice(0, 4)}`;
 
-/** One tag: total spend, where it went by category, and its transactions. */
-export function TagScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+/** One tag, or with `business` every business entry: totals or profit, costs by category, and the transactions. */
+export function TagScreen({ business: businessView = false }: { business?: boolean }) {
+  const params = useLocalSearchParams<{ id: string }>();
+  const id = businessView ? "" : params.id;
   const router = useRouter();
   const actions = useActions();
   const { category } = useTokens();
@@ -59,8 +61,12 @@ export function TagScreen() {
   const rates = useRateLookup();
   const tags = useTags();
   const totals = useTagTotals(ALL);
-  const items = useTagTransactions(id);
-  const tag = tags.find((t) => t.id === id);
+  const tagItems = useTagTransactions(businessView ? undefined : id);
+  const businessItems = useBusinessTransactions(businessView);
+  const items = businessView ? businessItems : tagItems;
+  const tag = businessView
+    ? { id: "", name: "Business", color: "amber" }
+    : tags.find((t) => t.id === id);
   const total = totals.find((t) => t.tag.id === id);
   const leaving = React.useRef(false);
   const settings = useSettings();
@@ -91,7 +97,7 @@ export function TagScreen() {
   );
 
   React.useEffect(() => {
-    if (!tag && !leaving.current && router.canGoBack()) router.back();
+    if (!businessView && !tag && !leaving.current && router.canGoBack()) router.back();
   }, [tag, router]);
 
   const breakdown = React.useMemo(
@@ -111,7 +117,8 @@ export function TagScreen() {
     });
   const count = total?.count ?? 0;
   // A tag with money both in and out reads as a business or project.
-  const business = (total?.earned ?? 0) > 0 && (total?.spent ?? 0) > 0;
+  const business =
+    businessView || ((total?.earned ?? 0) > 0 && (total?.spent ?? 0) > 0);
   const signed = (minor: number) =>
     formatMoney(minor, currency, {
       locale: money.locale,
@@ -141,9 +148,11 @@ export function TagScreen() {
       contentInsetAdjustmentBehavior="automatic"
       contentContainerClassName="gap-6 pb-12"
     >
-      <Stack.Screen options={{ title: "" }} />
+      <Stack.Screen options={{ title: businessView ? "Business" : "" }} />
       <Stagger index={0} className="items-center gap-1 px-6 pt-4">
-        <TagPill name={tag.name} color={tag.color} size="md" />
+        {businessView ? null : (
+          <TagPill name={tag.name} color={tag.color} size="md" />
+        )}
         {business ? (
           <>
             <View className="pt-2">
@@ -288,11 +297,13 @@ export function TagScreen() {
         </Stagger>
       ) : null}
 
-      <Stagger index={3}>
-        <ListGroup>
-          <ListRow label="Delete tag" destructive centered onPress={remove} />
-        </ListGroup>
-      </Stagger>
+      {businessView ? null : (
+        <Stagger index={3}>
+          <ListGroup>
+            <ListRow label="Delete tag" destructive centered onPress={remove} />
+          </ListGroup>
+        </Stagger>
+      )}
     </ScrollView>
   );
 }

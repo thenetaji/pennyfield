@@ -1,5 +1,6 @@
 import { listTags, listTagsWithTotals, type TagTotal } from "@/db/repos/tags";
-import { transactionsForTag } from "@/db/repos/transactions";
+import { listForPeriod, transactionsForTag } from "@/db/repos/transactions";
+import { ALL_DATES } from "@studio/dates";
 import type { TagRow } from "@/db/schema";
 import { useLiveData } from "@/data/use-live-data";
 import type { TransactionListItem } from "./useTransactions";
@@ -36,5 +37,29 @@ export function useTagTransactions(
     ],
     `${tagId ?? ""}:${period?.from ?? ""}:${period?.to ?? ""}`,
     (db) => (tagId ? transactionsForTag(db, tagId, period) : []),
+  );
+}
+
+/** Every business income and spending entry, newest first. */
+export function useBusinessTransactions(enabled: boolean): TransactionListItem[] {
+  return useLiveData(
+    [
+      "transactions",
+      "transaction_splits",
+      "accounts",
+      "categories",
+      "people",
+      "attachments",
+      "transaction_tags",
+    ],
+    String(enabled),
+    (db) =>
+      enabled
+        ? listForPeriod(db, {
+            from: ALL_DATES.from,
+            to: ALL_DATES.to,
+            side: "business",
+          })
+        : [],
   );
 }

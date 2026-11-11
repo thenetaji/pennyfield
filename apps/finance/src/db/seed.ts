@@ -15,6 +15,7 @@ interface SeedCategory {
   color: string;
   /** Default group; migration 0002 applies the same mapping to existing installs. */
   groupName?: string;
+  isBusiness?: boolean;
 }
 
 export const EXPENSE_CATEGORIES: readonly SeedCategory[] = [
@@ -106,7 +107,13 @@ export const INCOME_CATEGORIES: readonly SeedCategory[] = [
   { name: "Refunds", icon: "arrow.uturn.backward.circle.fill", color: "cyan" },
   { name: "Gifts", icon: "gift.fill", color: "pink" },
   { name: "Interest", icon: "bank", color: "indigo" },
-  { name: "Business", icon: "business", color: "amber", groupName: "Work" },
+  {
+    name: "Business",
+    icon: "business",
+    color: "amber",
+    groupName: "Work",
+    isBusiness: true,
+  },
   { name: "Other income", icon: "plus.circle.fill", color: "gray" },
 ];
 

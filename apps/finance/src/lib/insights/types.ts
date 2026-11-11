@@ -13,8 +13,10 @@ export interface FlatLine {
 export interface InsightsScope {
   accountId?: string | null;
   tagId?: string | null;
+  /** Business or personal money only; follows each line's category unless the entry overrides it. */
+  side?: "business" | "personal" | null;
 }
 
 /** Stable cache key for a scope. */
 export const scopeKey = (scope: InsightsScope | undefined): string =>
-  `${scope?.accountId ?? ""}|${scope?.tagId ?? ""}`;
+  `${scope?.accountId ?? ""}|${scope?.tagId ?? ""}|${scope?.side ?? ""}`;

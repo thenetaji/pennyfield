@@ -88,7 +88,7 @@ function breakdownContext(
   const category = (id: string | null): CategoryRow | null =>
     id ? (categories.get(id) ?? null) : null;
   const lookups: BreakdownLookups = {
-    groupOf: (id) => category(id)?.groupName ?? null,
+    groupOf: (id) => (category(id)?.isBusiness ? "Business" : "Personal"),
     tagsOf: (id) => links.get(id) ?? [],
   };
   const describe: Describe = (row) => {

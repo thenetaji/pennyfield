@@ -44,7 +44,7 @@ export function detailedLines(
         between(transactions.dateKey, range.from, range.to),
         inArray(transactions.kind, [...kinds]),
         eq(transactions.isSplit, false),
-        ...scopeConditions(scope),
+        ...scopeConditions(scope, transactions.categoryId),
       ),
     )
     .all();
@@ -63,7 +63,7 @@ export function detailedLines(
       and(
         between(transactions.dateKey, range.from, range.to),
         inArray(transactions.kind, [...kinds]),
-        ...scopeConditions(scope),
+        ...scopeConditions(scope, transactionSplits.categoryId),
       ),
     )
     .all();

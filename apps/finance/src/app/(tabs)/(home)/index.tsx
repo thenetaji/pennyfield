@@ -22,6 +22,7 @@ import {
   useUpcoming,
 } from "@/data/hooks";
 import { AccountsCard } from "@/features/home/accounts-card";
+import { BusinessCard } from "@/features/home/business-card";
 import { BudgetStatus } from "@/features/home/budget-status";
 import { QuickAdd } from "@/features/home/quick-add";
 import { Pockets } from "@/features/home/pockets";
@@ -253,6 +254,17 @@ export default function Home() {
                 showDecimals={money.showDecimals}
               />
             </View>
+            {spend.business ? (
+              <View className="mt-4">
+                <BusinessCard
+                  earned={spend.business.earned}
+                  spent={spend.business.spent}
+                  currency={spend.currency}
+                  locale={locale}
+                  showDecimals={money.showDecimals}
+                />
+              </View>
+            ) : null}
             {layout
               .filter((section) => section.visible)
               .flatMap((section) => {
