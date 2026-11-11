@@ -108,10 +108,12 @@ describe("parseScope", () => {
     expect(parseScope({ account: "a1", tag: "t1" })).toEqual({
       accountId: "a1",
       tagId: "t1",
+      side: null,
     });
     expect(parseScope({ account: "" })).toEqual({
       accountId: null,
       tagId: null,
+      side: null,
     });
   });
 });
@@ -121,7 +123,7 @@ describe("contextParams and parseContext", () => {
     const context = {
       period: { type: "week" as const, from: "2026-10-19", to: "2026-10-25" },
       kind: "income" as const,
-      scope: { accountId: "acc", tagId: null },
+      scope: { accountId: "acc", tagId: null, side: null },
     };
     const params = contextParams(context);
     expect(params).toEqual({
@@ -139,7 +141,7 @@ describe("contextParams and parseContext", () => {
     ).toEqual({
       period: { type: "month", from: "2026-10-01", to: "2026-10-31" },
       kind: "expense",
-      scope: { accountId: null, tagId: null },
+      scope: { accountId: null, tagId: null, side: null },
     });
   });
 });

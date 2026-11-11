@@ -43,6 +43,7 @@ function item(patch: Partial<TransactionListItem>): TransactionListItem {
     currency: "INR",
     accountId: "a1",
     categoryId: "c1",
+    side: null,
     transferAccountId: null,
     transferAmount: null,
     transferCurrency: null,

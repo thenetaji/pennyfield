@@ -12,6 +12,7 @@ import type { RecurringKind, TransactionKind } from "../lib/ledger/kinds";
 
 export type AccountType = "cash" | "bank" | "card" | "other";
 export type CategoryKind = "expense" | "income";
+export type TransactionSide = "business" | "personal";
 export type {
   LendingKind,
   RecurringKind,
@@ -48,6 +49,10 @@ export const categories = sqliteTable(
     color: text("color").notNull(),
     /** Optional group name ("Essentials") that Insights can roll categories up into; null stands alone. */
     groupName: text("group_name"),
+    /** Spending or income here counts as business unless a transaction overrides it. */
+    isBusiness: integer("is_business", { mode: "boolean" })
+      .notNull()
+      .default(false),
     sortOrder: integer("sort_order").notNull().default(0),
     archivedAt: integer("archived_at"),
     createdAt: integer("created_at").notNull(),
@@ -130,6 +135,8 @@ export const transactions = sqliteTable(
     ),
     /** Counterparty of the lending kinds; null otherwise. */
     personId: text("person_id").references(() => people.id),
+    /** Overrides the category's business flag; null follows the category. */
+    side: text("side").$type<TransactionSide>(),
     createdAt: integer("created_at").notNull(),
     updatedAt: integer("updated_at").notNull(),
   },

@@ -207,6 +207,7 @@ function Navigator() {
         />
         <Stack.Screen name="tags/index" options={push("Tags")} />
         <Stack.Screen name="tags/[id]" options={push("Tag")} />
+        <Stack.Screen name="business" options={push("Business")} />
         <Stack.Screen
           name="transaction/[id]/index"
           options={push("Transaction")}

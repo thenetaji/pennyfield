@@ -19,6 +19,7 @@ import {
   type SplitRow,
   type TransactionKind,
   type TransactionRow,
+  type TransactionSide,
 } from "../schema";
 import type { Db } from "../types";
 import { replaceTransactionTags } from "./tags";
@@ -59,6 +60,8 @@ export interface TransactionInput {
   personId?: string | null;
   /** Replaces the transaction's tags. On update, omit to keep the current tags. */
   tagIds?: readonly string[];
+  /** Business or personal regardless of category; null follows the category. On update, omit to keep it. */
+  side?: TransactionSide | null;
 }
 
 export interface TransactionSnapshot {
@@ -205,6 +208,7 @@ function writeRows(
     isSplit,
     recurringRuleId: input.recurringRuleId ?? null,
     personId: person?.id ?? null,
+    side: input.side !== undefined ? input.side : (existing?.side ?? null),
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
   };

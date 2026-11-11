@@ -58,6 +58,8 @@ export interface Draft {
   appliedTitleNorm: string | null;
   /** Counterparty for the lending kinds. */
   personId: string | null;
+  /** Overrides the category's business flag; null follows the category. */
+  side: "business" | "personal" | null;
   tagIds: string[];
   receipts: DraftReceipt[];
 }
@@ -435,12 +437,14 @@ export function buildTransactionInput(
     occurredAt: draft.occurredAt,
     recurringRuleId,
     tagIds: draft.tagIds,
+    side: draft.side,
   };
   if (isLendingKind(draft.kind))
-    return { ...base, personId: draft.personId, categoryId: null };
+    return { ...base, personId: draft.personId, categoryId: null, side: null };
   if (draft.kind === "transfer") {
     return {
       ...base,
+      side: null,
       transferAccountId: draft.transferAccountId,
       transferAmount: ctx.sameCurrency ? draft.amount : ctx.receivesAmount,
     };
@@ -518,6 +522,7 @@ export function emptyDraft(defaults: ResolvedDefaults, now: number): Draft {
     splits: null,
     appliedTitleNorm: null,
     personId: null,
+    side: null,
     tagIds: [],
     receipts: [],
   };
@@ -537,6 +542,7 @@ interface SourceTransaction {
   occurredAt: number;
   splits: readonly { categoryId: string; amount: number }[];
   personId?: string | null;
+  side?: "business" | "personal" | null;
   tags?: readonly { id: string }[];
   attachments?: readonly {
     id: string;
@@ -576,6 +582,7 @@ export function draftFromTransaction(
         : null,
     appliedTitleNorm: null,
     personId: source.personId ?? null,
+    side: source.side ?? null,
     tagIds: (source.tags ?? []).map((t) => t.id),
     receipts: (source.attachments ?? []).map((a) => ({
       key: a.id,

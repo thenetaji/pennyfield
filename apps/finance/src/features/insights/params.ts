@@ -36,6 +36,8 @@ export interface InsightsParams {
   from?: string;
   to?: string;
   select?: string;
+  /** "business" or "personal" narrows to that side. */
+  side?: string;
   /** Breakdown dimension: category, group, tag, account or merchant. */
   by?: string;
   /** Account id to narrow to. */
@@ -125,6 +127,10 @@ export function canStepForward(
   return periodOf(view, settings).to < today;
 }
 
+function parseSide(value: string | undefined): "business" | "personal" | null {
+  return value === "business" || value === "personal" ? value : null;
+}
+
 /** `?by=` as a breakdown dimension; anything else is the category breakdown. */
 export function parseBreakdownBy(value: string | undefined): BreakdownBy {
   return BREAKDOWN_BYS.find((by) => by === value) ?? "category";
@@ -135,6 +141,7 @@ export function parseScope(params: InsightsParams): InsightsScope {
   return {
     accountId: firstParam(params.account) || null,
     tagId: firstParam(params.tag) || null,
+    side: parseSide(firstParam(params.side)),
   };
 }
 
@@ -155,6 +162,7 @@ export function contextParams(context: InsightsContext): Record<string, string> 
   };
   if (context.scope.accountId) out.account = context.scope.accountId;
   if (context.scope.tagId) out.tag = context.scope.tagId;
+  if (context.scope.side) out.side = context.scope.side;
   return out;
 }
 
@@ -177,6 +185,7 @@ export function parseContext(
     scope: {
       accountId: firstParam(raw.account) || null,
       tagId: firstParam(raw.tag) || null,
+      side: parseSide(firstParam(raw.side)),
     },
   };
 }

@@ -20,6 +20,7 @@ export interface CategoryInput {
   color: string;
   /** Blank or null leaves the category ungrouped. */
   groupName?: string | null;
+  isBusiness?: boolean;
 }
 
 export type CategoryPatch = Partial<Omit<CategoryInput, "kind">>;
@@ -83,6 +84,7 @@ export function createCategory(
     icon: input.icon,
     color: input.color,
     groupName: normalizeGroupName(input.groupName),
+    isBusiness: input.isBusiness ?? false,
     sortOrder: (max?.max ?? -1) + 1,
     archivedAt: null,
     createdAt: now,
@@ -107,6 +109,7 @@ export function updateCategory(
       ...(patch.groupName !== undefined && {
         groupName: normalizeGroupName(patch.groupName),
       }),
+      ...(patch.isBusiness !== undefined && { isBusiness: patch.isBusiness }),
       updatedAt: now,
     })
     .where(eq(categories.id, id))

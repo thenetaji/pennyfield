@@ -24,7 +24,7 @@ const countLabel = (count: number) =>
     ? "No transactions"
     : `${count} ${count === 1 ? "transaction" : "transactions"}`;
 
-/** Icon tile, name, then group and transaction count; the separator is inset past the tile. */
+/** Icon tile, name, then "Business" and transaction count; the separator is inset past the tile. */
 function CategoryRow({
   category,
   count,
@@ -33,7 +33,7 @@ function CategoryRow({
   trailing,
 }: CategoryRowProps) {
   const { colors } = useTokens();
-  const detail = [category.groupName, countLabel(count)]
+  const detail = [category.isBusiness ? "Business" : null, countLabel(count)]
     .filter(Boolean)
     .join(" · ");
   return (

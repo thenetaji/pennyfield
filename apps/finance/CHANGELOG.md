@@ -2,6 +2,16 @@
 
 All notable changes to Finance. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.6.0 update - 2026-11-11
+
+### Added
+- **Business and personal:** turn on Business for a category (Edit category) and its entries count as business. Flip a single entry with the Business/Personal chip in the add sheet. The chip only shows once a category is marked Business.
+- **Business on Home:** the hero shows personal spending only, and a Business card shows this month's money in, money out and profit. Tap it for the Business page: profit, margin, ROI, by month, costs by category and every business entry.
+
+### Changed
+- Category groups are replaced by the Business switch. Insights' "Groups" breakdown now splits business from personal.
+- Existing `business` tags are converted on update: a category where most entries carry the tag becomes Business. The tags themselves are kept.
+
 ## 0.6.0 update - 2026-11-10
 
 ### Added

@@ -26,6 +26,7 @@ import {
   type AttachmentRow,
   type TransactionKind,
   type TransactionRow,
+  type TransactionSide,
 } from "../schema";
 import type { Db } from "../types";
 import { listAttachmentsFor } from "./attachments";
@@ -78,6 +79,8 @@ export interface PeriodFilter {
   tagId?: string;
   /** Only lending transactions with this person. */
   personId?: string;
+  /** Only income and spending on this side; a split counts as business when any line is. */
+  side?: TransactionSide;
 }
 
 const SEARCH_LIMIT = 200;
@@ -298,6 +301,12 @@ export function listForPeriod(
   }
   if (filter.personId)
     conditions.push(eq(transactions.personId, filter.personId));
+  if (filter.side) {
+    conditions.push(inArray(transactions.kind, ["expense", "income"]));
+    conditions.push(
+      sql`coalesce(${transactions.side}, case when exists (select 1 from ${categories} where ${categories.isBusiness} = 1 and (${categories.id} = ${transactions.categoryId} or ${categories.id} in (select ${transactionSplits.categoryId} from ${transactionSplits} where ${transactionSplits.transactionId} = ${transactions.id}))) then 'business' else 'personal' end) = ${filter.side}`,
+    );
+  }
   const rows = baseSelect(db)
     .where(and(...conditions))
     .orderBy(...newestFirst)
