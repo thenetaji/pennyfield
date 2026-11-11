@@ -28,13 +28,13 @@ function TagPill({
   const { category, colors } = useTokens();
   const hex = category[tagColorKey(color)];
   const pill = tagPillColors(hex);
-  const height = size === "sm" ? 24 : 32;
+  const height = size === "sm" ? 24 : 38;
   const body = (
     <View
       style={{
         height: height,
         borderRadius: height / 2,
-        paddingHorizontal: size === "sm" ? 9 : 13,
+        paddingHorizontal: size === "sm" ? 9 : 15,
         backgroundColor: selected
           ? pill.bg
           : size === "sm"
@@ -49,10 +49,15 @@ function TagPill({
       }}
     >
       <View
-        style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: hex }}
+        style={{
+          width: size === "sm" ? 7 : 9,
+          height: size === "sm" ? 7 : 9,
+          borderRadius: 5,
+          backgroundColor: hex,
+        }}
       />
       <Text
-        variant={size === "sm" ? "caption" : "callout"}
+        variant={size === "sm" ? "caption" : "body"}
         numberOfLines={1}
         style={{ color: size === "sm" || selected ? pill.fg : colors.text }}
       >

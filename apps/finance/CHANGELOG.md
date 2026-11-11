@@ -2,6 +2,17 @@
 
 All notable changes to Finance. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.6.0 update - 2026-11-11 (2)
+
+### Changed
+- **Groups are back** as an optional field under Business in Edit category. Insights has both breakdowns again: Groups (like Essentials and Lifestyle) and Business / personal.
+- The Home Business card covers the last 3 months, so a payout and the costs it paid for land in the same window instead of making one month look negative. It also shows this month's combined spending, personal and business.
+- The Home hero reads "Personal spending" once you have business entries, so it's clear business costs are in the Business card.
+- The add sheet shows applied tags on the Tags chip, which now sits next to Account. Tags in the picker are larger.
+
+### Fixed
+- Applying a tag no longer pushes the add sheet's fields up into the header.
+
 ## 0.6.0 update - 2026-11-11
 
 ### Added

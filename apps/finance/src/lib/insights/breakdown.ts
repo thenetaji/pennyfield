@@ -3,11 +3,18 @@ import { convertLine, type ConversionContext } from "./aggregate";
 import { normaliseTitle, type DetailedLine } from "./extras";
 
 /** What Insights can split a period's total by. */
-export type BreakdownBy = "category" | "group" | "tag" | "account" | "merchant";
+export type BreakdownBy =
+  | "category"
+  | "group"
+  | "side"
+  | "tag"
+  | "account"
+  | "merchant";
 
 export const BREAKDOWN_BYS: readonly BreakdownBy[] = [
   "category",
   "group",
+  "side",
   "tag",
   "account",
   "merchant",
@@ -17,6 +24,7 @@ export const BREAKDOWN_BYS: readonly BreakdownBy[] = [
 export const KEY = {
   category: "c",
   group: "g",
+  side: "s",
   tag: "t",
   account: "a",
   merchant: "m",
@@ -25,6 +33,8 @@ export const KEY = {
 export interface BreakdownLookups {
   /** Group name of a category, or null when it stands alone. */
   groupOf: (categoryId: string | null) => string | null;
+  /** "Business" or "Personal" by the category's flag. */
+  sideOf: (categoryId: string | null) => string;
   /** Tag ids on the line's transaction (split lines share their parent's tags). */
   tagsOf: (transactionId: string) => readonly string[];
 }
@@ -49,6 +59,8 @@ export function breakdownKeys(
       const group = lookups.groupOf(line.categoryId);
       return [group ? `${KEY.group}:${group}` : categoryKey(line.categoryId)];
     }
+    case "side":
+      return [`${KEY.side}:${lookups.sideOf(line.categoryId)}`];
     case "tag": {
       const tags = lookups.tagsOf(line.transactionId);
       return tags.length === 0

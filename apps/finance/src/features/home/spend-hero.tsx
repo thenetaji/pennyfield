@@ -192,7 +192,14 @@ function SpendHero({
     sign: "none",
     decimals,
   });
-  const label = all ? "Spent all time" : `Spent in ${monthLabel}`;
+  const personal = spend.business !== null;
+  const label = all
+    ? personal
+      ? "Personal spending, all time"
+      : "Spent all time"
+    : personal
+      ? `Personal spending in ${monthLabel}`
+      : `Spent in ${monthLabel}`;
   const days = spend.series.length;
 
   const actual = React.useMemo(

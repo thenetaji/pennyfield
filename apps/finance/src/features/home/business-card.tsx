@@ -8,12 +8,18 @@ import { Card, Pressable, Text } from "@studio/ui";
 export function BusinessCard({
   earned,
   spent,
+  personalSpent,
+  monthSpent,
   currency,
   locale,
   showDecimals,
 }: {
   earned: number;
   spent: number;
+  /** This month's personal spending, for the combined line. */
+  personalSpent: number;
+  /** This month's business spending, for the combined line. */
+  monthSpent: number;
   currency: string;
   locale?: string;
   showDecimals: boolean;
@@ -31,14 +37,14 @@ export function BusinessCard({
   return (
     <Pressable
       role="button"
-      accessibilityLabel={`Business this month, ${cells.map((c) => `${c.label} ${c.value}`).join(", ")}`}
+      accessibilityLabel={`Business, last 3 months, ${cells.map((c) => `${c.label} ${c.value}`).join(", ")}. This month, all spending ${fmt(personalSpent + monthSpent)}`}
       scale={0.98}
       onPress={() => router.push("/business")}
     >
       <Card className="gap-2 rounded-[20px] px-4 py-3">
         <View className="flex-row items-center justify-between">
           <Text variant="caption" tone="secondary">
-            Business this month
+            Business, last 3 months
           </Text>
           <Text variant="caption" tone="accent" className="font-semibold">
             Details
@@ -56,6 +62,9 @@ export function BusinessCard({
             </View>
           ))}
         </View>
+        <Text variant="footnote" tone="secondary" numeric>
+          {`This month, all spending: ${fmt(personalSpent + monthSpent)}`}
+        </Text>
       </Card>
     </Pressable>
   );

@@ -1,6 +1,7 @@
 import { spendLines } from "@/db/repos/reports";
 import type { Db } from "@/db/types";
 import {
+  addDays,
   diffDays,
   monthShort,
   parseKey,
@@ -44,9 +45,11 @@ export interface HomeSpend {
   series: HomeSpendPoint[];
   /** Daily spend for the last seven days, oldest first, ending today (reaches into the previous period). */
   week: number[];
-  /** Business money this period, kept out of every figure above; null when there is none. */
-  business: { earned: number; spent: number } | null;
+  /** Business money over the last 90 days (payouts often land a month apart from their costs), kept out of every figure above; null when there is none. */
+  business: { earned: number; spent: number; monthSpent: number } | null;
 }
+
+const BUSINESS_DAYS = 90;
 
 export function cumulative(amounts: readonly number[]): number[] {
   let sum = 0;
@@ -132,13 +135,15 @@ export function readHomeSpend(
     { from: previous.from, to: period.to },
     { side: "personal" },
   );
-  const businessLines = spendLines(db, period, { side: "business" });
+  const window = { from: addDays(todayKey, -(BUSINESS_DAYS - 1)), to: todayKey };
+  const businessLines = spendLines(db, window, { side: "business" });
   const business =
     businessLines.length === 0
       ? null
       : {
-          earned: sumLines(businessLines, "income", period, ctx),
-          spent: sumLines(businessLines, "expense", period, ctx),
+          earned: sumLines(businessLines, "income", window, ctx),
+          spent: sumLines(businessLines, "expense", window, ctx),
+          monthSpent: sumLines(businessLines, "expense", period, ctx),
         };
   const amounts = (p: Period) =>
     buildSeries(lines, "expense", p, ctx, { granularity: "day" }).map(
