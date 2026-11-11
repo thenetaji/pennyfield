@@ -14,6 +14,8 @@ import { CalendarView } from "@/features/calendar/calendar-view";
 import { monthOf, shiftMonth } from "@/features/calendar/grid";
 
 import { AddFab } from "@/components/app/add-fab";
+import { SelectionBar } from "@/features/transactions/selection-bar";
+import { useSelection } from "@/features/transactions/selection-store";
 import { OptionPicker, type Option } from "@studio/ui";
 import {
   useCategories,
@@ -57,6 +59,7 @@ function pillLabel(period: Period): string {
 }
 
 export default function Activity() {
+  const selecting = useSelection((st) => st.ids.length > 0);
   const router = useRouter();
   const money = useMoneyContext();
   const today = useTodayKey();
@@ -412,7 +415,8 @@ export default function Activity() {
           contentContainerStyle={{ paddingBottom: 96 }}
         />
       )}
-      <AddFab />
+      {selecting ? null : <AddFab />}
+      <SelectionBar />
       <OptionPicker
         visible={picking && !calendar}
         title="Period"

@@ -2,6 +2,13 @@
 
 All notable changes to Finance. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.6.0 update - 2026-11-11 (5)
+
+### Added
+- **Select many entries:** long-press an entry and choose Select, tap more, then change their category, set them to count as business or personal, or delete them. Each change can be undone.
+- **Archive:** Settings, Transactions, Archive leaves a past year (calendar or April–March) out of totals, so a new year starts clean. Looking at a month or year inside the archive still shows it, and balances don't change.
+- The Business page offers to delete an old "business" tag, which no longer does anything.
+
 ## 0.6.0 update - 2026-11-11 (4)
 
 ### Added

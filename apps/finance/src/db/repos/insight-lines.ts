@@ -2,7 +2,8 @@ import { and, between, eq, inArray } from "drizzle-orm";
 import type { DetailedLine, InsightsScope } from "@/lib/insights";
 
 import { transactionSplits, transactions } from "../schema";
-import { scopeConditions } from "./reports";
+import { clampToArchive, scopeConditions } from "./reports";
+import { getSetting } from "./settings";
 import type { Db } from "../types";
 
 export interface RawAnalyzerLine {
@@ -23,6 +24,7 @@ export function detailedLines(
   range: { from: string; to: string },
   scope?: InsightsScope,
 ): DetailedLine[] {
+  range = clampToArchive(range, getSetting(db, "archived_through"));
   const kinds = ["expense", "income"] as const;
   const columns = {
     transactionId: transactions.id,

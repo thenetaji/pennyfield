@@ -2,7 +2,8 @@ import { createTestDb } from "../test-helpers";
 import { createAccount } from "./accounts";
 import { createCategory, updateCategory } from "./categories";
 import { listForPeriod } from "./transactionQueries";
-import { spendLines } from "./reports";
+import { clampToArchive, spendLines } from "./reports";
+import { setSetting } from "./settings";
 import { createTransaction } from "./transactions";
 
 const RANGE = { from: "2026-11-01", to: "2026-11-30" };
@@ -78,5 +79,17 @@ describe("business and personal sides", () => {
     expect(total(spendLines(db, RANGE, { side: "business" }))).toBe(120);
     updateCategory(db, food.id, { isBusiness: false });
     expect(total(spendLines(db, RANGE, { side: "business" }))).toBe(0);
+  });
+
+  it("leaves archived entries out unless the view sits inside the archive", () => {
+    const { db, tools, add } = setup();
+    add(1000, { categoryId: tools.id });
+    setSetting(db, "archived_through", "2026-11-30");
+    expect(total(spendLines(db, { from: "0000-01-01", to: "2026-12-31" }))).toBe(0);
+    expect(total(spendLines(db, RANGE))).toBe(1000);
+    expect(clampToArchive({ from: "2026-01-01", to: "2027-02-01" }, "2026-12-31")).toEqual({
+      from: "2027-01-01",
+      to: "2027-02-01",
+    });
   });
 });

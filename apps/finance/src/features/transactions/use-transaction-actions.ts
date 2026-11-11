@@ -16,6 +16,7 @@ import { collapseThen } from "@studio/motion";
 import { sql } from "drizzle-orm";
 
 import { inputFromItem, quickActionsFor } from "./quick-edit";
+import { useSelection } from "./selection-store";
 
 export interface TransactionActions {
   open: (id: string) => void;
@@ -33,6 +34,12 @@ export interface TransactionActions {
     side: "business" | "personal" | null,
     label: string,
   ) => void;
+  /** Bulk changes for select mode in Activity; each shows one undo toast. */
+  bulk: {
+    category: (ids: readonly string[]) => void;
+    side: (ids: readonly string[]) => void;
+    remove: (ids: readonly string[], done: () => void) => void;
+  };
   /** Native action menu: edit, memo, category, account, merchant, duplicate, delete. */
   menu: (id: string) => void;
 }
@@ -193,6 +200,7 @@ export function useTransactionActions(): TransactionActions {
       if (!item) return;
       const can = quickActionsFor(item);
       const choices: Choice[] = [
+        { label: "Select", run: () => useSelection.getState().start(id) },
         { label: "Edit", run: () => edit(id) },
         { label: item.memo.trim() ? "Edit note" : "Add note", run: () => editMemo(id) },
       ];
@@ -211,7 +219,110 @@ export function useTransactionActions(): TransactionActions {
       );
       choose(undefined, choices);
     };
+    const loadAll = (ids: readonly string[]) =>
+      ids.flatMap((id) => {
+        const item = getTransaction(db, id);
+        return item ? [item] : [];
+      });
+    const updateMany = (
+      items: readonly TransactionListItem[],
+      patch: Parameters<typeof inputFromItem>[1],
+      message: string,
+    ) => {
+      for (const item of items)
+        actions.transactions.update(item.id, inputFromItem(item, patch));
+      showToast({
+        message,
+        actionLabel: "Undo",
+        onAction: () => {
+          for (const item of items)
+            actions.transactions.update(item.id, inputFromItem(item, {}));
+        },
+      });
+    };
+    const bulk = {
+      category: (ids: readonly string[]) => {
+        const items = loadAll(ids).filter(
+          (i) =>
+            (i.kind === "expense" || i.kind === "income") &&
+            i.splits.length <= 1,
+        );
+        const kinds = new Set(items.map((i) => i.kind));
+        const kind = [...kinds][0];
+        if (items.length === 0 || kinds.size > 1 || !kind) {
+          Alert.alert(
+            "Can't change category",
+            "Pick only spending or only income, without split entries.",
+          );
+          return;
+        }
+        const options = recentCategories(
+          db,
+          kind === "income" ? "income" : "expense",
+          12,
+        );
+        choose(
+          "Category",
+          options.map((c) => ({
+            label: c.name,
+            run: () =>
+              updateMany(
+                items,
+                { categoryId: c.id },
+                `${items.length} moved to ${c.name}`,
+              ),
+          })),
+        );
+      },
+      side: (ids: readonly string[]) => {
+        const items = loadAll(ids).filter(
+          (i) => i.kind === "expense" || i.kind === "income",
+        );
+        if (items.length === 0) return;
+        choose("Counts as", [
+          {
+            label: "Business",
+            run: () => updateMany(items, { side: "business" }, `${items.length} count as business`),
+          },
+          {
+            label: "Personal",
+            run: () => updateMany(items, { side: "personal" }, `${items.length} count as personal`),
+          },
+          {
+            label: "Follow category",
+            run: () => updateMany(items, { side: null }, `${items.length} follow their category`),
+          },
+        ]);
+      },
+      remove: (ids: readonly string[], done: () => void) =>
+        Alert.alert(
+          `Delete ${ids.length} ${ids.length === 1 ? "entry" : "entries"}?`,
+          undefined,
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Delete",
+              style: "destructive",
+              onPress: () => {
+                const snapshots = ids.flatMap((id) => {
+                  const s = actions.transactions.delete(id);
+                  return s ? [s] : [];
+                });
+                done();
+                showToast({
+                  message: `${snapshots.length} deleted`,
+                  actionLabel: "Undo",
+                  onAction: () => {
+                    for (const s of snapshots) actions.transactions.restore(s);
+                  },
+                });
+              },
+            },
+          ],
+        ),
+    };
     return {
+      bulk,
       open,
       edit,
       duplicate,

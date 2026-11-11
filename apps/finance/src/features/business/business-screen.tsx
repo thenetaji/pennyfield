@@ -1,6 +1,6 @@
 import { useRouter, type Href } from "expo-router";
 import * as React from "react";
-import { ScrollView, View } from "react-native";
+import { Alert, ScrollView, View } from "react-native";
 
 import { withSkia } from "@studio/charts";
 import type { CashFlowChartProps } from "@studio/charts/components";
@@ -32,8 +32,11 @@ import {
   useCategories,
   useRateLookup,
   useSettings,
+  useTags,
   useTodayKey,
 } from "@/data/hooks";
+import { useActions } from "@/data/actions";
+import { clampToArchive } from "@/db/repos/reports";
 import { normalizeTitle } from "@/db/repos/titleMemory";
 import { useRangeStore } from "@/features/insights/range-store";
 import { categoryBreakdown, profitSummary } from "@/features/tags/model";
@@ -80,6 +83,22 @@ export default function BusinessScreen() {
   const categories = useCategories();
   const accounts = useAccounts();
   const openRange = useRangeStore((s) => s.open);
+  const actions = useActions();
+  const oldTag = useTags().find((t) => t.name.trim().toLowerCase() === "business");
+  const removeOldTag = () =>
+    oldTag &&
+    Alert.alert(
+      "Delete the business tag?",
+      "Business categories decide this now. Entries keep everything else.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => actions.tags.delete(oldTag.id),
+        },
+      ],
+    );
 
   const [scope, setScope] = React.useState(0);
   const [custom, setCustom] = React.useState({
@@ -118,8 +137,14 @@ export default function BusinessScreen() {
     accountId: accountId || null,
     payee: payee || null,
   };
-  const all = filterItems(items, { ...ALL_DATES, ...filters });
-  const shown = filterItems(all, range);
+  const all = filterItems(items, {
+    ...clampToArchive(ALL_DATES, settings.archived_through),
+    ...filters,
+  });
+  const shown = filterItems(
+    items,
+    { ...clampToArchive(range, settings.archived_through), ...filters },
+  );
   const summary = profitSummary(shown, convert);
   const months = lastMonths(today);
   const flow = monthlyFlow(all, months, convert);
@@ -127,7 +152,7 @@ export default function BusinessScreen() {
   const costs = byPayee(shown, "expense", convert);
   const before = previous
     ? new Map(
-        byPayee(filterItems(all, previous), "income", convert).map((r) => [
+        byPayee(filterItems(items, { ...previous, ...filters }), "income", convert).map((r) => [
           r.key,
           r.amount,
         ]),
@@ -296,6 +321,14 @@ export default function BusinessScreen() {
           ) : null}
         </ScrollView>
       </Stagger>
+
+      {oldTag ? (
+        <Stagger index={2}>
+          <ListGroup footer="Business categories decide what counts as business, so this tag no longer does anything.">
+            <ListRow label="Delete the business tag" destructive centered onPress={removeOldTag} />
+          </ListGroup>
+        </Stagger>
+      ) : null}
 
       <Stagger index={2}>
         <ListGroup

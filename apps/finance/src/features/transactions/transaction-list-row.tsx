@@ -1,5 +1,7 @@
 import * as React from "react";
-import type { LayoutChangeEvent } from "react-native";
+import { StyleSheet, View, type LayoutChangeEvent } from "react-native";
+import { AppIcon } from "@studio/icons";
+import { useTokens, withAlpha } from "@studio/theme";
 import Animated, {
   Easing,
   runOnJS,
@@ -22,6 +24,7 @@ import {
 import type { EntryTracker } from "@studio/motion";
 
 import { toRowModel, type RowModelContext } from "./row-model";
+import { useSelection } from "./selection-store";
 import { useTransactionActions } from "./use-transaction-actions";
 
 type TransactionListRowProps = {
@@ -42,8 +45,23 @@ const TransactionListRow = React.memo(function TransactionListRow({
   const actions = useTransactionActions();
   const model = React.useMemo(() => toRowModel(item, context), [item, context]);
   const id = item.id;
-  const onPress = React.useCallback(() => actions.open(id), [actions, id]);
-  const onLongPress = React.useCallback(() => actions.menu(id), [actions, id]);
+  const { colors } = useTokens();
+  const selecting = useSelection((s) => s.ids.length > 0);
+  const selected = useSelection((s) => s.ids.includes(id));
+  const onPress = React.useCallback(
+    () =>
+      useSelection.getState().ids.length > 0
+        ? useSelection.getState().toggle(id)
+        : actions.open(id),
+    [actions, id],
+  );
+  const onLongPress = React.useCallback(
+    () =>
+      useSelection.getState().ids.length > 0
+        ? useSelection.getState().toggle(id)
+        : actions.menu(id),
+    [actions, id],
+  );
   const onDelete = React.useCallback(() => actions.remove(id), [actions, id]);
   const onDuplicate = React.useCallback(
     () => actions.duplicate(id),
@@ -125,6 +143,28 @@ const TransactionListRow = React.memo(function TransactionListRow({
         onDuplicate={onDuplicate}
       />
       {inserted ? <Shimmer active /> : null}
+      {selecting ? (
+        <View
+          pointerEvents="none"
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              alignItems: "flex-end",
+              justifyContent: "center",
+              paddingRight: 6,
+              backgroundColor: selected
+                ? withAlpha(colors.accent, 0.14)
+                : "transparent",
+            },
+          ]}
+        >
+          <AppIcon
+            name={selected ? "checkmark.circle.fill" : "circle"}
+            size={18}
+            color={selected ? colors.accent : colors.textTertiary}
+          />
+        </View>
+      ) : null}
     </Animated.View>
   );
 });
