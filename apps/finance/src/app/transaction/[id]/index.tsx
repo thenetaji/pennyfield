@@ -14,6 +14,7 @@ import {
 } from "@studio/ui";
 import {
   useBudgets,
+  useCategories,
   useMerchantHistory,
   useRecurringRule,
   useSetting,
@@ -76,6 +77,7 @@ export default function TransactionDetail() {
   const [monthStart] = useSetting("month_start");
   const history = useMerchantHistory(item);
   const budgets = useBudgets(item?.dateKey);
+  const categories = useCategories();
 
   // Deleted elsewhere while open: pop back.
   React.useEffect(() => {
@@ -115,6 +117,14 @@ export default function TransactionDetail() {
       ? null
       : `≈ ${formatMoney(convertWithRates(item.amount, item.currency, displayCurrency, rates), displayCurrency, { locale, sign: "none", decimals: 0 })}`;
   const split = item.splits.length > 1;
+  const plainKind = item.kind === "expense" || item.kind === "income";
+  const businessIds = new Set(
+    categories.filter((c) => c.isBusiness).map((c) => c.id),
+  );
+  const categoryBusiness =
+    (item.categoryId !== null && businessIds.has(item.categoryId)) ||
+    item.splits.some((l) => businessIds.has(l.categoryId));
+  const isBusiness = item.side ? item.side === "business" : categoryBusiness;
   const lending = isLendingKind(item.kind);
   const title = isTransfer
     ? `${item.account.name} → ${item.transferAccount?.name ?? ""}`
@@ -311,6 +321,27 @@ export default function TransactionDetail() {
                   icon: item.category.icon,
                   color: item.category.color as CategoryColorKey,
                 }}
+              />
+            ) : null}
+            {plainKind && categories.some((c) => c.isBusiness) ? (
+              <DetailRow
+                label="Counts as"
+                value={isBusiness ? "Business" : "Personal"}
+                caption={item.side ? "Set on this entry" : undefined}
+                chevron
+                onPress={() => {
+                  const next = !isBusiness;
+                  actions.setSide(
+                    item,
+                    next === categoryBusiness
+                      ? null
+                      : next
+                        ? "business"
+                        : "personal",
+                    next ? "business" : "personal",
+                  );
+                }}
+                accessibilityLabel={`Counts as ${isBusiness ? "business" : "personal"}, tap to switch`}
               />
             ) : null}
             {isTransfer ? (

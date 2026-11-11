@@ -2,6 +2,14 @@
 
 All notable changes to Finance. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.6.0 update - 2026-11-11 (4)
+
+### Added
+- **Business page:** a 12-month chart of money in and out (tap a month to view it), Month, Year, All or a custom date range, filters for category, account and payee, income by source with change from the previous period, and costs by payee as a share of revenue.
+
+### Changed
+- **Simpler business and personal:** the category decides. The add sheet no longer has a Business/Personal chip. An entry's detail screen has a "Counts as" row for the rare exception, and switching a category's Business setting resets its entries to follow it.
+
 ## 0.6.0 update - 2026-11-11 (3)
 
 ### Fixed

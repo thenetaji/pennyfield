@@ -1,7 +1,9 @@
 import type { TransactionListItem } from "@/data/hooks";
 import type { TransactionInput } from "@/db/repos/transactions";
 
-type QuickPatch = Partial<Pick<TransactionInput, "memo" | "categoryId" | "accountId">>;
+type QuickPatch = Partial<
+  Pick<TransactionInput, "memo" | "categoryId" | "accountId" | "side">
+>;
 
 /** The full write input for an existing transaction with one field changed; tags are left as they are. */
 export function inputFromItem(
@@ -24,6 +26,7 @@ export function inputFromItem(
     occurredAt: item.occurredAt,
     recurringRuleId: item.recurringRuleId,
     personId: item.personId,
+    side: item.side,
     ...patch,
   };
 }

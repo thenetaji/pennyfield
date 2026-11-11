@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { ValidationError } from "../errors";
 import { newId } from "@studio/data";
 import {
@@ -100,7 +100,25 @@ export function updateCategory(
   patch: CategoryPatch,
   now = Date.now(),
 ): void {
-  if (!getCategory(db, id)) throw new ValidationError("category_not_found");
+  const before = getCategory(db, id);
+  if (!before) throw new ValidationError("category_not_found");
+  // A category's switch is the rule: flipping it drops per-entry exceptions, so its entries all follow.
+  if (patch.isBusiness !== undefined && patch.isBusiness !== before.isBusiness)
+    db.update(transactions)
+      .set({ side: null })
+      .where(
+        or(
+          eq(transactions.categoryId, id),
+          inArray(
+            transactions.id,
+            db
+              .select({ id: transactionSplits.transactionId })
+              .from(transactionSplits)
+              .where(eq(transactionSplits.categoryId, id)),
+          ),
+        ),
+      )
+      .run();
   db.update(categories)
     .set({
       ...(patch.name !== undefined && { name: patch.name.trim() }),

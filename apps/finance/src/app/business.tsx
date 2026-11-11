@@ -1,5 +1,3 @@
-import { TagScreen } from "@/features/tags/tag-screen";
+import { withSkia } from "@studio/charts";
 
-export default function BusinessScreen() {
-  return <TagScreen business />;
-}
+export default withSkia(() => import("@/features/business/business-screen"));

@@ -272,21 +272,6 @@ function TransactionForm({
           : colors.accent;
   const person = people.find((p) => p.id === draft.personId);
   const draftTags = allTags.filter((t) => draft.tagIds.includes(t.id));
-  const categoryIsBusiness =
-    categoriesAll.find(
-      (c) => c.id === (draft.splits?.[0]?.categoryId ?? draft.categoryId),
-    )?.isBusiness ?? false;
-  const usesBusiness = categoriesAll.some((c) => c.isBusiness);
-  const isBusiness = draft.side
-    ? draft.side === "business"
-    : categoryIsBusiness;
-  const toggleBusiness = () => {
-    haptic("selection");
-    const next = !isBusiness;
-    get().patch({
-      side: next === categoryIsBusiness ? null : next ? "business" : "personal",
-    });
-  };
   const crossCurrency = isTransfer && fromCurrency !== toCurrency;
   const budgets = useBudgets(
     draft.occurredAt ? toDateKey(draft.occurredAt) : todayKey,
@@ -1090,18 +1075,6 @@ function TransactionForm({
                       accessibilityLabel={`Date, ${dateChipLabel(draft.occurredAt, todayKey, timeChanged)}`}
                     />
                   </View>
-                  {usesBusiness &&
-                  (draft.kind === "expense" || draft.kind === "income") ? (
-                    <View>
-                      <FormChip
-                        label={isBusiness ? "Business" : "Personal"}
-                        icon="business"
-                        selected={isBusiness}
-                        onPress={toggleBusiness}
-                        accessibilityLabel={`${isBusiness ? "Business" : "Personal"}, tap to switch`}
-                      />
-                    </View>
-                  ) : null}
                   <View>
                     <MenuChip
                       label="Receipt"
