@@ -101,7 +101,7 @@ export function categoryBreakdown(
   return rows.map((row) => ({ ...row, share: top > 0 ? row.amount / top : 0 }));
 }
 
-/** Expense categories with these names count as income tax: kept out of costs and taken off after profit. */
+/** Expenses whose category or title has one of these names count as income tax: kept out of costs and taken off after profit. */
 const TAX_CATEGORY = /^(income\s+)?tax(es)?$/i;
 
 export const isTaxCategory = (name: string): boolean =>
@@ -109,6 +109,7 @@ export const isTaxCategory = (name: string): boolean =>
 
 interface ProfitItem extends BreakdownItem {
   dateKey: string;
+  title?: string;
 }
 
 export interface ProfitMonth {
@@ -166,9 +167,10 @@ export function profitSummary(
       item.splits.length > 1
         ? item.splits.map((l) => ({ amount: l.amount, name: l.category.name }))
         : [{ amount: item.amount, name: item.category?.name ?? "" }];
+    const taxTitle = isTaxCategory(item.title ?? "");
     for (const line of lines) {
       const v = convert(line.amount, item.currency);
-      if (isTaxCategory(line.name)) tax += v;
+      if (taxTitle || isTaxCategory(line.name)) tax += v;
       else {
         costs += v;
         month(item.dateKey).costs += v;
