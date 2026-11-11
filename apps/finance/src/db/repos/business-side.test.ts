@@ -1,6 +1,6 @@
 import { createTestDb } from "../test-helpers";
 import { createAccount } from "./accounts";
-import { createCategory } from "./categories";
+import { createCategory, updateCategory } from "./categories";
 import { listForPeriod } from "./transactionQueries";
 import { spendLines } from "./reports";
 import { createTransaction } from "./transactions";
@@ -68,5 +68,15 @@ describe("business and personal sides", () => {
     expect(total(spendLines(db, RANGE, { side: "business" }))).toBe(100);
     expect(total(spendLines(db, RANGE, { side: "personal" }))).toBe(200);
     expect(listForPeriod(db, { ...RANGE, side: "business" })).toHaveLength(1);
+  });
+
+  it("drops per-entry exceptions when the category is switched", () => {
+    const { db, food, add } = setup();
+    add(50, { categoryId: food.id, side: "business" });
+    add(70, { categoryId: food.id });
+    updateCategory(db, food.id, { isBusiness: true });
+    expect(total(spendLines(db, RANGE, { side: "business" }))).toBe(120);
+    updateCategory(db, food.id, { isBusiness: false });
+    expect(total(spendLines(db, RANGE, { side: "business" }))).toBe(0);
   });
 });

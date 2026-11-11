@@ -27,6 +27,12 @@ export interface TransactionActions {
   editMemo: (id: string) => void;
   /** Every payment to the same merchant, all time. */
   openMerchant: (item: TransactionListItem) => void;
+  /** Overrides business/personal for one entry; null follows its category. Shows an undo toast. */
+  setSide: (
+    item: TransactionListItem,
+    side: "business" | "personal" | null,
+    label: string,
+  ) => void;
   /** Native action menu: edit, memo, category, account, merchant, duplicate, delete. */
   menu: (id: string) => void;
 }
@@ -100,6 +106,11 @@ export function useTransactionActions(): TransactionActions {
           actions.transactions.update(item.id, inputFromItem(item, {})),
       });
     };
+    const setSide = (
+      item: TransactionListItem,
+      side: "business" | "personal" | null,
+      label: string,
+    ) => update(item, { side }, `Counts as ${label}`);
     const editMemo = (id: string) => {
       const item = getTransaction(db, id);
       if (!item) return;
@@ -200,6 +211,15 @@ export function useTransactionActions(): TransactionActions {
       );
       choose(undefined, choices);
     };
-    return { open, edit, duplicate, remove, editMemo, openMerchant, menu };
+    return {
+      open,
+      edit,
+      duplicate,
+      remove,
+      editMemo,
+      openMerchant,
+      setSide,
+      menu,
+    };
   }, [router, actions, db]);
 }
