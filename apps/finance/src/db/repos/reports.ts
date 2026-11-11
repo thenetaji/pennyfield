@@ -1,3 +1,5 @@
+import { addDays } from "@studio/dates";
+import { getSetting } from "./settings";
 import {
   and,
   between,
@@ -16,6 +18,16 @@ import {
 } from "../schema";
 import type { Db } from "../types";
 
+/** Narrows a range past the archive unless it lies wholly inside it (looking back at an archived year still works). */
+export function clampToArchive(
+  range: { from: string; to: string },
+  archivedThrough: string | null,
+): { from: string; to: string } {
+  if (!archivedThrough || range.to <= archivedThrough) return range;
+  if (range.from > archivedThrough) return range;
+  return { from: addDays(archivedThrough, 1), to: range.to };
+}
+
 /**
  * Attributable amounts for a date range: plain income/expense rows by their
  * category plus one line per split, never split parents and never transfers.
@@ -25,6 +37,7 @@ export function spendLines(
   range: { from: string; to: string },
   scope?: InsightsScope,
 ): FlatLine[] {
+  range = clampToArchive(range, getSetting(db, "archived_through"));
   const kinds = ["expense", "income"] as const;
   const plain = db
     .select({

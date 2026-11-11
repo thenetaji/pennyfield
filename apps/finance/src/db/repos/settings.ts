@@ -105,6 +105,8 @@ export interface SettingsMap {
   settings_style: SettingsStyle;
   /** Take-home pay per hour in the display currency's minor units, for showing costs as work time; null is off. */
   hourly_pay: number | null;
+  /** Entries on or before this date key are archived: left out of totals unless a view sits wholly inside it. */
+  archived_through: string | null;
 }
 
 export type SettingKey = keyof SettingsMap;
@@ -146,6 +148,7 @@ export const DEFAULT_SETTINGS: Readonly<SettingsMap> = {
   last_accounts: {},
   settings_style: "calm",
   hourly_pay: null,
+  archived_through: null,
 };
 
 const LOOK_VERSION = 2;

@@ -52,6 +52,7 @@ describe("settings", () => {
         "row_detail",
         "settings_style",
         "hourly_pay",
+        "archived_through",
         "reminder_price_fired",
         "look_version",
         "categories_version",

@@ -35,7 +35,7 @@ export type SettingGroup = {
   rows: SettingRow[];
 };
 
-export type PickerId = "week" | "month" | "account" | "rows";
+export type PickerId = "week" | "month" | "account" | "rows" | "archive";
 
 const ROW_LABELS: Record<RowDetail, string> = {
   memo: "Note",
@@ -80,6 +80,7 @@ export function useSettingGroups(): SettingGroup[] {
   const [weekStart] = useSetting("week_start");
   const [monthStart] = useSetting("month_start");
   const [defaultAccountId] = useSetting("default_account_id");
+  const [archivedThrough] = useSetting("archived_through");
   const [theme] = useSetting("theme");
   const [accent] = useSetting("accent");
   const [haptics, setHaptics] = useSetting("haptics");
@@ -133,6 +134,13 @@ export function useSettingGroups(): SettingGroup[] {
           words: "exchange rate display fx",
           value: displayCurrency,
           href: "/settings/currency",
+        },
+        {
+          key: "archive",
+          label: "Archive",
+          words: "year close new year financial reset",
+          value: archivedThrough ? `Up to ${archivedThrough}` : "Off",
+          picker: "archive",
         },
         {
           key: "default_account",

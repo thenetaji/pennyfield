@@ -290,6 +290,8 @@ export function GroupPickers({
   const [monthStart, setMonthStart] = useSetting("month_start");
   const [defaultAccountId, setDefaultAccountId] = useSetting("default_account_id");
   const [rowDetail, setRowDetail] = useSetting("row_detail");
+  const [archivedThrough, setArchivedThrough] = useSetting("archived_through");
+  const archiveOptions = React.useMemo(() => archiveChoices(new Date()), []);
   const accountOptions = React.useMemo(
     () => accounts.map((a) => ({ value: a.id as string | null, label: a.name })),
     [accounts],
@@ -302,6 +304,14 @@ export function GroupPickers({
         options={ROW_OPTIONS}
         selected={rowDetail}
         onSelect={setRowDetail}
+        onClose={onClose}
+      />
+      <OptionPicker
+        visible={open === "archive"}
+        title="Leave out of totals"
+        options={archiveOptions}
+        selected={archivedThrough}
+        onSelect={setArchivedThrough}
         onClose={onClose}
       />
       <OptionPicker
@@ -332,4 +342,15 @@ export function GroupPickers({
       />
     </>
   );
+}
+
+/** Off, the last calendar year, or the last April–March year: entries up to that day stop counting in totals. */
+function archiveChoices(now: Date): { value: string | null; label: string }[] {
+  const y = now.getFullYear();
+  const fyEnd = now.getMonth() >= 3 ? y : y - 1;
+  return [
+    { value: null, label: "Nothing" },
+    { value: `${y - 1}-12-31`, label: `${y - 1} and before` },
+    { value: `${fyEnd}-03-31`, label: `Up to March ${fyEnd} (Apr–Mar year)` },
+  ];
 }
