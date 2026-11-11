@@ -36,7 +36,7 @@ describe("breakdownTitle", () => {
   it("keeps the category wording and names other dimensions", () => {
     expect(breakdownTitle("category", "expense")).toBe("Spending by category");
     expect(breakdownTitle("category", "income")).toBe("Income by source");
-    expect(breakdownTitle("group", "expense")).toBe("Spending by business / personal");
+    expect(breakdownTitle("group", "expense")).toBe("Spending by group");
     expect(breakdownTitle("tag", "income")).toBe("Income by tag");
   });
 });
@@ -78,7 +78,7 @@ describe("breakdownSummary", () => {
       "Spending by tag: S0 20%, S1 19%",
     );
     expect(breakdownSummary([], "group", "expense")).toBe(
-      "Spending by business / personal: nothing in this period",
+      "Spending by group: nothing in this period",
     );
   });
 });

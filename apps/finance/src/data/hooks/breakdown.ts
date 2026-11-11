@@ -88,13 +88,21 @@ function breakdownContext(
   const category = (id: string | null): CategoryRow | null =>
     id ? (categories.get(id) ?? null) : null;
   const lookups: BreakdownLookups = {
-    groupOf: (id) => (category(id)?.isBusiness ? "Business" : "Personal"),
+    groupOf: (id) => category(id)?.groupName ?? null,
+    sideOf: (id) => (category(id)?.isBusiness ? "Business" : "Personal"),
     tagsOf: (id) => links.get(id) ?? [],
   };
   const describe: Describe = (row) => {
     const { prefix, id } = parseKey(row.key);
     const lead = category(row.categoryId);
     switch (prefix) {
+      case KEY.side:
+        return {
+          name: id,
+          icon: id === "Business" ? "business" : "person",
+          color: lead?.color ?? "gray",
+          target: null,
+        };
       case KEY.group:
         return {
           name: id,
@@ -164,18 +172,24 @@ export function readBreakdown(
   let slices = breakdownTotals(lines, kind, range, ctx, (l) =>
     breakdownKeys(by, l, lookups),
   ).map(slice);
-  if (by === "group") {
+  if (by === "group" || by === "side") {
+    const prefix = by === "group" ? KEY.group : KEY.side;
+    const inSlice = (id: string, name: string) => {
+      const c = category(id);
+      return by === "group"
+        ? c?.groupName === name
+        : (c?.isBusiness ? "Business" : "Personal") === name;
+    };
     const byCategory = breakdownTotals(lines, kind, range, ctx, (l) => [
       categoryKey(l.categoryId),
     ]).map(slice);
     slices = slices.map((s) =>
-      parseKey(s.key).prefix === KEY.group
+      parseKey(s.key).prefix === prefix
         ? {
             ...s,
             children: byCategory.filter(
               (child) =>
-                child.target !== null &&
-                category(child.target.id)?.groupName === s.name,
+                child.target !== null && inSlice(child.target.id, s.name),
             ),
           }
         : s,

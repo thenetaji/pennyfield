@@ -259,6 +259,8 @@ export default function Home() {
                 <BusinessCard
                   earned={spend.business.earned}
                   spent={spend.business.spent}
+                  personalSpent={spend.spent}
+                  monthSpent={spend.business.monthSpent}
                   currency={spend.currency}
                   locale={locale}
                   showDecimals={money.showDecimals}

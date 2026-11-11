@@ -32,6 +32,7 @@ const line = (
 const october = periodFor("month", "2026-10-05");
 const lookups: BreakdownLookups = {
   groupOf: (id) => (id === "food" || id === "groceries" ? "Essentials" : null),
+  sideOf: () => "Personal",
   tagsOf: (id) =>
     id === "t1" ? ["trip", "work"] : id === "t2" ? ["trip"] : [],
 };

@@ -53,7 +53,6 @@ import {
   type ReceiptSource,
 } from "@/features/receipts/pick";
 import { ReceiptThumb } from "@/features/receipts/receipt-thumb";
-import { TagPills } from "@/features/tags/tag-pill";
 import { isLendingKind, type TransactionKind } from "@/lib/ledger";
 import { applyDevPreset } from "@/features/transaction-form/dev-preset";
 import {
@@ -1066,6 +1065,21 @@ function TransactionForm({
                   )}
                   <View>
                     <FormChip
+                      label={
+                        draftTags.length === 0
+                          ? "Tags"
+                          : draftTags.length <= 2
+                            ? draftTags.map((t) => t.name).join(", ")
+                            : `${draftTags[0]?.name ?? ""} +${draftTags.length - 1}`
+                      }
+                      icon="tag"
+                      selected={draftTags.length > 0}
+                      onPress={() => router.push("/transaction/tags")}
+                      accessibilityLabel={`Tags, ${draftTags.length === 0 ? "none" : draftTags.map((t) => t.name).join(", ")}`}
+                    />
+                  </View>
+                  <View>
+                    <FormChip
                       label={dateChipLabel(
                         draft.occurredAt,
                         todayKey,
@@ -1088,21 +1102,6 @@ function TransactionForm({
                       />
                     </View>
                   ) : null}
-                  <View>
-                    <FormChip
-                      label={
-                        draftTags.length === 0
-                          ? "Tags"
-                          : draftTags.length === 1
-                            ? (draftTags[0]?.name ?? "Tags")
-                            : `${draftTags.length} tags`
-                      }
-                      icon="tag"
-                      selected={draftTags.length > 0}
-                      onPress={() => router.push("/transaction/tags")}
-                      accessibilityLabel={`Tags, ${draftTags.length === 0 ? "none" : draftTags.map((t) => t.name).join(", ")}`}
-                    />
-                  </View>
                   <View>
                     <MenuChip
                       label="Receipt"
@@ -1193,16 +1192,10 @@ function TransactionForm({
                 ))}
               </ScrollView>
             ) : null}
-            {draftTags.length > 0 || draft.receipts.length > 0 ? (
+            {draft.receipts.length > 0 ? (
               <>
                 <Hairline />
                 <View className="gap-3 px-4 py-3">
-                  {draftTags.length > 0 ? (
-                    <TagPills
-                      tags={draftTags}
-                      onPressTag={() => router.push("/transaction/tags")}
-                    />
-                  ) : null}
                   {draft.receipts.length > 0 ? (
                     <View className="flex-row flex-wrap gap-3 pt-1.5">
                       {draft.receipts.map((r) => (

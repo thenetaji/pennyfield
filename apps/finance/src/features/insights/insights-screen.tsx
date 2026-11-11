@@ -107,7 +107,8 @@ import {
 
 const LIST_TITLES: Record<BreakdownBy, string> = {
   category: "Categories",
-  group: "Business",
+  group: "Groups",
+  side: "Business",
   tag: "Tags",
   account: "Accounts",
   merchant: "Merchants",

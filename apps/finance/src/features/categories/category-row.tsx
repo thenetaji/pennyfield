@@ -33,7 +33,7 @@ function CategoryRow({
   trailing,
 }: CategoryRowProps) {
   const { colors } = useTokens();
-  const detail = [category.isBusiness ? "Business" : null, countLabel(count)]
+  const detail = [category.isBusiness ? "Business" : null, category.groupName, countLabel(count)]
     .filter(Boolean)
     .join(" · ");
   return (
