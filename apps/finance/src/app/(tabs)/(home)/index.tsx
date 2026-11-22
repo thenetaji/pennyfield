@@ -29,6 +29,7 @@ import { Pockets } from "@/features/home/pockets";
 import { HomeChapter, HomeSectionHeader } from "@/features/home/section-header";
 import { SpendHero } from "@/features/home/spend-hero";
 import { HomeTopBar } from "@/features/home/top-bar";
+import { MaturingCard } from "@/features/investments/maturing-card";
 import { TopCategories } from "@/features/home/top-categories";
 import { UpcomingBills } from "@/features/home/upcoming-bills";
 import { WeekCard } from "@/features/home/week-card";
@@ -267,6 +268,10 @@ export default function Home() {
                 />
               </View>
             ) : null}
+            <MaturingCard
+              locale={locale}
+              showDecimals={money.showDecimals}
+            />
             {layout
               .filter((section) => section.visible)
               .flatMap((section) => {

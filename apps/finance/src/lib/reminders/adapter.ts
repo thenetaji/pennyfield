@@ -1,10 +1,12 @@
 import { conversionContext } from "@/data/hooks/summary";
 import { listBudgetProgress } from "@/db/repos/budgets";
 import { analyzerLines } from "@/db/repos/insight-lines";
+import { listAllInvestments } from "@/db/repos/investments";
 import { listRules } from "@/db/repos/recurring";
 import { getAllSettings, setSetting } from "@/db/repos/settings";
 import type { Db } from "@/db/types";
 import { priceRises } from "@/lib/insights/price-rises";
+import { resolveTaxRules } from "@/lib/investments/tax";
 import { addDays, toDateKey } from "@studio/dates";
 import { convertWithRates } from "@studio/money";
 import {
@@ -130,8 +132,13 @@ export async function rescheduleAll(
       dailyTime: settings.reminder_daily_time,
       bills: settings.reminder_bills,
       budgets: settings.reminder_budgets,
+      investments: settings.reminder_investments,
     },
     rules: listRules(db),
+    investments: listAllInvestments(db),
+    indiaTax:
+      resolveTaxRules(settings.tax_rules, settings.display_currency) ===
+      "india",
     budgets: listBudgetProgress(db, toDateKey(now)).map((p) => ({
       budgetId: p.budget.id,
       name: p.budget.name,

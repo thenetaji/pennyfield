@@ -44,3 +44,4 @@ export * from "./useBalanceMovements";
 export * from "./useReports";
 export * from "./useMerchantHistory";
 export * from "./useRecentMemos";
+export * from "./useInvestments";

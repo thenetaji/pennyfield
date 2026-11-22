@@ -6,6 +6,7 @@ import m0001 from './0001_marvelous_gladiator.sql';
 import m0002 from './0002_acoustic_spiral.sql';
 import m0003 from './0003_burly_loa.sql';
 import m0004 from './0004_fixed_the_fury.sql';
+import m0005 from './0005_lonely_rocket_racer.sql';
 
   export default {
     journal,
@@ -14,7 +15,8 @@ import m0004 from './0004_fixed_the_fury.sql';
 m0001,
 m0002,
 m0003,
-m0004
+m0004,
+m0005
     }
   }
   

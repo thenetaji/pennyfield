@@ -14,6 +14,8 @@ export type TableName =
   | "budget_categories"
   | "title_memory"
   | "fx_rates"
+  | "investments"
+  | "investment_payouts"
   | "settings";
 
 export const ALL_TABLES: readonly TableName[] = [
@@ -30,6 +32,8 @@ export const ALL_TABLES: readonly TableName[] = [
   "budget_categories",
   "title_memory",
   "fx_rates",
+  "investments",
+  "investment_payouts",
   "settings",
 ];
 

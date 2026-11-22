@@ -12,8 +12,10 @@ import {
   planBillReminders,
   planBudgetAlerts,
   planDailyReminder,
+  planInvestmentReminders,
   planReminders,
   type BillRule,
+  type InvestmentReminderInput,
   type PlannedNotification,
 } from "./schedule";
 
@@ -217,6 +219,7 @@ describe("planReminders", () => {
     dailyTime: "21:00",
     bills: true,
     budgets: true,
+    investments: true,
   };
 
   it("combines the daily reminder, budget alerts and bills, honouring the toggles", () => {
@@ -411,5 +414,53 @@ describe("rescheduleAll", () => {
       [...pending.keys()].filter((k) => k.startsWith("budget:")),
     ).toHaveLength(2);
     expect(getSetting(db, "reminder_budget_fired")).toHaveLength(2);
+  });
+});
+
+describe("planInvestmentReminders", () => {
+  const fd = (patch: Partial<InvestmentReminderInput> = {}): InvestmentReminderInput => ({
+    id: "fd",
+    name: "SBI FD",
+    amount: 10_000_000,
+    currency: "INR",
+    payout: "quarterly",
+    buyDate: "2026-01-10",
+    maturityDate: "2026-11-20",
+    closedOn: null,
+    ...patch,
+  });
+
+  it("reminds three days before an open investment matures", () => {
+    const [n] = planInvestmentReminders([fd()], NOW, { india: false });
+    expect(n?.title).toBe("SBI FD matures in 3 days");
+    expect(n?.trigger).toEqual({
+      type: "date",
+      at: new Date(2026, 10, 17, 9, 0).getTime(),
+    });
+    expect(
+      planInvestmentReminders([fd({ closedOn: "2026-10-01" })], NOW, {
+        india: false,
+      }),
+    ).toEqual([]);
+  });
+
+  it("asks for last year's interest on cumulative deposits each April under Indian rules", () => {
+    const cumulative = fd({ payout: "cumulative", maturityDate: "2028-01-01" });
+    const plan = planInvestmentReminders([cumulative], NOW, { india: true });
+    expect(plan.map((n) => n.title)).toEqual(["Add last year's interest"]);
+    expect(plan[0]?.trigger).toEqual({
+      type: "date",
+      at: new Date(2027, 3, 15, 9, 0).getTime(),
+    });
+    expect(
+      planInvestmentReminders([cumulative], NOW, { india: false }),
+    ).toEqual([]);
+    expect(
+      planInvestmentReminders(
+        [fd({ payout: "cumulative", maturityDate: "2027-03-01" })],
+        NOW,
+        { india: true },
+      ),
+    ).toEqual([]);
   });
 });

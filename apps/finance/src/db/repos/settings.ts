@@ -21,6 +21,7 @@ import {
   normalizeHomeLayout,
   type HomeSectionPref,
 } from "@/lib/home/layout";
+import type { TaxRulesSetting } from "@/lib/investments/tax";
 
 export { ICON_BACKGROUNDS, ICON_STYLES };
 export type { IconBackground, IconStyle };
@@ -107,6 +108,15 @@ export interface SettingsMap {
   hourly_pay: number | null;
   /** Entries on or before this date key are archived: left out of totals unless a view sits wholly inside it. */
   archived_through: string | null;
+  /** Which tax rules the Tax year page uses; "auto" picks India for rupees. */
+  tax_rules: TaxRulesSetting;
+  /** Month (1–12) the tax year starts in, outside India. */
+  tax_year_start_month: number;
+  /** Date the invested money is needed back; investments maturing later are flagged. */
+  cash_need_date: string | null;
+  reminder_investments: boolean;
+  /** Account that holds money put into investments; created with the first investment. */
+  investments_account_id: string | null;
 }
 
 export type SettingKey = keyof SettingsMap;
@@ -149,6 +159,11 @@ export const DEFAULT_SETTINGS: Readonly<SettingsMap> = {
   settings_style: "calm",
   hourly_pay: null,
   archived_through: null,
+  tax_rules: "auto",
+  tax_year_start_month: 1,
+  cash_need_date: null,
+  reminder_investments: true,
+  investments_account_id: null,
 };
 
 const LOOK_VERSION = 2;
@@ -167,6 +182,8 @@ const ENUMS: Partial<Record<SettingKey, readonly unknown[]>> = {
   sync_provider: SYNC_PROVIDER_IDS,
   row_detail: ROW_DETAILS,
   settings_style: SETTINGS_STYLES,
+  tax_rules: ["auto", "india", "general"],
+  tax_year_start_month: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
 };
 
 export const SETTING_KEYS = Object.keys(DEFAULT_SETTINGS) as SettingKey[];

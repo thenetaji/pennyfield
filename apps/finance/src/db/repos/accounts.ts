@@ -3,6 +3,8 @@ import { ValidationError } from "../errors";
 import { newId } from "@studio/data";
 import {
   accounts,
+  investmentPayouts,
+  investments,
   recurringRules,
   titleMemory,
   transactions,
@@ -261,6 +263,14 @@ function moveAccountReferences(db: Db, from: string, to: string): void {
   db.update(titleMemory)
     .set({ accountId: to })
     .where(eq(titleMemory.accountId, from))
+    .run();
+  db.update(investments)
+    .set({ fromAccountId: to })
+    .where(eq(investments.fromAccountId, from))
+    .run();
+  db.update(investmentPayouts)
+    .set({ accountId: to })
+    .where(eq(investmentPayouts.accountId, from))
     .run();
 }
 

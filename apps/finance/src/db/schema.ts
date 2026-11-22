@@ -21,6 +21,15 @@ export type {
 export type Frequency = "daily" | "weekly" | "monthly" | "yearly";
 export type BudgetPeriod = "weekly" | "monthly" | "yearly";
 export type BudgetScope = "all" | "categories";
+export type InvestmentType = "fd" | "bond" | "gsec" | "tbill" | "other";
+export type InvestmentPayoutSchedule =
+  | "monthly"
+  | "quarterly"
+  | "half_yearly"
+  | "yearly"
+  | "cumulative"
+  | "at_maturity";
+export type PayoutKind = "interest" | "principal" | "maturity" | "sale";
 
 export const accounts = sqliteTable("accounts", {
   id: text("id").primaryKey(),
@@ -264,6 +273,66 @@ export const fxRates = sqliteTable(
   (t) => [primaryKey({ columns: [t.base, t.quote] })],
 );
 
+/**
+ * A fixed deposit, bond or similar holding. Its money sits in a holding account (the `investments_account_id`
+ * setting): buying is a transfer into it, principal coming back is a transfer out of it.
+ */
+export const investments = sqliteTable(
+  "investments",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    type: text("type").$type<InvestmentType>().notNull(),
+    issuer: text("issuer").notNull().default(""),
+    platform: text("platform").notNull().default(""),
+    /** ISIN, FD number or any other reference. */
+    reference: text("reference").notNull().default(""),
+    rating: text("rating").notNull().default(""),
+    listed: integer("listed", { mode: "boolean" }).notNull().default(false),
+    amount: integer("amount").notNull(),
+    currency: text("currency").notNull(),
+    /** Yearly rate or yield in percent. */
+    rate: real("rate"),
+    payout: text("payout").$type<InvestmentPayoutSchedule>().notNull(),
+    buyDate: text("buy_date").notNull(),
+    maturityDate: text("maturity_date"),
+    closedOn: text("closed_on"),
+    /** Account the money came from; null when it left before tracking began. */
+    fromAccountId: text("from_account_id"),
+    /** Ledger entries this investment posted, rewritten on every change. */
+    buyTransactionId: text("buy_transaction_id"),
+    closeTransactionId: text("close_transaction_id"),
+    note: text("note").notNull().default(""),
+    createdAt: integer("created_at").notNull(),
+    updatedAt: integer("updated_at").notNull(),
+  },
+  (t) => [index("investments_maturity_idx").on(t.maturityDate)],
+);
+
+export const investmentPayouts = sqliteTable(
+  "investment_payouts",
+  {
+    id: text("id").primaryKey(),
+    investmentId: text("investment_id")
+      .notNull()
+      .references(() => investments.id, { onDelete: "cascade" }),
+    kind: text("kind").$type<PayoutKind>().notNull(),
+    dateKey: text("date_key").notNull(),
+    /** Before tax was withheld, in the investment's currency. */
+    gross: integer("gross").notNull(),
+    tds: integer("tds").notNull().default(0),
+    /** Account the money arrived in; null keeps it out of balances. */
+    accountId: text("account_id"),
+    transactionId: text("transaction_id"),
+    note: text("note").notNull().default(""),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [
+    index("investment_payouts_investment_idx").on(t.investmentId),
+    index("investment_payouts_date_idx").on(t.dateKey),
+  ],
+);
+
 export const settings = sqliteTable("settings", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),
@@ -283,6 +352,8 @@ export const schema = {
   budgetCategories,
   titleMemory,
   fxRates,
+  investments,
+  investmentPayouts,
   settings,
 };
 
@@ -311,3 +382,5 @@ export type BudgetCategoryRow = typeof budgetCategories.$inferSelect;
 export type TitleMemoryRow = typeof titleMemory.$inferSelect;
 export type FxRateRow = typeof fxRates.$inferSelect;
 export type SettingRow = typeof settings.$inferSelect;
+export type InvestmentRow = typeof investments.$inferSelect;
+export type PayoutRow = typeof investmentPayouts.$inferSelect;

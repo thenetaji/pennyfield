@@ -9,7 +9,7 @@ export type ReminderTrigger =
 export interface PlannedNotification {
   /** Stable identifier: scheduling the same id twice replaces, never duplicates. */
   id: string;
-  kind: "daily" | "bill" | "budget" | "price";
+  kind: "daily" | "bill" | "budget" | "price" | "investment";
   title: string;
   body: string;
   trigger: ReminderTrigger;
@@ -21,6 +21,7 @@ export interface ReminderSettings {
   dailyTime: string;
   bills: boolean;
   budgets: boolean;
+  investments: boolean;
 }
 
 /** iOS keeps at most 64 pending local notifications; stay below it. */
@@ -178,9 +179,83 @@ function triggerTime(n: PlannedNotification, now: number): number {
   return n.trigger.type === "date" ? n.trigger.at : now;
 }
 
+export interface InvestmentReminderInput {
+  id: string;
+  name: string;
+  amount: number;
+  currency: string;
+  payout: string;
+  buyDate: DateKey;
+  maturityDate: DateKey | null;
+  closedOn: DateKey | null;
+}
+
+export const MATURITY_NOTICE_DAYS = 3;
+/** Interest certificates for the year to March usually arrive by mid-April. */
+const INTEREST_PROMPT_DAY = "04-15";
+
+/**
+ * A reminder before each open investment matures, and, under Indian rules, each April a prompt to
+ * record last year's interest on cumulative deposits, which is taxed every year though nothing is paid out.
+ */
+export function planInvestmentReminders(
+  investments: readonly InvestmentReminderInput[],
+  now: number,
+  options: { india: boolean; locale?: string; days?: number },
+): PlannedNotification[] {
+  const today = toDateKey(now);
+  const horizon = addDays(today, options.days ?? BILL_WINDOW_DAYS * 2);
+  const out: PlannedNotification[] = [];
+  for (const inv of investments) {
+    if (inv.closedOn || !inv.maturityDate || inv.maturityDate > horizon)
+      continue;
+    const at = keyToLocalMs(
+      addDays(inv.maturityDate, -MATURITY_NOTICE_DAYS),
+      BILL_REMINDER_HOUR,
+    );
+    if (at <= now) continue;
+    out.push({
+      id: `investment:${inv.id}:${inv.maturityDate}`,
+      kind: "investment",
+      title: `${inv.name} matures in ${MATURITY_NOTICE_DAYS} days`,
+      body: `${formatMoney(inv.amount, inv.currency, { sign: "none", locale: options.locale })} invested. Add the payout when it arrives.`,
+      trigger: { type: "date", at },
+    });
+  }
+  if (options.india) {
+    const year = Number(today.slice(0, 4));
+    let prompt = `${year}-${INTEREST_PROMPT_DAY}`;
+    if (keyToLocalMs(prompt, BILL_REMINDER_HOUR) <= now)
+      prompt = `${year + 1}-${INTEREST_PROMPT_DAY}`;
+    const yearStart = `${prompt.slice(0, 4)}-04-01`;
+    const cumulative = investments.filter(
+      (inv) =>
+        inv.payout === "cumulative" &&
+        !inv.closedOn &&
+        inv.buyDate < yearStart &&
+        (!inv.maturityDate || inv.maturityDate >= yearStart),
+    );
+    const first = cumulative[0];
+    if (first)
+      out.push({
+        id: `investment:interest:${prompt}`,
+        kind: "investment",
+        title: "Add last year's interest",
+        body:
+          cumulative.length === 1
+            ? `Copy it for ${first.name} from the interest certificate.`
+            : `Copy it for ${first.name} and ${cumulative.length - 1} more from the interest certificates.`,
+        trigger: { type: "date", at: keyToLocalMs(prompt, BILL_REMINDER_HOUR) },
+      });
+  }
+  return out;
+}
+
 export interface PlanInput {
   settings: ReminderSettings;
   rules: readonly BillRule[];
+  investments?: readonly InvestmentReminderInput[];
+  indiaTax?: boolean;
   budgets: readonly BudgetProgressInput[];
   fired: readonly string[];
   now: number;
@@ -239,7 +314,17 @@ export function planReminders(input: PlanInput): ReminderPlan {
   const bills = input.settings.bills
     ? planBillReminders(input.rules, input.now, { locale: input.locale })
     : [];
-  const head = [...(daily ? [daily] : []), ...budget.notifications];
+  const investments = input.settings.investments
+    ? planInvestmentReminders(input.investments ?? [], input.now, {
+        india: input.indiaTax ?? false,
+        locale: input.locale,
+      })
+    : [];
+  const head = [
+    ...(daily ? [daily] : []),
+    ...budget.notifications,
+    ...investments,
+  ];
   return {
     notifications: [
       ...head,

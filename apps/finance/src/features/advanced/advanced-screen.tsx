@@ -25,6 +25,12 @@ export function AdvancedScreen() {
       items: [
         { label: "Budgets", icon: "budgets", subtitle: "Monthly limits", href: "/advanced/budgets" },
         { label: "What if", icon: "salary", subtitle: "Forecast your balance", href: "/explore/what-if" },
+        {
+          label: "Investments",
+          icon: "investments",
+          subtitle: "Deposits, bonds and tax",
+          href: "/investments",
+        },
       ],
     },
     {

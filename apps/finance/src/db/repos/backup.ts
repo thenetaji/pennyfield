@@ -8,6 +8,8 @@ import {
   budgets,
   categories,
   fxRates,
+  investmentPayouts,
+  investments,
   people,
   recurringRules,
   settings,
@@ -80,6 +82,13 @@ const TABLES: readonly TableSpec[] = [
     optional: true,
   },
   { key: "fx_rates", table: fxRates, order: ["base", "quote"], optional: true },
+  { key: "investments", table: investments, order: ["id"], optional: true },
+  {
+    key: "investment_payouts",
+    table: investmentPayouts,
+    order: ["id"],
+    optional: true,
+  },
   { key: "settings", table: settings, order: ["key"] },
 ];
 
@@ -397,5 +406,7 @@ export function localModifiedAt(db: Db): number {
     latest(tags, "createdAt"),
     latest(attachments, "createdAt"),
     latest(fxRates, "updatedAt"),
+    latest(investments, "updatedAt"),
+    latest(investmentPayouts, "createdAt"),
   );
 }
