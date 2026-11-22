@@ -5,6 +5,7 @@ import * as attachments from "@/db/repos/attachments";
 import * as backup from "@/db/repos/backup";
 import * as budgets from "@/db/repos/budgets";
 import * as categories from "@/db/repos/categories";
+import * as funding from "@/db/repos/funding";
 import * as fx from "@/db/repos/fx";
 import * as importer from "@/db/repos/importer";
 import * as investments from "@/db/repos/investments";
@@ -64,6 +65,16 @@ export function createActions(db: Db) {
       return result;
     };
   };
+  /** Runs a write, then adds or fixes automatic top-ups for any payment it created. */
+  const funded = <A extends unknown[], R>(
+    fn: (db: Db, ...args: A) => R,
+  ): ((db: Db, ...args: A) => R) =>
+    (d, ...args) => {
+      const since = Date.now();
+      const result = fn(d, ...args);
+      funding.syncCreatedSince(d, since);
+      return result;
+    };
   const refresh = () => {
     notifyChange();
     scheduleRemindersSoon(db);
@@ -88,10 +99,15 @@ export function createActions(db: Db) {
       restore: write(categories.restoreCategory),
     },
     transactions: {
-      create: write(transactions.createTransaction),
-      update: write(transactions.updateTransaction),
+      create: write(funded(transactions.createTransaction)),
+      update: write(funding.updateWithFunding),
       delete: write(transactions.deleteTransaction),
-      restore: write(transactions.restoreTransaction),
+      restore: write(funding.restoreWithFunding),
+    },
+    funding: {
+      backfill: write(funding.backfillTopUps),
+      countMissing: (accountId: string, from: string, to: string) =>
+        funding.countMissingTopUps(db, accountId, from, to),
     },
     budgets: {
       create: write(budgets.createBudget),
@@ -104,8 +120,8 @@ export function createActions(db: Db) {
       update: write(recurring.updateRule),
       setPaused: write(recurring.setRulePaused),
       delete: write(recurring.deleteRule),
-      postDue: write(recurring.postDue),
-      postNow: write(recurring.postNow),
+      postDue: write(funded(recurring.postDue)),
+      postNow: write(funded(recurring.postNow)),
       skip: write(recurring.skip),
     },
     investments: {
@@ -138,7 +154,7 @@ export function createActions(db: Db) {
       update: plain(people.updatePerson),
       delete: plain(people.deletePerson),
       /** Records a repayment moving the person's balance towards zero; returns the new transaction. */
-      settle: write(people.settle),
+      settle: write(funded(people.settle)),
     },
     attachments: {
       /** Copies a picked image into app storage, then stores its metadata. */

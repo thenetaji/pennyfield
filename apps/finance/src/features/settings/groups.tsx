@@ -80,6 +80,7 @@ export function useSettingGroups(): SettingGroup[] {
   const [weekStart] = useSetting("week_start");
   const [monthStart] = useSetting("month_start");
   const [defaultAccountId] = useSetting("default_account_id");
+  const [fundingMain] = useSetting("funding_main_account_id");
   const [archivedThrough] = useSetting("archived_through");
   const [theme] = useSetting("theme");
   const [accent] = useSetting("accent");
@@ -147,6 +148,13 @@ export function useSettingGroups(): SettingGroup[] {
           label: "Default account",
           value: accounts.find((a) => a.id === defaultAccountId)?.name,
           picker: "account",
+        },
+        {
+          key: "top_up",
+          label: "Auto top-up",
+          words: "main master bank fund transfer pocket wallet move money",
+          value: accounts.find((a) => a.id === fundingMain)?.name ?? "Off",
+          href: "/settings/top-up",
         },
         {
           key: "decimals",

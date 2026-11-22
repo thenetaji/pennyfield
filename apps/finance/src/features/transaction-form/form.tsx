@@ -260,6 +260,14 @@ function TransactionForm({
   const fromDigits = minorDigits(fromCurrency);
   const toDigits = minorDigits(toCurrency);
   const isTransfer = draft.kind === "transfer";
+  const fundingMain = accountOf(settings.funding_main_account_id);
+  const toppedUp =
+    !!fundingMain &&
+    !!draft.accountId &&
+    draft.accountId !== fundingMain.id &&
+    settings.funded_accounts.includes(draft.accountId) &&
+    ["expense", "lent", "repaid_by_me", "transfer"].includes(draft.kind) &&
+    !(isTransfer && draft.transferAccountId === fundingMain.id);
   const isLend = isLendingKind(draft.kind);
   // The entry wears its kind: coral, mint, blue, brass.
   const kindColor =
@@ -1048,6 +1056,27 @@ function TransactionForm({
                       />
                     </View>
                   )}
+                  {toppedUp && fundingMain ? (
+                    <View>
+                      <FormChip
+                        label={
+                          draft.noFunding
+                            ? "No top-up"
+                            : `From ${fundingMain.name}`
+                        }
+                        icon="swap"
+                        selected={!draft.noFunding}
+                        onPress={() =>
+                          get().patch({ noFunding: !draft.noFunding })
+                        }
+                        accessibilityLabel={
+                          draft.noFunding
+                            ? `No top-up from ${fundingMain.name}, tap to top up`
+                            : `Top up from ${fundingMain.name}, tap to skip`
+                        }
+                      />
+                    </View>
+                  ) : null}
                   <View>
                     <FormChip
                       label={

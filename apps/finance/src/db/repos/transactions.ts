@@ -62,6 +62,10 @@ export interface TransactionInput {
   tagIds?: readonly string[];
   /** Business or personal regardless of category; null follows the category. On update, omit to keep it. */
   side?: TransactionSide | null;
+  /** Skip the automatic top-up for this payment. On update, omit to keep it. */
+  noFunding?: boolean;
+  /** Marks this transfer as the automatic top-up for that payment. On update, omit to keep it. */
+  fundsTransactionId?: string | null;
 }
 
 export interface TransactionSnapshot {
@@ -209,6 +213,11 @@ function writeRows(
     recurringRuleId: input.recurringRuleId ?? null,
     personId: person?.id ?? null,
     side: input.side !== undefined ? input.side : (existing?.side ?? null),
+    fundsTransactionId:
+      input.fundsTransactionId !== undefined
+        ? input.fundsTransactionId
+        : (existing?.fundsTransactionId ?? null),
+    noFunding: input.noFunding ?? existing?.noFunding ?? false,
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
   };

@@ -24,6 +24,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="lock" options={{ title: "Face ID" }} />
       <Stack.Screen name="privacy" options={{ title: "Privacy" }} />
       <Stack.Screen name="reminders" options={{ title: "Reminders" }} />
+      <Stack.Screen name="top-up" options={{ title: "Auto top-up" }} />
       <Stack.Screen name="backup" options={{ title: "Backup & sync" }} />
       <Stack.Screen name="categories/index" options={{ title: "Categories" }} />
       <Stack.Screen name="transfer" options={{ title: "Import & export" }} />

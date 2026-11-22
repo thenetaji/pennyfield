@@ -6,6 +6,7 @@ import {
   real,
   sqliteTable,
   text,
+  type AnySQLiteColumn,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 import type { RecurringKind, TransactionKind } from "../lib/ledger/kinds";
@@ -146,6 +147,15 @@ export const transactions = sqliteTable(
     personId: text("person_id").references(() => people.id),
     /** Overrides the category's business flag; null follows the category. */
     side: text("side").$type<TransactionSide>(),
+    /** Set on an automatic top-up: the payment it funds. Deleting the payment deletes the top-up. */
+    fundsTransactionId: text("funds_transaction_id").references(
+      (): AnySQLiteColumn => transactions.id,
+      { onDelete: "cascade" },
+    ),
+    /** The owner skipped the automatic top-up for this payment. */
+    noFunding: integer("no_funding", { mode: "boolean" })
+      .notNull()
+      .default(false),
     createdAt: integer("created_at").notNull(),
     updatedAt: integer("updated_at").notNull(),
   },
@@ -159,6 +169,7 @@ export const transactions = sqliteTable(
     index("transactions_category_date_idx").on(t.categoryId, t.dateKey),
     index("transactions_rule_idx").on(t.recurringRuleId),
     index("transactions_transfer_account_idx").on(t.transferAccountId),
+    index("transactions_funds_idx").on(t.fundsTransactionId),
   ],
 );
 

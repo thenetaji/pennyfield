@@ -31,6 +31,7 @@ export type RowDetail =
   "memo" | "category" | "category_account" | "category_memo";
 
 export type SettingsStyle = "calm" | "glass" | "list";
+export type FundingMode = "full" | "shortfall";
 export const SETTINGS_STYLES: readonly SettingsStyle[] = [
   "calm",
   "glass",
@@ -117,6 +118,12 @@ export interface SettingsMap {
   reminder_investments: boolean;
   /** Account that holds money put into investments; created with the first investment. */
   investments_account_id: string | null;
+  /** Main account that tops up the funded accounts; null turns automatic top-ups off. */
+  funding_main_account_id: string | null;
+  /** Accounts topped up from the main account whenever money leaves them. */
+  funded_accounts: string[];
+  /** Move the whole payment, or only what the account is short. */
+  funding_mode: FundingMode;
 }
 
 export type SettingKey = keyof SettingsMap;
@@ -164,6 +171,9 @@ export const DEFAULT_SETTINGS: Readonly<SettingsMap> = {
   cash_need_date: null,
   reminder_investments: true,
   investments_account_id: null,
+  funding_main_account_id: null,
+  funded_accounts: [],
+  funding_mode: "full",
 };
 
 const LOOK_VERSION = 2;
@@ -184,6 +194,7 @@ const ENUMS: Partial<Record<SettingKey, readonly unknown[]>> = {
   settings_style: SETTINGS_STYLES,
   tax_rules: ["auto", "india", "general"],
   tax_year_start_month: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+  funding_mode: ["full", "shortfall"],
 };
 
 export const SETTING_KEYS = Object.keys(DEFAULT_SETTINGS) as SettingKey[];
@@ -201,6 +212,11 @@ function decode<K extends SettingKey>(
     if (key === "home_layout")
       return normalizeHomeLayout(value) as SettingsMap[K];
     if (key === "pockets") return normalizePockets(value) as SettingsMap[K];
+    if (
+      key === "funded_accounts" &&
+      (!Array.isArray(value) || value.some((v) => typeof v !== "string"))
+    )
+      return DEFAULT_SETTINGS[key];
     if (
       key === "last_accounts" &&
       (typeof value !== "object" || value === null || Array.isArray(value))

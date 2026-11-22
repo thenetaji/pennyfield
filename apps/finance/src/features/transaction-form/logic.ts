@@ -60,6 +60,8 @@ export interface Draft {
   personId: string | null;
   /** Overrides the category's business flag; null follows the category. */
   side: "business" | "personal" | null;
+  /** Skip the automatic top-up from the main account for this entry. */
+  noFunding: boolean;
   tagIds: string[];
   receipts: DraftReceipt[];
 }
@@ -438,6 +440,7 @@ export function buildTransactionInput(
     recurringRuleId,
     tagIds: draft.tagIds,
     side: draft.side,
+    noFunding: draft.noFunding,
   };
   if (isLendingKind(draft.kind))
     return { ...base, personId: draft.personId, categoryId: null, side: null };
@@ -523,6 +526,7 @@ export function emptyDraft(defaults: ResolvedDefaults, now: number): Draft {
     appliedTitleNorm: null,
     personId: null,
     side: null,
+    noFunding: false,
     tagIds: [],
     receipts: [],
   };
@@ -543,6 +547,7 @@ interface SourceTransaction {
   splits: readonly { categoryId: string; amount: number }[];
   personId?: string | null;
   side?: "business" | "personal" | null;
+  noFunding?: boolean;
   tags?: readonly { id: string }[];
   attachments?: readonly {
     id: string;
@@ -583,6 +588,7 @@ export function draftFromTransaction(
     appliedTitleNorm: null,
     personId: source.personId ?? null,
     side: source.side ?? null,
+    noFunding: source.noFunding ?? false,
     tagIds: (source.tags ?? []).map((t) => t.id),
     receipts: (source.attachments ?? []).map((a) => ({
       key: a.id,

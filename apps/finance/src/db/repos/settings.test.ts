@@ -62,6 +62,9 @@ describe("settings", () => {
         "cash_need_date",
         "reminder_investments",
         "investments_account_id",
+        "funding_main_account_id",
+        "funded_accounts",
+        "funding_mode",
       ].sort(),
     );
   });

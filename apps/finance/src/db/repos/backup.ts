@@ -348,7 +348,13 @@ export function restoreBackup(db: Db, json: unknown): BackupSummary {
     for (const spec of [...TABLES].reverse()) tx.delete(spec.table).run();
     for (const spec of TABLES) {
       const columns = columnsOf(spec.table);
-      const rows = (backup.tables[spec.key] ?? []).map((row) => {
+      // A top-up references its payment, so payments go in first.
+      const source = [...(backup.tables[spec.key] ?? [])].sort(
+        (a, b) =>
+          Number(a.fundsTransactionId != null) -
+          Number(b.fundsTransactionId != null),
+      );
+      const rows = source.map((row) => {
         const record: Record<string, unknown> = {};
         for (const [name, column] of columns) {
           const value = row[name];

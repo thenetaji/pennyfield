@@ -2,6 +2,13 @@
 
 All notable changes to Finance. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.7.0 update - 2026-11-22 (2)
+
+### Added
+- **Auto top-up:** Settings, Transactions, Auto top-up. Pick your main account (where income arrives) and the accounts it tops up. Whenever money leaves a topped-up account, Pennyfield first adds a transfer from the main account for the same amount, or only what the account is short. The transfer shows in Activity and follows the payment when you edit or delete it.
+- On the add sheet, the "From HDFC" chip skips the top-up for one entry.
+- Turning an account on offers to add top-ups for this month's earlier payments.
+
 ## 0.7.0 update - 2026-11-22
 
 ### Added
