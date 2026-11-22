@@ -124,6 +124,8 @@ export interface SettingsMap {
   funded_accounts: string[];
   /** Move the whole payment, or only what the account is short. */
   funding_mode: FundingMode;
+  /** Income tax slab in percent, for after-tax returns; null until set. */
+  tax_slab_percent: number | null;
 }
 
 export type SettingKey = keyof SettingsMap;
@@ -174,6 +176,7 @@ export const DEFAULT_SETTINGS: Readonly<SettingsMap> = {
   funding_main_account_id: null,
   funded_accounts: [],
   funding_mode: "full",
+  tax_slab_percent: null,
 };
 
 const LOOK_VERSION = 2;

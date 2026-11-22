@@ -16,6 +16,21 @@ import {
   type TaxYearSummary,
 } from "@/lib/investments/tax";
 import type { Db } from "@/db/types";
+import {
+  afterTax,
+  cashFlows,
+  effectiveSlab,
+  interestByMonth,
+  investmentReturns,
+  maturityLadder,
+  tdsWarnings,
+  upcomingPayouts,
+  xirr,
+  type InvestmentReturns,
+  type TdsWarning,
+  type UpcomingPayout,
+} from "@/lib/investments/returns";
+import { addDays, type DateKey } from "@studio/dates";
 
 import { useTodayKey } from "./useTodayKey";
 
@@ -75,3 +90,71 @@ export type {
   InvestmentDetail,
   InvestmentSummary,
 } from "@/db/repos/investments";
+
+export interface PortfolioInsights {
+  currency: string;
+  /** Principal still out in open investments. */
+  invested: number;
+  accrued: number;
+  currentValue: number;
+  interestToCome: number;
+  /** Interest still to come after tax at the set slab; null until a slab is set. */
+  interestToComeAfterTax: number | null;
+  /** Tax rate on interest, cess included; null until a slab is set. */
+  taxRate: number | null;
+  xirr: number | null;
+  returns: Record<string, InvestmentReturns>;
+  upcoming: UpcomingPayout[];
+  ladder: { months: { key: DateKey; amount: number }[]; later: number };
+  interestMonths: { key: DateKey; amount: number }[];
+  tds: TdsWarning[];
+}
+
+const UPCOMING_DAYS = 365;
+const CHART_MONTHS = 12;
+
+function readInsights(db: Db, today: DateKey): PortfolioInsights {
+  const investments = listAllInvestments(db);
+  const payouts = listAllPayouts(db);
+  const { rules } = readTaxContext(db);
+  const slab = getSetting(db, "tax_slab_percent");
+  const taxRate = slab === null ? null : effectiveSlab(slab, rules);
+  const returns: Record<string, InvestmentReturns> = {};
+  let invested = 0;
+  let accrued = 0;
+  let interestToCome = 0;
+  for (const inv of investments) {
+    const own = payouts.filter((p) => p.investmentId === inv.id);
+    const r = investmentReturns(inv, own, today);
+    returns[inv.id] = r;
+    if (inv.closedOn) continue;
+    invested += r.currentValue - r.accrued;
+    accrued += r.accrued;
+    interestToCome += r.interestToCome;
+  }
+  return {
+    currency:
+      investments[0]?.currency ?? getSetting(db, "display_currency"),
+    invested,
+    accrued,
+    currentValue: invested + accrued,
+    interestToCome,
+    interestToComeAfterTax:
+      taxRate === null ? null : afterTax(interestToCome, taxRate),
+    taxRate,
+    xirr: xirr(
+      cashFlows(investments, payouts, today, (inv) => returns[inv.id]?.accrued ?? 0),
+    ),
+    returns,
+    upcoming: upcomingPayouts(investments, today, addDays(today, UPCOMING_DAYS)),
+    ladder: maturityLadder(investments, payouts, today, CHART_MONTHS),
+    interestMonths: interestByMonth(payouts, today, CHART_MONTHS),
+    tds: rules === "india" ? tdsWarnings(investments, payouts, today) : [],
+  };
+}
+
+/** Value, returns, what is coming and warnings across every investment. */
+export function useInvestmentInsights(): PortfolioInsights {
+  const today = useTodayKey();
+  return useLiveData(TABLES, today, (db) => readInsights(db, today));
+}

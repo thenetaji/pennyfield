@@ -18,6 +18,7 @@ import {
   useAccounts,
   useInvestment,
   useSetting,
+  useInvestmentInsights,
   useTaxContext,
 } from "@/data/hooks";
 import { useMoneyContext } from "@/features/transactions/use-money-context";
@@ -48,6 +49,7 @@ export function InvestmentDetailScreen() {
   const accounts = useAccounts({ includeArchived: true });
   const [needBy] = useSetting("cash_need_date");
   const detail = useInvestment(id);
+  const insights = useInvestmentInsights();
 
   React.useEffect(() => {
     if (!detail && router.canGoBack()) router.back();
@@ -110,6 +112,45 @@ export function InvestmentDetailScreen() {
       value: detail.gain !== null ? fmt(Math.abs(detail.gain)) : undefined,
     },
   ];
+  const r = insights.returns[inv.id];
+  const open = detail.status !== "closed";
+  const pct = (v: number) => `${Number(v.toFixed(2))}%`;
+  const returns: Fact[] = r
+    ? [
+        {
+          label: "Return a year",
+          value:
+            r.xirr === null
+              ? undefined
+              : inv.rate !== null
+                ? `${pct(r.xirr)} (rate ${pct(inv.rate)})`
+                : pct(r.xirr),
+        },
+        {
+          label: "Interest over the term",
+          value: r.expectedInterest > 0 ? fmt(r.expectedInterest) : undefined,
+        },
+        {
+          label: "Still to come",
+          value: open && r.interestToCome > 0 ? fmt(r.interestToCome) : undefined,
+        },
+        {
+          label: "Earned, not paid",
+          value: open && r.accrued > 0 ? fmt(r.accrued) : undefined,
+        },
+        {
+          label: "Total at maturity",
+          value: r.expectedInterest > 0 ? fmt(r.totalAtMaturity) : undefined,
+        },
+        {
+          label: "Rate after tax",
+          value:
+            insights.taxRate !== null && inv.rate !== null
+              ? pct(inv.rate * (1 - insights.taxRate / 100))
+              : undefined,
+        },
+      ]
+    : [];
   const facts = (list: Fact[]) =>
     list
       .filter((f) => f.value !== undefined)
@@ -174,6 +215,17 @@ export function InvestmentDetailScreen() {
           </Button>
         </Stagger>
       )}
+
+      {returns.some((f) => f.value !== undefined) ? (
+        <Stagger index={2}>
+          <ListGroup
+            header="Returns"
+            footer="Expected figures come from the rate and schedule. Return a year counts money on the dates it actually moved."
+          >
+            {facts(returns)}
+          </ListGroup>
+        </Stagger>
+      ) : null}
 
       <Stagger index={2}>
         <ListGroup header="Received">{facts(received)}</ListGroup>

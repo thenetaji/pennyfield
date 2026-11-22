@@ -2,6 +2,18 @@
 
 All notable changes to Finance. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.7.0 update - 2026-11-22 (3)
+
+### Added
+- **Investment returns:** the Investments page shows what everything is worth today, your real yearly return (XIRR) across all investments, interest earned but not paid yet, and interest still to come. Set your tax slab to see it after tax.
+- Each investment shows its return a year against its rate, interest over the term, what is still to come, the total at maturity and the rate after tax.
+- **Coming up:** the expected interest and maturity payouts for the next 12 months.
+- **Money coming back:** a chart of principal returning each month, with the amount due later.
+- **Interest received:** a 12-month chart, plus this tax year against the last.
+- **Split:** money by type, issuer or rating, with a note when one issuer or rating holds more than half.
+- **TDS likely this year:** warns when one bank is heading past ₹50,000 of interest in the tax year, or one company past ₹10,000, with the Form 15G/15H hint.
+- Tax by year has your tax slab, an estimated tax and what is left to pay after TDS.
+
 ## 0.7.0 update - 2026-11-22 (2)
 
 ### Added

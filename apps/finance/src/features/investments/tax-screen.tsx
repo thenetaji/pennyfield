@@ -15,6 +15,7 @@ import {
 } from "@/data/hooks";
 import { PickRow } from "@/features/entry/form-row";
 import { useMoneyContext } from "@/features/transactions/use-money-context";
+import { effectiveSlab, estimateTax } from "@/lib/investments/returns";
 import type {
   TaxRules,
   TaxRulesSetting,
@@ -58,6 +59,8 @@ export function TaxYearsScreen() {
   const tax = useTaxContext();
   const [rulesSetting, setRules] = useSetting("tax_rules");
   const [startMonth, setStartMonth] = useSetting("tax_year_start_month");
+  const [slab, setSlab] = useSetting("tax_slab_percent");
+  const taxRate = slab === null ? null : effectiveSlab(slab, tax.rules);
   const decimals = money.showDecimals ? undefined : 0;
   const settings = useSettings();
   const currency =
@@ -88,7 +91,7 @@ export function TaxYearsScreen() {
         <ListGroup
           footer={
             tax.rules === "india"
-              ? "Tax years run 1 April to 31 March. Check interest and TDS against your AIS on the income tax portal."
+              ? "Tax years run 1 April to 31 March. Check interest and TDS against your AIS on the income tax portal. Estimates add 4% cess and leave out losses."
               : undefined
           }
         >
@@ -110,6 +113,19 @@ export function TaxYearsScreen() {
               onSelect={setStartMonth}
             />
           ) : null}
+          <PickRow
+            label="Your tax slab"
+            value={slab === null ? "Not set" : `${slab}%`}
+            options={[
+              ...[0, 5, 10, 15, 20, 25, 30].map((v) => ({
+                value: v as number | null,
+                label: `${v}%`,
+              })),
+              { value: null, label: "Not set" },
+            ]}
+            selected={slab}
+            onSelect={setSlab}
+          />
         </ListGroup>
       </Stagger>
 
@@ -133,6 +149,18 @@ export function TaxYearsScreen() {
                     value={fmt(l.amount)}
                   />
                 ))}
+              {taxRate !== null ? (
+                <ListRow
+                  label="Estimated tax"
+                  value={fmt(estimateTax(year, tax.rules, taxRate))}
+                />
+              ) : null}
+              {taxRate !== null ? (
+                <ListRow
+                  label={tax.rules === "india" ? "Left after TDS" : "Left after tax withheld"}
+                  value={fmt(estimateTax(year, tax.rules, taxRate) - year.tds)}
+                />
+              ) : null}
             </ListGroup>
             <View className="flex-row px-4 pt-2">
               <Button

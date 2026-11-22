@@ -12,10 +12,12 @@ import {
   HeaderButton,
   ListGroup,
   ListRow,
+  OptionPicker,
   Text,
 } from "@studio/ui";
 
 import {
+  useInvestmentInsights,
   useInvestments,
   useSetting,
   useTaxContext,
@@ -29,6 +31,19 @@ import { useMoneyContext } from "@/features/transactions/use-money-context";
 import { backAfter, taxYearOf } from "@/lib/investments/tax";
 
 import { investmentLine } from "./format";
+import {
+  InterestCard,
+  LadderCard,
+  SplitCard,
+  SummaryCard,
+  TdsCard,
+  UpcomingCard,
+} from "./insight-cards";
+
+const SLAB_OPTIONS = [0, 5, 10, 15, 20, 25, 30].map((value) => ({
+  value: value as number | null,
+  label: `${value}%`,
+}));
 
 /** Every deposit and bond: what is still invested, the tax year, and a row each, closed ones folded away. */
 export function InvestmentsScreen() {
@@ -40,6 +55,9 @@ export function InvestmentsScreen() {
   const tax = useTaxContext();
   const [needBy, setNeedBy] = useSetting("cash_need_date");
   const [showClosed, setShowClosed] = React.useState(false);
+  const insights = useInvestmentInsights();
+  const [slab, setSlab] = useSetting("tax_slab_percent");
+  const [slabOpen, setSlabOpen] = React.useState(false);
 
   const add = () => router.push("/investments/new");
   const header = (
@@ -78,13 +96,10 @@ export function InvestmentsScreen() {
       sign: "none",
       decimals,
     });
-  const invested = open.reduce(
-    (sum, s) => sum + s.investment.amount - s.totals.principalBack,
-    0,
-  );
   const thisYear = taxYearOf(today, tax.startMonth);
   const yearInterest =
     years.find((y) => y.startYear === thisYear)?.interest ?? 0;
+  const lastYear = years.find((y) => y.startYear === thisYear - 1);
   const late = needBy
     ? open.filter((s) => backAfter(s.investment, needBy))
     : [];
@@ -114,20 +129,31 @@ export function InvestmentsScreen() {
       {header}
       <Stagger index={0} className="gap-1 px-4">
         <Text variant="footnote" tone="secondary">
-          Invested now
+          Worth today
         </Text>
         <Amount
-          value={fmt(invested)}
+          value={fmt(insights.currentValue)}
           variant="hero"
           animate="intro"
-          accessibilityLabel={`Invested now, ${formatMoneyForSpeech(invested, currency, { sign: "none", locale: money.locale })}`}
+          accessibilityLabel={`Worth today, ${formatMoneyForSpeech(insights.currentValue, currency, { sign: "none", locale: money.locale })}`}
         />
         <Text variant="subhead" tone="secondary" numeric>
           {`Interest this tax year: ${fmt(yearInterest)}`}
         </Text>
       </Stagger>
 
-      <Stagger index={1}>
+      <Stagger index={1} className="gap-4">
+        <SummaryCard
+          insights={insights}
+          fmt={fmt}
+          onSetSlab={() => setSlabOpen(true)}
+        />
+        <TdsCard insights={insights} fmt={fmt} />
+        <UpcomingCard insights={insights} fmt={fmt} />
+        <LadderCard insights={insights} fmt={fmt} locale={money.locale} />
+      </Stagger>
+
+      <Stagger index={2}>
         <ListGroup>
           <ListRow
             label="Tax by year"
@@ -171,8 +197,19 @@ export function InvestmentsScreen() {
         </Stagger>
       ) : null}
 
+      <Stagger index={3} className="gap-4">
+        <InterestCard
+          insights={insights}
+          fmt={fmt}
+          locale={money.locale}
+          thisYear={yearInterest}
+          lastYear={lastYear ? lastYear.interest : null}
+        />
+        <SplitCard open={open} fmt={fmt} />
+      </Stagger>
+
       {closed.length > 0 ? (
-        <Stagger index={3}>
+        <Stagger index={4}>
           <ListGroup header={showClosed ? "Closed" : undefined}>
             {showClosed
               ? closed.map(row)
@@ -187,6 +224,14 @@ export function InvestmentsScreen() {
           </ListGroup>
         </Stagger>
       ) : null}
+      <OptionPicker
+        visible={slabOpen}
+        title="Your income tax slab"
+        options={[...SLAB_OPTIONS, { value: null, label: "Not set" }]}
+        selected={slab}
+        onSelect={setSlab}
+        onClose={() => setSlabOpen(false)}
+      />
     </ScrollView>
   );
 }

@@ -65,6 +65,7 @@ describe("settings", () => {
         "funding_main_account_id",
         "funded_accounts",
         "funding_mode",
+        "tax_slab_percent",
       ].sort(),
     );
   });
