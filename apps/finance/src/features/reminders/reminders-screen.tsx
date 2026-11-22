@@ -18,6 +18,7 @@ export function RemindersScreen() {
   const [time, setTime] = useSetting("reminder_daily_time");
   const [bills, setBills] = useSetting("reminder_bills");
   const [budgets, setBudgets] = useSetting("reminder_budgets");
+  const [investments, setInvestments] = useSetting("reminder_investments");
   const [permission, setPermission] =
     React.useState<Permission>("undetermined");
 
@@ -45,7 +46,8 @@ export function RemindersScreen() {
       .catch(() => undefined);
   };
 
-  const denied = permission === "denied" && (daily || bills || budgets);
+  const denied =
+    permission === "denied" && (daily || bills || budgets || investments);
 
   return (
     <ScrollView
@@ -102,6 +104,12 @@ export function RemindersScreen() {
             icon={{ name: "budgets", color: "amber" }}
             switchValue={budgets}
             onSwitchChange={toggle(setBudgets)}
+          />
+          <ListRow
+            label="Investments maturing"
+            icon={{ name: "investments", color: "teal" }}
+            switchValue={investments}
+            onSwitchChange={toggle(setInvestments)}
           />
         </ListGroup>
       </Stagger>

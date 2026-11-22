@@ -7,6 +7,7 @@ import * as budgets from "@/db/repos/budgets";
 import * as categories from "@/db/repos/categories";
 import * as fx from "@/db/repos/fx";
 import * as importer from "@/db/repos/importer";
+import * as investments from "@/db/repos/investments";
 import * as maintenance from "@/db/repos/maintenance";
 import * as people from "@/db/repos/people";
 import * as recurring from "@/db/repos/recurring";
@@ -106,6 +107,14 @@ export function createActions(db: Db) {
       postDue: write(recurring.postDue),
       postNow: write(recurring.postNow),
       skip: write(recurring.skip),
+    },
+    investments: {
+      create: write(investments.createInvestment),
+      update: write(investments.updateInvestment),
+      delete: write(investments.deleteInvestment),
+      addPayout: write(investments.addPayout),
+      updatePayout: write(investments.updatePayout),
+      deletePayout: write(investments.deletePayout),
     },
     settings: {
       set: <K extends settings.SettingKey>(

@@ -6,6 +6,8 @@ import {
   budgets,
   categories,
   fxRates,
+  investmentPayouts,
+  investments,
   people,
   tags,
   transactionTags,
@@ -24,6 +26,8 @@ export function eraseAllData(db: Db): void {
     const theme = getSetting(tx, "theme");
     const iconStyle = getSetting(tx, "icon_style");
     const iconBackground = getSetting(tx, "icon_background");
+    tx.delete(investmentPayouts).run();
+    tx.delete(investments).run();
     tx.delete(transactionSplits).run();
     tx.delete(transactionTags).run();
     tx.delete(attachments).run();

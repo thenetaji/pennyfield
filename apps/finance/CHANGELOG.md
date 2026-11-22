@@ -2,6 +2,16 @@
 
 All notable changes to Finance. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.7.0 update - 2026-11-22
+
+### Added
+- **Investments:** Advanced, Investments tracks fixed deposits, bonds, government bonds and treasury bills. Add one with its amount, rate, interest schedule, maturity date and the account the money came from; record each payout (interest with the tax withheld, part of the principal, maturity or a sale).
+- Buying moves the money into an Investments account, interest arrives as income after tax, and principal moves back, so balances and net worth stay right. A bond bought below or above face value books the difference as a gain or loss when it closes.
+- **Tax by year:** interest, tax withheld and gains for each tax year, with a Share button. For rupees it follows Indian rules (April to March, TDS, short-term, long-term at 12.5% and unlisted bond gains); elsewhere pick the month your tax year starts.
+- **Need the money by a date:** flags investments that pay back after it.
+- A Home card lists investments maturing in the next 30 days, or past maturity without a payout.
+- Reminders three days before an investment matures, and each April a prompt to add last year's interest on cumulative deposits (Indian rules). Turn them off in Settings, Reminders.
+
 ## [0.7.0] - 2026-11-11
 
 ### Changed

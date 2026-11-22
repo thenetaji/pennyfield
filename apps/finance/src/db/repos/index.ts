@@ -15,3 +15,4 @@ export * as calendar from "./calendar";
 export * as people from "./people";
 export * as subscriptions from "./subscriptions";
 export * as tags from "./tags";
+export * as investments from "./investments";

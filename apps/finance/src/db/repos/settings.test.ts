@@ -57,6 +57,11 @@ describe("settings", () => {
         "look_version",
         "categories_version",
         "last_accounts",
+        "tax_rules",
+        "tax_year_start_month",
+        "cash_need_date",
+        "reminder_investments",
+        "investments_account_id",
       ].sort(),
     );
   });
@@ -181,6 +186,7 @@ describe("feature settings", () => {
       reminder_daily_time: "21:00",
       reminder_bills: true,
       reminder_budgets: true,
+      reminder_investments: true,
       sync_provider: "none",
       last_backup_at: null,
     });

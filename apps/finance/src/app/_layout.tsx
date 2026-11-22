@@ -208,6 +208,24 @@ function Navigator() {
         <Stack.Screen name="tags/index" options={push("Tags")} />
         <Stack.Screen name="tags/[id]" options={push("Tag")} />
         <Stack.Screen name="business" options={push("Business")} />
+        <Stack.Screen name="investments/index" options={push("Investments")} />
+        <Stack.Screen name="investments/tax" options={push("Tax by year")} />
+        <Stack.Screen
+          name="investments/new"
+          options={formSheet("New investment")}
+        />
+        <Stack.Screen
+          name="investments/[id]/index"
+          options={push("Investment")}
+        />
+        <Stack.Screen
+          name="investments/[id]/edit"
+          options={formSheet("Edit investment")}
+        />
+        <Stack.Screen
+          name="investments/[id]/payout"
+          options={formSheet("Add payout")}
+        />
         <Stack.Screen
           name="transaction/[id]/index"
           options={push("Transaction")}
