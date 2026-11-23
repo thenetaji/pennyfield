@@ -100,6 +100,14 @@
       "iconURL": "https://raw.githubusercontent.com/thenetaji/studio/main/apps/finance/assets/images/icon.png",
       "versions": [
         {
+          "version": "0.8.0",
+          "buildVersion": "800",
+          "date": "2026-11-23",
+          "downloadURL": "https://github.com/thenetaji/pennyfield/releases/download/finance-v0.8.0/Pennyfield-0.8.0.ipa",
+          "size": 20226869,
+          "minOSVersion": "16.4"
+        },
+        {
           "version": "0.7.0",
           "buildVersion": "700",
           "date": "2026-11-11",
