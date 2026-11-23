@@ -2,6 +2,13 @@
 
 All notable changes to Finance. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.8.0 update - 2026-11-23
+
+### Added
+- **Bond payout schedules:** set the first payout date (for bonds that pay on the 1st of each month, say), the interest per payout and the amount back at maturity, copied from the platform. Expected interest, gain, Coming up and TDS warnings then match the issuer's numbers.
+- **Payout schedule:** on an investment, check every expected payout and change any date or amount to match the platform's schedule exactly, or go back to the calculated one.
+- Each investment shows its expected gain, including any difference between the redemption value and what you paid. Bonds show the rate as Yield (YTM).
+
 ## [0.8.0] - 2026-11-23
 
 ### Added

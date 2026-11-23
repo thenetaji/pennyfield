@@ -15,6 +15,7 @@ import {
   accounts,
   categories,
   investmentPayouts,
+  investmentSchedule,
   investments,
   transactions,
   type AccountRow,
@@ -24,6 +25,7 @@ import {
   type InvestmentType,
   type PayoutKind,
   type PayoutRow,
+  type ScheduleRow,
 } from "../schema";
 import type { Db } from "../types";
 import { createAccount, getAccount } from "./accounts";
@@ -48,6 +50,12 @@ export interface InvestmentInput {
   closedOn?: DateKey | null;
   /** Account the money came from; null when it left before tracking began. */
   fromAccountId?: string | null;
+  /** First interest date; later payouts repeat from it. */
+  firstPayoutDate?: DateKey | null;
+  /** Interest per payout as the issuer states it, minor units. */
+  couponAmount?: number | null;
+  /** What comes back at maturity, minor units. */
+  redemptionAmount?: number | null;
   note?: string;
 }
 
@@ -112,6 +120,12 @@ function validateInvestment(input: InvestmentInput): void {
     throw new ValidationError("invalid_input", "matures before it was bought");
   if (input.closedOn && input.closedOn < input.buyDate)
     throw new ValidationError("invalid_input", "closed before it was bought");
+  assertDate(input.firstPayoutDate, "first payout date");
+  if (input.firstPayoutDate && input.firstPayoutDate <= input.buyDate)
+    throw new ValidationError("invalid_input", "first payout is before it was bought");
+  for (const value of [input.couponAmount, input.redemptionAmount])
+    if (value != null && (!Number.isInteger(value) || value <= 0))
+      throw new ValidationError("amount_not_positive");
 }
 
 function validatePayout(input: PayoutInput): void {
@@ -362,6 +376,9 @@ function toRow(input: InvestmentInput) {
     maturityDate: input.maturityDate ?? null,
     closedOn: input.closedOn ?? null,
     fromAccountId: input.fromAccountId ?? null,
+    firstPayoutDate: input.firstPayoutDate ?? null,
+    couponAmount: input.couponAmount ?? null,
+    redemptionAmount: input.redemptionAmount ?? null,
     note: clean(input.note),
   };
 }
@@ -581,4 +598,53 @@ export function listAllPayouts(db: Db): PayoutRow[] {
 
 export function listAllInvestments(db: Db): InvestmentRow[] {
   return db.select().from(investments).all();
+}
+
+export interface ScheduleInput {
+  dateKey: DateKey;
+  kind: "interest" | "principal";
+  /** Positive minor units. */
+  amount: number;
+}
+
+export function listSchedule(db: Db, investmentId?: string): ScheduleRow[] {
+  const query = db.select().from(investmentSchedule);
+  return (
+    investmentId
+      ? query.where(eq(investmentSchedule.investmentId, investmentId))
+      : query
+  )
+    .orderBy(asc(investmentSchedule.dateKey), asc(investmentSchedule.kind))
+    .all();
+}
+
+/** Replaces the investment's schedule; an empty list goes back to the calculated one. */
+export function setSchedule(
+  db: Db,
+  investmentId: string,
+  rows: readonly ScheduleInput[],
+): void {
+  for (const row of rows) {
+    assertDate(row.dateKey, "date");
+    if (!Number.isInteger(row.amount) || row.amount <= 0)
+      throw new ValidationError("amount_not_positive");
+  }
+  db.transaction((tx) => {
+    if (!getInvestment(tx, investmentId)) throw new ValidationError("not_found");
+    tx.delete(investmentSchedule)
+      .where(eq(investmentSchedule.investmentId, investmentId))
+      .run();
+    if (rows.length > 0)
+      tx.insert(investmentSchedule)
+        .values(
+          rows.map((row) => ({
+            id: newId(),
+            investmentId,
+            dateKey: row.dateKey,
+            kind: row.kind,
+            amount: row.amount,
+          })),
+        )
+        .run();
+  });
 }

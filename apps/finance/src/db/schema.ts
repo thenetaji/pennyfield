@@ -313,11 +313,32 @@ export const investments = sqliteTable(
     /** Ledger entries this investment posted, rewritten on every change. */
     buyTransactionId: text("buy_transaction_id"),
     closeTransactionId: text("close_transaction_id"),
+    /** First interest date; later ones repeat from it. Null repeats from the purchase date. */
+    firstPayoutDate: text("first_payout_date"),
+    /** Interest per payout as the issuer states it; null works it out from the rate. */
+    couponAmount: integer("coupon_amount"),
+    /** What comes back at maturity; null is the amount invested. */
+    redemptionAmount: integer("redemption_amount"),
     note: text("note").notNull().default(""),
     createdAt: integer("created_at").notNull(),
     updatedAt: integer("updated_at").notNull(),
   },
   (t) => [index("investments_maturity_idx").on(t.maturityDate)],
+);
+
+/** The issuer's own payout schedule; when an investment has rows here they replace the calculated one. */
+export const investmentSchedule = sqliteTable(
+  "investment_schedule",
+  {
+    id: text("id").primaryKey(),
+    investmentId: text("investment_id")
+      .notNull()
+      .references(() => investments.id, { onDelete: "cascade" }),
+    dateKey: text("date_key").notNull(),
+    kind: text("kind").$type<"interest" | "principal">().notNull(),
+    amount: integer("amount").notNull(),
+  },
+  (t) => [index("investment_schedule_investment_idx").on(t.investmentId)],
 );
 
 export const investmentPayouts = sqliteTable(
@@ -365,6 +386,7 @@ export const schema = {
   fxRates,
   investments,
   investmentPayouts,
+  investmentSchedule,
   settings,
 };
 
@@ -395,3 +417,4 @@ export type FxRateRow = typeof fxRates.$inferSelect;
 export type SettingRow = typeof settings.$inferSelect;
 export type InvestmentRow = typeof investments.$inferSelect;
 export type PayoutRow = typeof investmentPayouts.$inferSelect;
+export type ScheduleRow = typeof investmentSchedule.$inferSelect;

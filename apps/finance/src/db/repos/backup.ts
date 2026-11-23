@@ -9,6 +9,7 @@ import {
   categories,
   fxRates,
   investmentPayouts,
+  investmentSchedule,
   investments,
   people,
   recurringRules,
@@ -86,6 +87,12 @@ const TABLES: readonly TableSpec[] = [
   {
     key: "investment_payouts",
     table: investmentPayouts,
+    order: ["id"],
+    optional: true,
+  },
+  {
+    key: "investment_schedule",
+    table: investmentSchedule,
     order: ["id"],
     optional: true,
   },

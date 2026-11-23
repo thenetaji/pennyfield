@@ -221,6 +221,10 @@ function Navigator() {
           options={push("Investment")}
         />
         <Stack.Screen
+          name="investments/[id]/schedule"
+          options={push("Payout schedule")}
+        />
+        <Stack.Screen
           name="investments/[id]/edit"
           options={formSheet("Edit investment")}
         />

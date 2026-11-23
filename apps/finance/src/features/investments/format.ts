@@ -70,3 +70,11 @@ export function investmentLine(
   if (backAfter(inv, needBy) && needBy) parts.push("after you need it");
   return parts.filter(Boolean).join(" · ");
 }
+
+/** "1,234.50" to minor units; empty is 0, anything else is NaN. */
+export function parseMinor(text: string, digits: number): number {
+  const clean = text.trim().replace(/,/g, "");
+  if (clean === "") return 0;
+  if (!/^\d+(\.\d+)?$/.test(clean)) return Number.NaN;
+  return Math.round(Number(clean) * 10 ** digits);
+}

@@ -1,4 +1,5 @@
 import {
+  addDays,
   addMonths,
   keyToLocalMs,
   toDateKey,
@@ -33,7 +34,17 @@ import { useAmountEntry } from "@/features/entry/use-amount-entry";
 import { DatePicker } from "@/features/transaction-form/date-picker";
 import { TYPE_LABELS } from "@/lib/investments/tax";
 
-import { parseRate, SCHEDULE_LABELS, SCHEDULES, TYPES } from "./format";
+import {
+  parseMinor,
+  parseRate,
+  SCHEDULE_LABELS,
+  SCHEDULES,
+  TYPES,
+} from "./format";
+
+const PERIODIC = ["monthly", "quarterly", "half_yearly", "yearly"];
+const minorText = (minor: number | null | undefined, digits: number) =>
+  minor == null ? "" : String(minor / 10 ** digits);
 
 const noon = (key: DateKey) => keyToLocalMs(key, 12);
 const NONE = "none";
@@ -125,13 +136,31 @@ export function InvestmentForm({
     source?.closedOn ?? source?.maturityDate ?? today,
   );
   const [note, setNote] = React.useState(source?.note ?? "");
+  const [firstPayout, setFirstPayout] = React.useState<DateKey | null>(
+    source?.firstPayoutDate ?? null,
+  );
+  const [couponText, setCouponText] = React.useState(
+    minorText(source?.couponAmount, digits),
+  );
+  const [redemptionText, setRedemptionText] = React.useState(
+    minorText(source?.redemptionAmount, digits),
+  );
   const [keypadOpen, setKeypadOpen] = React.useState(mode === "new");
   const [textFocused, setTextFocused] = React.useState(false);
   const entry = useAmountEntry(digits, amount, setAmount);
 
   const rate = parseRate(rateText);
+  const periodic = PERIODIC.includes(payout);
+  const coupon = periodic ? parseMinor(couponText, digits) : 0;
+  const redemption = parseMinor(redemptionText, digits);
   const fallbackName = issuer.trim() || TYPE_LABELS[type];
-  const disabled = amount <= 0 || Number.isNaN(rate) || maturityDate < buyDate;
+  const disabled =
+    amount <= 0 ||
+    Number.isNaN(rate) ||
+    Number.isNaN(coupon) ||
+    Number.isNaN(redemption) ||
+    maturityDate < buyDate ||
+    (periodic && firstPayout !== null && firstPayout <= buyDate);
 
   const close = () => {
     if (router.canDismiss()) router.dismiss();
@@ -159,6 +188,9 @@ export function InvestmentForm({
       maturityDate,
       closedOn: closed ? closedOn : null,
       fromAccountId: fromId === NONE ? null : fromId,
+      firstPayoutDate: periodic ? firstPayout : null,
+      couponAmount: coupon > 0 ? coupon : null,
+      redemptionAmount: redemption > 0 ? redemption : null,
       note,
     };
     try {
@@ -261,7 +293,7 @@ export function InvestmentForm({
             onSelect={setType}
           />
           <TextRow
-            label="Rate"
+            label={type === "fd" ? "Rate" : "Yield (YTM)"}
             value={rateText}
             onChange={setRateText}
             placeholder="% a year"
@@ -301,6 +333,46 @@ export function InvestmentForm({
             options={accountOptions}
             selected={fromId}
             onSelect={setFromId}
+          />
+        </ListGroup>
+        <ListGroup footer="Copy these from the platform's payout schedule. Leave them empty to work them out from the rate.">
+          {periodic ? (
+            <ListRow
+              label="Set first payout date"
+              switchValue={firstPayout !== null}
+              onSwitchChange={(on) =>
+                setFirstPayout(on ? addMonths(buyDate, 1) : null)
+              }
+            />
+          ) : null}
+          {periodic && firstPayout ? (
+            <FormRow label="First payout">
+              <DatePicker
+                value={noon(firstPayout)}
+                mode="date"
+                display="compact"
+                minimumDate={noon(addDays(buyDate, 1))}
+                onChange={(ms) => setFirstPayout(toDateKey(ms))}
+              />
+            </FormRow>
+          ) : null}
+          {periodic ? (
+            <TextRow
+              label="Interest per payout"
+              value={couponText}
+              onChange={setCouponText}
+              placeholder={`${currencySymbol(currency)}0`}
+              keyboardType="decimal-pad"
+              focus={focus}
+            />
+          ) : null}
+          <TextRow
+            label="Amount back at maturity"
+            value={redemptionText}
+            onChange={setRedemptionText}
+            placeholder={`${currencySymbol(currency)}0`}
+            keyboardType="decimal-pad"
+            focus={focus}
           />
         </ListGroup>
         <ListGroup>

@@ -84,6 +84,7 @@ describe("exportBackup", () => {
         "categories",
         "fx_rates",
         "investment_payouts",
+        "investment_schedule",
         "investments",
         "people",
         "recurring_rules",

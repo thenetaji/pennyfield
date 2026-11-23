@@ -136,6 +136,7 @@ export function createActions(db: Db) {
       addPayout: write(investments.addPayout),
       updatePayout: write(investments.updatePayout),
       deletePayout: write(investments.deletePayout),
+      setSchedule: write(investments.setSchedule),
     },
     settings: {
       set: <K extends settings.SettingKey>(

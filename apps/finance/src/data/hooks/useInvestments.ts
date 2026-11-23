@@ -1,6 +1,7 @@
 import {
   getInvestmentDetail,
   listAllInvestments,
+  listSchedule,
   listAllPayouts,
   listInvestments,
   type InvestmentDetail,
@@ -20,13 +21,16 @@ import {
   afterTax,
   cashFlows,
   effectiveSlab,
+  expectedFlows,
   interestByMonth,
   investmentReturns,
   maturityLadder,
   tdsWarnings,
   upcomingPayouts,
   xirr,
+  type ExpectedFlow,
   type InvestmentReturns,
+  type PlannedInvestment,
   type TdsWarning,
   type UpcomingPayout,
 } from "@/lib/investments/returns";
@@ -34,7 +38,12 @@ import { addDays, type DateKey } from "@studio/dates";
 
 import { useTodayKey } from "./useTodayKey";
 
-const TABLES = ["investments", "investment_payouts", "settings"] as const;
+const TABLES = [
+  "investments",
+  "investment_payouts",
+  "investment_schedule",
+  "settings",
+] as const;
 
 export function useInvestments(): InvestmentSummary[] {
   const today = useTodayKey();
@@ -113,8 +122,30 @@ export interface PortfolioInsights {
 const UPCOMING_DAYS = 365;
 const CHART_MONTHS = 12;
 
+/** Every investment with its entered schedule attached. */
+function plannedInvestments(db: Db): PlannedInvestment[] {
+  const schedule = listSchedule(db);
+  return listAllInvestments(db).map((inv) => {
+    const own = schedule.filter((r) => r.investmentId === inv.id);
+    return own.length > 0 ? { ...inv, schedule: own } : inv;
+  });
+}
+
+/** One investment's expected payouts, entered or calculated; empty when the id is unknown. */
+export function useExpectedFlows(id: string | undefined): {
+  flows: ExpectedFlow[];
+  entered: boolean;
+} {
+  return useLiveData(TABLES, id ?? "", (db) => {
+    const inv = plannedInvestments(db).find((i) => i.id === id);
+    return inv
+      ? { flows: expectedFlows(inv), entered: !!inv.schedule }
+      : { flows: [], entered: false };
+  });
+}
+
 function readInsights(db: Db, today: DateKey): PortfolioInsights {
-  const investments = listAllInvestments(db);
+  const investments = plannedInvestments(db);
   const payouts = listAllPayouts(db);
   const { rules } = readTaxContext(db);
   const slab = getSetting(db, "tax_slab_percent");

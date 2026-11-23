@@ -34,6 +34,8 @@ import { useSheetHeader } from "@/features/entry/sheet-header";
 import { useAmountEntry } from "@/features/entry/use-amount-entry";
 import { DatePicker } from "@/features/transaction-form/date-picker";
 
+import { parseMinor } from "./format";
+
 const KINDS: readonly PayoutKind[] = [
   "interest",
   "principal",
@@ -42,14 +44,6 @@ const KINDS: readonly PayoutKind[] = [
 ];
 const KIND_SEGMENTS = ["Interest", "Part back", "Maturity", "Sale"] as const;
 const NONE = "none";
-
-/** "1,234.50" to minor units; empty is 0, anything else is NaN. */
-export function parseMinor(text: string, digits: number): number {
-  const clean = text.trim().replace(/,/g, "");
-  if (clean === "") return 0;
-  if (!/^\d+(\.\d+)?$/.test(clean)) return Number.NaN;
-  return Math.round(Number(clean) * 10 ** digits);
-}
 
 const toText = (minor: number, digits: number) =>
   minor === 0 ? "" : String(minor / 10 ** digits);

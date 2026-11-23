@@ -20,10 +20,20 @@ export interface ExpectedFlow {
   amount: number;
 }
 
-type Terms = Pick<
+export type Terms = Pick<
   InvestmentRow,
-  "amount" | "rate" | "payout" | "buyDate" | "maturityDate"
->;
+  | "amount"
+  | "rate"
+  | "payout"
+  | "buyDate"
+  | "maturityDate"
+  | "firstPayoutDate"
+  | "couponAmount"
+  | "redemptionAmount"
+> & {
+  /** The issuer's schedule; when present it replaces the calculated one. */
+  schedule?: readonly ExpectedFlow[];
+};
 
 const PERIOD_MONTHS: Partial<Record<InvestmentPayoutSchedule, number>> = {
   monthly: 1,
@@ -44,73 +54,92 @@ const compounded = (amount: number, rate: number, days: number) =>
       ((COMPOUNDS_PER_YEAR * days) / DAYS_PER_YEAR) -
   amount;
 
+const byDate = (a: ExpectedFlow, b: ExpectedFlow) =>
+  a.dateKey.localeCompare(b.dateKey) || a.kind.localeCompare(b.kind);
+
+/** What comes back at maturity: the stated redemption value, else the amount invested. */
+export const redemptionOf = (inv: Pick<Terms, "amount" | "redemptionAmount">) =>
+  inv.redemptionAmount ?? inv.amount;
+
 /**
- * Interest and principal the terms promise, from purchase to maturity. Periodic schedules pay a full period's
- * coupon each period and a broken period at maturity; cumulative deposits compound quarterly and pay at maturity.
+ * Interest and principal the terms promise, from purchase to maturity. An entered schedule wins. Otherwise periodic
+ * payouts start on the first payout date (or one period after purchase) and repeat each period; with a stated coupon
+ * every payout is that coupon, else a period's interest at the rate plus a broken period at maturity. Cumulative
+ * deposits compound quarterly and pay at maturity.
  */
 export function expectedFlows(inv: Terms): ExpectedFlow[] {
+  if (inv.schedule && inv.schedule.length > 0) {
+    const rows = [...inv.schedule];
+    if (inv.maturityDate && !rows.some((r) => r.kind === "principal"))
+      rows.push({
+        dateKey: inv.maturityDate,
+        kind: "principal",
+        amount: redemptionOf(inv),
+      });
+    return rows.sort(byDate);
+  }
   const maturity = inv.maturityDate;
   if (!maturity) return [];
   const principal: ExpectedFlow = {
     dateKey: maturity,
     kind: "principal",
-    amount: inv.amount,
+    amount: redemptionOf(inv),
   };
   const rate = inv.rate ?? 0;
-  if (rate <= 0) return [principal];
-  const days = diffDays(inv.buyDate, maturity);
   const months = PERIOD_MONTHS[inv.payout];
+  const coupon =
+    inv.couponAmount ??
+    (months ? Math.round((inv.amount * rate * months) / 1200) : 0);
+  if (rate <= 0 && !inv.couponAmount) return [principal];
+  const days = diffDays(inv.buyDate, maturity);
   if (!months) {
     const interest =
-      inv.payout === "cumulative"
+      inv.couponAmount ??
+      (inv.payout === "cumulative"
         ? compounded(inv.amount, rate, days)
-        : simple(inv.amount, rate, days);
+        : simple(inv.amount, rate, days));
     return [
       { dateKey: maturity, kind: "interest", amount: Math.round(interest) },
       principal,
     ];
   }
   const flows: ExpectedFlow[] = [];
-  const coupon = Math.round((inv.amount * rate * months) / 1200);
+  const first = inv.firstPayoutDate ?? addMonths(inv.buyDate, months);
   let previous = inv.buyDate;
-  for (let k = 1; ; k += 1) {
-    const next = addMonths(inv.buyDate, months * k);
+  for (let k = 0; ; k += 1) {
+    const next = addMonths(first, months * k);
     if (next >= maturity) break;
-    flows.push({ dateKey: next, kind: "interest", amount: coupon });
+    if (next > inv.buyDate)
+      flows.push({ dateKey: next, kind: "interest", amount: coupon });
     previous = next;
   }
-  const broken = Math.round(
-    simple(inv.amount, rate, diffDays(previous, maturity)),
-  );
+  // A stated coupon leaves the last part to the redemption value, as issuers quote it.
+  const broken = inv.couponAmount
+    ? 0
+    : Math.round(simple(inv.amount, rate, diffDays(previous, maturity)));
   if (broken > 0)
     flows.push({ dateKey: maturity, kind: "interest", amount: broken });
   flows.push(principal);
   return flows;
 }
 
-/** Interest the terms have earned by `today`, paid or not. */
+/** Interest the terms have earned by `today`, paid or not: payouts due so far plus the running share of the next. */
 export function earnedBy(inv: Terms, today: DateKey): number {
-  const maturity = inv.maturityDate;
-  const rate = inv.rate ?? 0;
-  if (!maturity || rate <= 0 || today <= inv.buyDate) return 0;
-  const end = today < maturity ? today : maturity;
-  if (!PERIOD_MONTHS[inv.payout]) {
-    const days = diffDays(inv.buyDate, end);
-    return Math.round(
-      inv.payout === "cumulative"
-        ? compounded(inv.amount, rate, days)
-        : simple(inv.amount, rate, days),
-    );
-  }
+  if (today <= inv.buyDate) return 0;
   let earned = 0;
   let last = inv.buyDate;
   for (const flow of expectedFlows(inv)) {
     if (flow.kind !== "interest") continue;
-    if (flow.dateKey > end) break;
-    earned += flow.amount;
-    last = flow.dateKey;
+    if (flow.dateKey <= today) {
+      earned += flow.amount;
+      last = flow.dateKey;
+      continue;
+    }
+    const span = diffDays(last, flow.dateKey);
+    if (span > 0) earned += (flow.amount * diffDays(last, today)) / span;
+    break;
   }
-  return Math.round(earned + simple(inv.amount, rate, diffDays(last, end)));
+  return Math.round(earned);
 }
 
 export interface InvestmentReturns {
@@ -122,14 +151,19 @@ export interface InvestmentReturns {
   accrued: number;
   /** What is invested now plus interest earned and not yet received. */
   currentValue: number;
-  /** Principal plus every rupee of interest over the term. */
+  /** Redemption value plus every rupee of interest over the term. */
   totalAtMaturity: number;
+  /** Interest plus any difference between the redemption value and the amount invested. */
+  expectedGain: number;
   /** Yearly return from the dates and amounts that actually moved; null when there is too little to tell. */
   xirr: number | null;
 }
 
+/** An investment with its entered schedule, if any. */
+export type PlannedInvestment = InvestmentRow & Pick<Terms, "schedule">;
+
 export function investmentReturns(
-  inv: InvestmentRow,
+  inv: PlannedInvestment,
   payouts: readonly PayoutRow[],
   today: DateKey,
 ): InvestmentReturns {
@@ -147,7 +181,9 @@ export function investmentReturns(
     interestToCome: open ? Math.max(0, expectedInterest - totals.interest) : 0,
     accrued,
     currentValue: still + accrued,
-    totalAtMaturity: inv.amount + Math.max(expectedInterest, totals.interest),
+    totalAtMaturity:
+      redemptionOf(inv) + Math.max(expectedInterest, totals.interest),
+    expectedGain: expectedInterest + redemptionOf(inv) - inv.amount,
     xirr: xirr(cashFlows([inv], payouts, today, () => accrued)),
   };
 }
@@ -236,7 +272,7 @@ export interface UpcomingPayout extends ExpectedFlow {
 
 /** Promised payouts of open investments after today and up to `horizon`, soonest first. */
 export function upcomingPayouts(
-  investments: readonly InvestmentRow[],
+  investments: readonly PlannedInvestment[],
   today: DateKey,
   horizon: DateKey,
 ): UpcomingPayout[] {
@@ -267,7 +303,7 @@ export const TDS_LIMITS = { bank: 5_000_000, company: 1_000_000 } as const;
 
 /** Payers on track to pay more interest this tax year than the TDS limit. Indian rules only; government bonds have no TDS. */
 export function tdsWarnings(
-  investments: readonly InvestmentRow[],
+  investments: readonly PlannedInvestment[],
   payouts: readonly PayoutRow[],
   today: DateKey,
 ): TdsWarning[] {
@@ -313,7 +349,7 @@ export function tdsWarnings(
 
 /** Principal coming back per month for the next `months` months, keyed by each month's first day. */
 export function maturityLadder(
-  investments: readonly InvestmentRow[],
+  investments: readonly PlannedInvestment[],
   payouts: readonly PayoutRow[],
   today: DateKey,
   months: number,
@@ -328,7 +364,7 @@ export function maturityLadder(
     const back = payoutTotals(
       payouts.filter((p) => p.investmentId === inv.id),
     ).principalBack;
-    const amount = Math.max(0, inv.amount - back);
+    const amount = Math.max(0, redemptionOf(inv) - back);
     const month = `${inv.maturityDate.slice(0, 7)}-01`;
     // Overdue maturities count as this month: the money is due now.
     const key = month < first ? first : month;

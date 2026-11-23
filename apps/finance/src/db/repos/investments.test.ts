@@ -12,6 +12,8 @@ import {
   deletePayout,
   getInvestmentDetail,
   listInvestments,
+  listSchedule,
+  setSchedule,
   updateInvestment,
   updatePayout,
   type InvestmentInput,
@@ -244,5 +246,32 @@ describe("investments ledger", () => {
     const detail = getInvestmentDetail(fresh, inv.id, "2026-08-01");
     expect(detail?.payouts).toHaveLength(1);
     expect(detail?.totals.interest).toBe(177_000);
+  });
+
+  it("keeps an entered schedule until it is cleared or the investment goes", () => {
+    const { db } = setup();
+    const inv = createInvestment(db, {
+      ...FD,
+      type: "bond",
+      firstPayoutDate: "2026-05-01",
+      couponAmount: 18_384,
+      redemptionAmount: 10_100_000,
+    });
+    setSchedule(db, inv.id, [
+      { dateKey: "2026-05-01", kind: "interest", amount: 18_384 },
+      { dateKey: "2026-06-01", kind: "interest", amount: 16_604 },
+    ]);
+    expect(listSchedule(db, inv.id).map((r) => r.amount)).toEqual([18_384, 16_604]);
+    setSchedule(db, inv.id, [{ dateKey: "2026-05-01", kind: "interest", amount: 1 }]);
+    expect(listSchedule(db, inv.id)).toHaveLength(1);
+    deleteInvestment(db, inv.id);
+    expect(listSchedule(db)).toHaveLength(0);
+  });
+
+  it("rejects a first payout before the purchase", () => {
+    const { db } = setup();
+    expect(() =>
+      createInvestment(db, { ...FD, firstPayoutDate: "2026-04-01" }),
+    ).toThrow();
   });
 });

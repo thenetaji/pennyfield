@@ -139,6 +139,10 @@ export function InvestmentDetailScreen() {
           value: open && r.accrued > 0 ? fmt(r.accrued) : undefined,
         },
         {
+          label: "Expected gain",
+          value: r.expectedGain > 0 ? fmt(r.expectedGain) : undefined,
+        },
+        {
           label: "Total at maturity",
           value: r.expectedInterest > 0 ? fmt(r.totalAtMaturity) : undefined,
         },
@@ -216,13 +220,23 @@ export function InvestmentDetailScreen() {
         </Stagger>
       )}
 
-      {returns.some((f) => f.value !== undefined) ? (
+      {inv.maturityDate || returns.some((f) => f.value !== undefined) ? (
         <Stagger index={2}>
           <ListGroup
             header="Returns"
             footer="Expected figures come from the rate and schedule. Return a year counts money on the dates it actually moved."
           >
             {facts(returns)}
+            <ListRow
+              label="Payout schedule"
+              chevron
+              onPress={() =>
+                router.push({
+                  pathname: "/investments/[id]/schedule",
+                  params: { id: inv.id },
+                })
+              }
+            />
           </ListGroup>
         </Stagger>
       ) : null}

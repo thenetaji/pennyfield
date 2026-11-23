@@ -32,6 +32,9 @@ function inv(patch: Partial<InvestmentRow> = {}): InvestmentRow {
     fromAccountId: null,
     buyTransactionId: null,
     closeTransactionId: null,
+    firstPayoutDate: null,
+    couponAmount: null,
+    redemptionAmount: null,
     note: "",
     createdAt: 0,
     updatedAt: 0,
@@ -79,10 +82,52 @@ describe("expectedFlows", () => {
   });
 });
 
+describe("bonds with a stated schedule", () => {
+  // Kosamattam Finance via Stable Bonds: bought 23 Nov 2026, interest on the 1st, redeemed 11 Mar 2027.
+  const bond = inv({
+    type: "bond",
+    amount: 2_563_997,
+    rate: 10,
+    payout: "monthly",
+    buyDate: "2026-11-23",
+    maturityDate: "2027-03-11",
+    firstPayoutDate: "2027-01-01",
+    couponAmount: 18_384,
+    redemptionAmount: 2_576_031,
+  });
+
+  it("pays from the first payout date and redeems at the stated value", () => {
+    expect(expectedFlows(bond).map((f) => [f.dateKey, f.kind, f.amount])).toEqual([
+      ["2027-01-01", "interest", 18_384],
+      ["2027-02-01", "interest", 18_384],
+      ["2027-03-01", "interest", 18_384],
+      ["2027-03-11", "principal", 2_576_031],
+    ]);
+    const r = investmentReturns(bond, [], "2026-11-23");
+    expect(r.expectedGain).toBe(18_384 * 3 + 2_576_031 - 2_563_997);
+    expect(r.totalAtMaturity).toBe(2_576_031 + 18_384 * 3);
+  });
+
+  it("uses the issuer's schedule when one is entered", () => {
+    const flows = expectedFlows({
+      ...bond,
+      schedule: [
+        { dateKey: "2027-03-01", kind: "interest", amount: 16_604 },
+        { dateKey: "2027-01-01", kind: "interest", amount: 18_384 },
+        { dateKey: "2027-02-01", kind: "interest", amount: 18_384 },
+      ],
+    });
+    expect(flows.map((f) => f.amount)).toEqual([18_384, 18_384, 16_604, 2_576_031]);
+    expect(investmentReturns({ ...bond, schedule: flows }, [], "2026-11-23").expectedGain).toBe(
+      18_384 * 2 + 16_604 + 2_576_031 - 2_563_997,
+    );
+  });
+});
+
 describe("earned and accrued", () => {
   it("adds paid coupons and the days since the last one", () => {
-    // Two coupons by 1 Jul plus 31 days at 8%.
-    expect(earnedBy(inv(), "2026-08-01")).toBe(400_000 + 67_945);
+    // Two coupons by 1 Jul plus 31 of the next coupon's 92 days.
+    expect(earnedBy(inv(), "2026-08-01")).toBe(400_000 + 67_391);
     expect(earnedBy(inv(), "2025-12-01")).toBe(0);
   });
 
@@ -94,8 +139,8 @@ describe("earned and accrued", () => {
     );
     expect(r.expectedInterest).toBe(801_644);
     expect(r.interestToCome).toBe(401_644);
-    expect(r.accrued).toBe(67_945);
-    expect(r.currentValue).toBe(10_067_945);
+    expect(r.accrued).toBe(67_391);
+    expect(r.currentValue).toBe(10_067_391);
     expect(r.totalAtMaturity).toBe(10_801_644);
   });
 });
