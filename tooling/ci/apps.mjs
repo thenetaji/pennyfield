@@ -243,7 +243,7 @@ function sidestore(ipaPath) {
   const source = fs.existsSync(file)
     ? JSON.parse(fs.readFileSync(file, "utf8"))
     : {
-        name: "Studio",
+        name: expo.name,
         identifier: `com.${owner}.studio`,
         subtitle: `Apps by ${owner}`,
         apps: [],
