@@ -35,6 +35,11 @@ export function BackupScreen() {
   } | null>(null);
   const [busy, setBusy] = React.useState(false);
   const [syncing, setSyncing] = React.useState(false);
+  const [autoFolder] = useSetting("auto_backup_folder");
+  const [autoFolderName] = useSetting("auto_backup_folder_name");
+  const [autoAt] = useSetting("auto_backup_at");
+  const [autoError] = useSetting("auto_backup_error");
+  const [autoBusy, setAutoBusy] = React.useState(false);
   const statuses = React.useMemo(
     () =>
       PROVIDERS.map((p) => ({
@@ -110,6 +115,31 @@ export function BackupScreen() {
     }
   };
 
+  const pickFolder = async () => {
+    setAutoBusy(true);
+    try {
+      if (await actions.autoBackup.pick()) haptic("success");
+    } catch (error) {
+      showToast({
+        message: error instanceof Error ? error.message : "Could not use that folder",
+        haptic: "warning",
+      });
+    } finally {
+      setAutoBusy(false);
+    }
+  };
+
+  const autoNow = async () => {
+    setAutoBusy(true);
+    try {
+      const ok = await actions.autoBackup.runNow();
+      if (ok) haptic("success");
+      else showToast({ message: "Backup failed", haptic: "warning" });
+    } finally {
+      setAutoBusy(false);
+    }
+  };
+
   const syncNow = async () => {
     setSyncing(true);
     try {
@@ -128,6 +158,43 @@ export function BackupScreen() {
       contentInsetAdjustmentBehavior="automatic"
       contentContainerClassName="gap-6 py-4 pb-12"
     >
+      <Stagger index={0}>
+        <ListGroup
+          header="Automatic backup"
+          footer={
+            autoError
+              ? autoError
+              : autoFolder
+                ? `Saves a backup once a day and keeps a copy for each of the last 8 weeks. Last: ${autoAt ? backupTimeLabel(autoAt) : "not yet"}`
+                : "Pick a folder in iCloud Drive or Files. A backup is saved there once a day, with a copy for each of the last 8 weeks."
+          }
+        >
+          <ListRow
+            label="Automatic backup"
+            icon={{ name: "cloud", color: "blue" }}
+            switchValue={!!autoFolder}
+            onSwitchChange={(on) => {
+              if (on) void pickFolder();
+              else actions.autoBackup.turnOff();
+            }}
+          />
+          {autoFolder ? (
+            <ListRow
+              label="Folder"
+              value={autoFolderName ?? "Folder"}
+              chevron
+              onPress={() => void pickFolder()}
+            />
+          ) : null}
+          {autoFolder ? (
+            <ListRow
+              label={autoBusy ? "Backing up" : "Back up to folder now"}
+              icon={{ name: "download", color: "indigo" }}
+              onPress={autoBusy ? undefined : () => void autoNow()}
+            />
+          ) : null}
+        </ListGroup>
+      </Stagger>
       <Stagger index={0}>
         <ListGroup
           header="Backup"

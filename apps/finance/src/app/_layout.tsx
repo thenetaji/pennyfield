@@ -20,6 +20,7 @@ import { Platform, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { usePostDueRecurring, useReminderSync, useSetting } from "@/data/hooks";
+import { useAutoBackup } from "@/data/hooks/useAutoBackup";
 import { LockGate } from "@/features/lock/lock-gate";
 import { AmountsPrivacy } from "@/features/privacy/amounts-privacy";
 import { DemoSeedGate } from "@/lib/demo-seed-gate";
@@ -118,6 +119,7 @@ function Database({ children }: { children: ReactNode }) {
 function Navigator() {
   usePostDueRecurring();
   useReminderSync();
+  useAutoBackup();
   useIconPrefsSync();
   const { colors } = useTokens();
   const [theme] = useSetting("theme");

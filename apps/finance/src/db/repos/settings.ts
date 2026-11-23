@@ -126,6 +126,13 @@ export interface SettingsMap {
   funding_mode: FundingMode;
   /** Income tax slab in percent, for after-tax returns; null until set. */
   tax_slab_percent: number | null;
+  /** Folder the automatic backup writes to; null is off. */
+  auto_backup_folder: string | null;
+  auto_backup_folder_name: string | null;
+  /** Epoch ms of the last automatic backup. */
+  auto_backup_at: number | null;
+  /** Why the last automatic backup failed; cleared by the next success. */
+  auto_backup_error: string | null;
 }
 
 export type SettingKey = keyof SettingsMap;
@@ -177,6 +184,10 @@ export const DEFAULT_SETTINGS: Readonly<SettingsMap> = {
   funded_accounts: [],
   funding_mode: "full",
   tax_slab_percent: null,
+  auto_backup_folder: null,
+  auto_backup_folder_name: null,
+  auto_backup_at: null,
+  auto_backup_error: null,
 };
 
 const LOOK_VERSION = 2;

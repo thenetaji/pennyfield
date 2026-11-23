@@ -66,6 +66,10 @@ describe("settings", () => {
         "funded_accounts",
         "funding_mode",
         "tax_slab_percent",
+        "auto_backup_folder",
+        "auto_backup_folder_name",
+        "auto_backup_at",
+        "auto_backup_error",
       ].sort(),
     );
   });

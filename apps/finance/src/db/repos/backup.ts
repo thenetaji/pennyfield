@@ -121,6 +121,10 @@ export const DEVICE_SETTING_KEYS: readonly SettingKey[] = [
   "reminder_bills",
   "reminder_budgets",
   "reminder_budget_fired",
+  "auto_backup_folder",
+  "auto_backup_folder_name",
+  "auto_backup_at",
+  "auto_backup_error",
 ];
 
 export type BackupErrorCode =

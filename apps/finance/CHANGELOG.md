@@ -2,6 +2,13 @@
 
 All notable changes to Finance. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.8.0] - 2026-11-23
+
+### Added
+- **Automatic backup:** Settings, Backup & sync, Automatic backup. Pick a folder once (iCloud Drive, Google Drive or On My iPhone) and Pennyfield saves a backup there once a day when you leave the app, plus a copy for each of the last 8 weeks. Restore any of them with Restore from file.
+
+Includes every 0.7.0 update below: investments, returns and tax by year, and auto top-up.
+
 ## 0.7.0 update - 2026-11-22 (3)
 
 ### Added

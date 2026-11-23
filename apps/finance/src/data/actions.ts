@@ -31,6 +31,11 @@ import {
   scheduleRemindersSoon,
 } from "@/lib/reminders";
 import {
+  pickBackupFolder,
+  runAutoBackup,
+  turnOffAutoBackup,
+} from "@/lib/backup/auto-backup";
+import {
   getSyncProvider,
   syncNow,
   type SyncOutcome,
@@ -208,6 +213,23 @@ export function createActions(db: Db) {
       validate: (json: unknown) => backup.validateBackup(json),
       /** Replaces all data atomically. Throws `BackupError` for an invalid document. */
       restore: write(backup.restoreBackup),
+    },
+    autoBackup: {
+      /** Opens the folder picker; true once a folder is set and the first backup is written. */
+      pick: async (): Promise<boolean> => {
+        const picked = await pickBackupFolder(db);
+        notifyChange(["settings"]);
+        if (!picked) return false;
+        const wrote = await runAutoBackup(db, appVersion(), true);
+        notifyChange(["settings"]);
+        return wrote;
+      },
+      runNow: async (): Promise<boolean> => {
+        const wrote = await runAutoBackup(db, appVersion(), true);
+        notifyChange(["settings"]);
+        return wrote;
+      },
+      turnOff: plain(turnOffAutoBackup),
     },
     sync: {
       /** Syncs with the provider (default: the `sync_provider` setting). Resolves with what happened. */

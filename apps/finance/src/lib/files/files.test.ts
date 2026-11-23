@@ -3,10 +3,10 @@ import { backupFileName, imageExtension, isInsideDirectory } from "./paths";
 describe("file helpers", () => {
   it("names backups by local date", () => {
     expect(backupFileName(new Date(2026, 9, 6, 23, 59))).toBe(
-      "Finance-backup-2026-10-06.json",
+      "Pennyfield-backup-2026-10-06.json",
     );
     expect(backupFileName(new Date(2026, 0, 3))).toBe(
-      "Finance-backup-2026-01-03.json",
+      "Pennyfield-backup-2026-01-03.json",
     );
   });
 
