@@ -1,3 +1,5 @@
+import { LinearGradient } from "expo-linear-gradient";
+import { useTokens } from "@studio/theme";
 import { useRouter } from "expo-router";
 import * as React from "react";
 
@@ -58,6 +60,7 @@ const GAP_BETWEEN = "mt-10";
 
 export default function Home() {
   const router = useRouter();
+  const { colors } = useTokens();
   const reveal = useScrollReveal();
   const money = useMoneyContext({ relativeDays: true });
   const today = useTodayKey();
@@ -224,6 +227,11 @@ export default function Home() {
 
   return (
     <View className="flex-1 bg-bg">
+      <LinearGradient
+        pointerEvents="none"
+        colors={[colors.accentSoft, colors.bg]}
+        style={{ position: "absolute", top: 0, left: 0, right: 0, height: 420 }}
+      />
       <HomeTopBar />
       <ScrollView
         contentContainerClassName="px-4 pb-28"

@@ -2,20 +2,23 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import * as React from "react";
 import { ScrollView, View } from "react-native";
 
-import { formatMoney, formatMoneyForSpeech } from "@studio/money";
-import { Stagger } from "@studio/motion";
+import { addMonths, diffDays, monthShort, parseKey } from "@studio/dates";
+import { formatMoney } from "@studio/money";
+import { haptic, useTokens } from "@studio/theme";
 import {
-  Amount,
   barRight,
   Button,
   HeaderButton,
-  ListGroup,
   ListRow,
+  Switch,
   Text,
 } from "@studio/ui";
 
+import { Eyebrow, HeroWash, Panel } from "@/components/app/surface";
+
 import {
   useAccounts,
+  useExpectedFlows,
   useInvestment,
   useSetting,
   useInvestmentInsights,
@@ -50,6 +53,9 @@ export function InvestmentDetailScreen() {
   const [needBy] = useSetting("cash_need_date");
   const detail = useInvestment(id);
   const insights = useInvestmentInsights();
+  const { colors } = useTokens();
+  const { flows } = useExpectedFlows(id);
+  const [afterTds, setAfterTds] = React.useState(true);
 
   React.useEffect(() => {
     if (!detail && router.canGoBack()) router.back();
@@ -166,15 +172,22 @@ export function InvestmentDetailScreen() {
       params: { id: inv.id },
     });
 
+  const tdsRate = tax.rules === "india" ? 0.1 : 0;
+  const lines = scheduleLines(flows, detail.payouts, tdsRate);
+  const years = groupByYear(lines);
+  const totalBack = lines.reduce((sum, l) => sum + (afterTds ? l.net : l.gross), 0);
+  const backDone = lines.filter((l) => l.received).length;
+  const tenure = end ? tenureLabel(inv.buyDate, end) : null;
+
   return (
     <ScrollView
       className="flex-1 bg-bg"
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerClassName="gap-6 pb-12"
+      contentContainerClassName="pb-12"
     >
       <Stack.Screen
         options={{
-          title: "",
+          title: inv.name,
           ...barRight(
             <HeaderButton
               symbol="pencil"
@@ -189,65 +202,133 @@ export function InvestmentDetailScreen() {
           ),
         }}
       />
-      <Stagger index={0} className="items-center gap-1 px-6 pt-4">
-        <Text
-          variant="title2"
-          numberOfLines={2}
-          accessibilityRole="header"
-          className="text-center"
-        >
-          {inv.name}
-        </Text>
-        <Text
-          variant="footnote"
-          tone={detail.status === "due" ? "warning" : "secondary"}
-        >
-          {investmentLine(detail, needBy)}
-        </Text>
-        <Amount
-          value={fmt(inv.amount)}
-          variant="hero"
-          animate="intro"
-          accessibilityLabel={`${inv.name}, ${formatMoneyForSpeech(inv.amount, inv.currency, { sign: "none", locale: money.locale })} invested`}
-        />
-      </Stagger>
-
-      {detail.status === "closed" ? null : (
-        <Stagger index={1} className="px-4">
-          <Button size="lg" onPress={addPayout} accessibilityLabel="Add payout">
-            Add payout
-          </Button>
-        </Stagger>
-      )}
-
-      {inv.maturityDate || returns.some((f) => f.value !== undefined) ? (
-        <Stagger index={2}>
-          <ListGroup
-            header="Returns"
-            footer="Expected figures come from the rate and schedule. Return a year counts money on the dates it actually moved."
+      <HeroWash>
+        <View className="px-5 pb-6 pt-4">
+          <Text
+            variant="footnote"
+            tone={detail.status === "due" ? "warning" : "secondary"}
+            className="font-semibold uppercase tracking-[1.4px]"
           >
-            {facts(returns)}
-            <ListRow
-              label="Payout schedule"
-              chevron
-              onPress={() =>
-                router.push({
-                  pathname: "/investments/[id]/schedule",
-                  params: { id: inv.id },
-                })
-              }
-            />
-          </ListGroup>
-        </Stagger>
+            {investmentLine(detail, needBy)}
+          </Text>
+          <View className="mt-4 flex-row items-center">
+            <View className="flex-1">
+              <Text variant="caption" tone="secondary" className="uppercase tracking-[1.2px]">
+                Investing
+              </Text>
+              <Text variant="title2" numeric className="mt-1">
+                {fmt(inv.amount)}
+              </Text>
+            </View>
+            {tenure ? (
+              <View
+                className="rounded-full px-3 py-1"
+                style={{ borderWidth: 1, borderColor: colors.separator }}
+              >
+                <Text variant="footnote" tone="secondary">
+                  {tenure}
+                </Text>
+              </View>
+            ) : null}
+            <View className="flex-1 items-end">
+              <Text variant="caption" tone="secondary" className="uppercase tracking-[1.2px]">
+                Return
+              </Text>
+              <Text variant="title2" tone="income" numeric className="mt-1">
+                {lines.length > 0 ? fmt(totalBack) : "—"}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </HeroWash>
+
+      {lines.length > 0 ? (
+        <View
+          className="mx-4 mt-4 flex-row items-center justify-center rounded-[14px] py-2.5"
+          style={{ backgroundColor: colors.fill }}
+        >
+          <Text variant="footnote" tone="secondary" className="font-semibold uppercase tracking-[1.2px]">
+            {backDone === 0
+              ? `${lines.length} payouts ahead`
+              : `${backDone} of ${lines.length} paid so far`}
+          </Text>
+        </View>
       ) : null}
 
-      <Stagger index={2}>
-        <ListGroup header="Received">{facts(received)}</ListGroup>
-      </Stagger>
+      {years.map(([year, rows], index) => (
+        <View key={year}>
+          <Eyebrow
+            trailing={
+              index === 0 && tdsRate > 0 ? (
+                <View className="flex-row items-center gap-2">
+                  <Text variant="footnote" tone="secondary">
+                    After {tdsLabel}
+                  </Text>
+                  <Switch
+                    value={afterTds}
+                    onValueChange={(v) => {
+                      haptic("selection");
+                      setAfterTds(v);
+                    }}
+                    accessibilityLabel={`Show amounts after ${tdsLabel}`}
+                  />
+                </View>
+              ) : undefined
+            }
+          >
+            {`${year} · ${rows.length} ${rows.length === 1 ? "payout" : "payouts"}`}
+          </Eyebrow>
+          <Panel>
+            {rows.map((l, i) => (
+              <View
+                key={`${l.dateKey}${l.kind}`}
+                className="flex-row items-center justify-between px-4 py-3.5"
+                style={
+                  i > 0
+                    ? { borderTopWidth: 0.5, borderTopColor: colors.separator }
+                    : null
+                }
+              >
+                <View>
+                  <Text variant="body" className="font-medium">
+                    {shortDate(l.dateKey)}
+                  </Text>
+                  <Text variant="subhead" tone="secondary">
+                    {l.kind === "interest" ? "Interest" : "Money back"}
+                    {l.received ? " · Received" : ""}
+                  </Text>
+                </View>
+                <Text
+                  variant="headline"
+                  numeric
+                  tone={l.kind === "interest" ? "income" : "default"}
+                >
+                  {`+${fmt(afterTds ? l.net : l.gross)}`}
+                </Text>
+              </View>
+            ))}
+          </Panel>
+        </View>
+      ))}
+
+      <View className="mt-6 px-4">
+        <Button size="lg" variant={detail.status === "closed" ? "secondary" : "primary"} onPress={addPayout}>
+          Add payout
+        </Button>
+      </View>
+
+      {returns.some((f) => f.value !== undefined) ? (
+        <>
+          <Eyebrow>Returns</Eyebrow>
+          <Panel>{facts(returns)}</Panel>
+        </>
+      ) : null}
 
       {detail.payouts.length > 0 ? (
-        <Stagger index={3}>
-          <ListGroup header="Payouts">
+        <>
+          <Eyebrow>Received</Eyebrow>
+          <Panel>
+            {facts(received)}
             {detail.payouts.map((p) => (
               <ListRow
                 key={p.id}
@@ -269,24 +350,82 @@ export function InvestmentDetailScreen() {
                 }
               />
             ))}
-          </ListGroup>
-        </Stagger>
+          </Panel>
+        </>
       ) : null}
 
-      <Stagger index={4}>
-        <ListGroup header="Details">{facts(terms)}</ListGroup>
-      </Stagger>
-      {detail.status === "closed" ? (
-        <View className="px-4">
-          <Button
-            variant="secondary"
-            onPress={addPayout}
-            accessibilityLabel="Add payout"
-          >
-            Add payout
-          </Button>
-        </View>
-      ) : null}
+      <Eyebrow>Details</Eyebrow>
+      <Panel>
+        {facts(terms)}
+        <ListRow
+          label="Payout schedule"
+          chevron
+          onPress={() =>
+            router.push({
+              pathname: "/investments/[id]/schedule",
+              params: { id: inv.id },
+            })
+          }
+        />
+      </Panel>
     </ScrollView>
   );
+}
+
+type Line = {
+  dateKey: string;
+  kind: "interest" | "principal";
+  gross: number;
+  net: number;
+  received: boolean;
+};
+
+const MATCH_DAYS = 7;
+
+/** Expected payouts, with the recorded payout swapped in where one landed near the expected date. */
+function scheduleLines(
+  flows: readonly { dateKey: string; kind: "interest" | "principal"; amount: number }[],
+  payouts: readonly { dateKey: string; kind: string; gross: number; tds: number }[],
+  tdsRate: number,
+): Line[] {
+  const used = new Set<number>();
+  return flows.map((f) => {
+    const hit = payouts.findIndex(
+      (p, i) =>
+        !used.has(i) &&
+        (p.kind === "interest") === (f.kind === "interest") &&
+        Math.abs(diffDays(f.dateKey, p.dateKey)) <= MATCH_DAYS,
+    );
+    if (hit >= 0) {
+      used.add(hit);
+      const p = payouts[hit]!;
+      return { dateKey: p.dateKey, kind: f.kind, gross: p.gross, net: p.gross - p.tds, received: true };
+    }
+    const tds = f.kind === "interest" ? Math.round(f.amount * tdsRate) : 0;
+    return { dateKey: f.dateKey, kind: f.kind, gross: f.amount, net: f.amount - tds, received: false };
+  });
+}
+
+function groupByYear(lines: readonly Line[]): [number, Line[]][] {
+  const out = new Map<number, Line[]>();
+  for (const l of lines) {
+    const y = parseKey(l.dateKey).year;
+    out.set(y, [...(out.get(y) ?? []), l]);
+  }
+  return [...out.entries()];
+}
+
+function shortDate(key: string): string {
+  const { month, day } = parseKey(key);
+  return `${monthShort(month)} ${day}`;
+}
+
+/** "5M 10D", the way platforms show a holding period. */
+function tenureLabel(from: string, to: string): string {
+  let months = 0;
+  while (addMonths(from, months + 1) <= to) months += 1;
+  const days = diffDays(addMonths(from, months), to);
+  const y = Math.floor(months / 12);
+  const m = months % 12;
+  return [y ? `${y}Y` : "", m ? `${m}M` : "", days ? `${days}D` : ""].filter(Boolean).join(" ") || "0D";
 }

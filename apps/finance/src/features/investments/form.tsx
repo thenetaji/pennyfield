@@ -145,6 +145,12 @@ export function InvestmentForm({
   const [redemptionText, setRedemptionText] = React.useState(
     minorText(source?.redemptionAmount, digits),
   );
+  const [more, setMore] = React.useState(
+    mode === "edit" &&
+      !!(source?.name && source.name !== source.issuer) ||
+      !!(source?.platform || source?.reference || source?.rating || source?.note ||
+        source?.firstPayoutDate || source?.couponAmount || source?.redemptionAmount),
+  );
   const [keypadOpen, setKeypadOpen] = React.useState(mode === "new");
   const [textFocused, setTextFocused] = React.useState(false);
   const entry = useAmountEntry(digits, amount, setAmount);
@@ -277,20 +283,20 @@ export function InvestmentForm({
             accessibilityLabel={`Amount invested, ${formatMoneyForSpeech(amount, currency, { sign: "none" })}`}
           />
         </View>
-        <ListGroup footer="Choose None if the money left your accounts before you started using Pennyfield.">
-          <TextRow
-            label="Name"
-            value={name}
-            onChange={setName}
-            placeholder={fallbackName}
-            focus={focus}
-          />
+        <ListGroup>
           <PickRow
             label="Type"
             value={TYPE_LABELS[type]}
             options={TYPES.map((t) => ({ value: t, label: TYPE_LABELS[t] }))}
             selected={type}
             onSelect={setType}
+          />
+          <TextRow
+            label={type === "fd" ? "Bank" : "Issuer"}
+            value={issuer}
+            onChange={setIssuer}
+            placeholder="Name"
+            focus={focus}
           />
           <TextRow
             label={type === "fd" ? "Rate" : "Yield (YTM)"}
@@ -318,7 +324,7 @@ export function InvestmentForm({
               onChange={(ms) => setBuyDate(toDateKey(ms))}
             />
           </FormRow>
-          <FormRow label="Matures">
+          <FormRow label={type === "fd" ? "Matures" : "Matures or sells"}>
             <DatePicker
               value={noon(maturityDate)}
               mode="date"
@@ -335,82 +341,87 @@ export function InvestmentForm({
             onSelect={setFromId}
           />
         </ListGroup>
-        <ListGroup footer="Copy these from the platform's payout schedule. Leave them empty to work them out from the rate.">
-          {periodic ? (
-            <ListRow
-              label="Set first payout date"
-              switchValue={firstPayout !== null}
-              onSwitchChange={(on) =>
-                setFirstPayout(on ? addMonths(buyDate, 1) : null)
-              }
-            />
-          ) : null}
-          {periodic && firstPayout ? (
-            <FormRow label="First payout">
-              <DatePicker
-                value={noon(firstPayout)}
-                mode="date"
-                display="compact"
-                minimumDate={noon(addDays(buyDate, 1))}
-                onChange={(ms) => setFirstPayout(toDateKey(ms))}
-              />
-            </FormRow>
-          ) : null}
-          {periodic ? (
+        {more ? (
+          <ListGroup header="More details">
             <TextRow
-              label="Interest per payout"
-              value={couponText}
-              onChange={setCouponText}
+              label="Name"
+              value={name}
+              onChange={setName}
+              placeholder={fallbackName}
+              focus={focus}
+            />
+            <TextRow
+              label="Platform"
+              value={platform}
+              onChange={setPlatform}
+              focus={focus}
+            />
+            <TextRow
+              label={type === "fd" ? "FD number" : "ISIN"}
+              value={reference}
+              onChange={setReference}
+              focus={focus}
+            />
+            {type === "fd" ? null : (
+              <TextRow
+                label="Rating"
+                value={rating}
+                onChange={setRating}
+                focus={focus}
+              />
+            )}
+            {type === "fd" ? null : (
+              <ListRow
+                label="Listed on an exchange"
+                switchValue={listed}
+                onSwitchChange={setListed}
+              />
+            )}
+            {periodic ? (
+              <ListRow
+                label="Set first payout date"
+                switchValue={firstPayout !== null}
+                onSwitchChange={(on) =>
+                  setFirstPayout(on ? addMonths(buyDate, 1) : null)
+                }
+              />
+            ) : null}
+            {periodic && firstPayout ? (
+              <FormRow label="First payout">
+                <DatePicker
+                  value={noon(firstPayout)}
+                  mode="date"
+                  display="compact"
+                  minimumDate={noon(addDays(buyDate, 1))}
+                  onChange={(ms) => setFirstPayout(toDateKey(ms))}
+                />
+              </FormRow>
+            ) : null}
+            {periodic ? (
+              <TextRow
+                label="Interest per payout"
+                value={couponText}
+                onChange={setCouponText}
+                placeholder={`${currencySymbol(currency)}0`}
+                keyboardType="decimal-pad"
+                focus={focus}
+              />
+            ) : null}
+            <TextRow
+              label="Amount back"
+              value={redemptionText}
+              onChange={setRedemptionText}
               placeholder={`${currencySymbol(currency)}0`}
               keyboardType="decimal-pad"
               focus={focus}
             />
-          ) : null}
-          <TextRow
-            label="Amount back at maturity"
-            value={redemptionText}
-            onChange={setRedemptionText}
-            placeholder={`${currencySymbol(currency)}0`}
-            keyboardType="decimal-pad"
-            focus={focus}
-          />
-        </ListGroup>
-        <ListGroup>
-          <TextRow
-            label={type === "fd" ? "Bank" : "Issuer"}
-            value={issuer}
-            onChange={setIssuer}
-            focus={focus}
-          />
-          <TextRow
-            label="Platform"
-            value={platform}
-            onChange={setPlatform}
-            focus={focus}
-          />
-          <TextRow
-            label={type === "fd" ? "FD number" : "ISIN"}
-            value={reference}
-            onChange={setReference}
-            focus={focus}
-          />
-          {type === "fd" ? null : (
-            <TextRow
-              label="Rating"
-              value={rating}
-              onChange={setRating}
-              focus={focus}
-            />
-          )}
-          {type === "fd" ? null : (
-            <ListRow
-              label="Listed on an exchange"
-              switchValue={listed}
-              onSwitchChange={setListed}
-            />
-          )}
-          <TextRow label="Note" value={note} onChange={setNote} focus={focus} />
-        </ListGroup>
+            <TextRow label="Note" value={note} onChange={setNote} focus={focus} />
+          </ListGroup>
+        ) : (
+          <ListGroup>
+            <ListRow label="More details" chevron onPress={() => setMore(true)} />
+          </ListGroup>
+        )}
         {mode === "edit" ? (
           <ListGroup>
             <ListRow

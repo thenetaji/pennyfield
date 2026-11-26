@@ -97,6 +97,7 @@ import { PayeesCard } from "./payees-card";
 import { PeriodControls } from "./period-controls";
 import { useRangeStore } from "./range-store";
 import { ScopeBar } from "./scope-bar";
+import { InvestmentsChapter } from "./investments-chapter";
 import { TrendSection } from "./trend-section";
 import {
   categoryKeyOf,
@@ -752,6 +753,8 @@ export default function InsightsScreen() {
 </Reveal>
             </View>
           ) : null}
+
+          <InvestmentsChapter label={<ChapterLabel title="Investments" />} />
 
           <ChapterLabel title="More" />
           <View className="gap-3 px-4 pt-2">

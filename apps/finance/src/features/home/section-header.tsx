@@ -9,7 +9,7 @@ type HomeSectionHeaderProps = {
   onAction?: () => void;
 };
 
-/** 15 pt / 600 title (not small caps) with a brass "All ›" link. */
+/** Letter-spaced caps title with an "All ›" link. */
 function HomeSectionHeader({
   title,
   actionLabel,
@@ -19,9 +19,10 @@ function HomeSectionHeader({
   return (
     <View className="flex-row items-baseline justify-between px-0.5 pb-2.5">
       <Text
-        variant="subhead"
+        variant="footnote"
+        tone="secondary"
         accessibilityRole="header"
-        className="font-semibold tracking-[-0.15px]"
+        className="font-semibold uppercase tracking-[1.4px]"
       >
         {title}
       </Text>
