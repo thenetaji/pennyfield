@@ -26,6 +26,7 @@ export function AdvancedScreen() {
     {
       header: "Plan",
       items: [
+        { label: "Income growth", icon: "chart.line.uptrend.xyaxis", subtitle: "Month by month, year by year", href: "/advanced/income" as Href },
         { label: "Budgets", icon: "budgets", subtitle: "Monthly limits", href: "/advanced/budgets" },
         { label: "What if", icon: "salary", subtitle: "Forecast your balance", href: "/explore/what-if" },
       ],
