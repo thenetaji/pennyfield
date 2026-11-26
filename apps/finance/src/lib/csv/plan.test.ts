@@ -255,4 +255,52 @@ describe("importBreakdown", () => {
       }),
     ).toBe("1 category · 2 accounts (1 new)");
   });
+
+  it("updates a stored entry matched by id, keeps unchanged ones, and leaves split rows on the skip path", () => {
+    const stored = (patch = {}) => ({
+      kind: "expense" as const,
+      title: "Coffee",
+      memo: "",
+      categoryKey: "expense:food",
+      isSplit: false,
+      tags: [],
+      person: null,
+      ...patch,
+    });
+    const existing: ExistingData = {
+      ...empty,
+      ids: new Set(["a", "b", "c"]),
+      stored: new Map([
+        ["a", stored()],
+        ["b", stored()],
+        ["c", stored({ isSplit: true })],
+      ]),
+    };
+    const plan = planImport(
+      [
+        row({ id: "a", title: "Cafe latte", category: "Drinks", tags: ["x"] }),
+        row({ id: "b" }),
+        row({ id: "c", title: "New" }),
+      ],
+      existing,
+      defaults,
+    );
+    expect(plan.updates).toEqual([
+      {
+        id: "a",
+        title: "Cafe latte",
+        memo: "",
+        categoryKey: "expense:drinks",
+        tags: ["x"],
+        personName: null,
+      },
+    ]);
+    expect(plan.newCategories).toHaveLength(1);
+    expect(plan.stats).toMatchObject({
+      transactions: 0,
+      updated: 1,
+      unchanged: 1,
+      duplicates: 1,
+    });
+  });
 });

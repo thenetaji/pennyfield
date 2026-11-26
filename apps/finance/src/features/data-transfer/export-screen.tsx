@@ -23,8 +23,8 @@ import { shareTextFile } from "./share-file";
 
 const RANGES: readonly ExportRange[] = ["month", "year", "all", "custom"];
 const RANGE_LABELS: Record<ExportRange, string> = {
-  month: "This month",
-  year: "This year",
+  month: "Month",
+  year: "Year",
   all: "All",
   custom: "Custom",
 };

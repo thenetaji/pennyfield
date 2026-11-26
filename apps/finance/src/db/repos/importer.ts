@@ -8,6 +8,7 @@ import {
   existingAccountKeys,
   planImport,
   type ExistingData,
+  type StoredEntry,
   type ExportRecord,
   type ImportRow,
   type ImportStats,
@@ -31,7 +32,7 @@ import type { Db } from "../types";
 import { createAccount } from "./accounts";
 import { createCategory } from "./categories";
 import { findOrCreatePerson } from "./people";
-import { findOrCreateTag } from "./tags";
+import { findOrCreateTag, replaceTransactionTags } from "./tags";
 
 /** Everything the planner needs to match a file against what is already stored. */
 export function loadImportContext(db: Db): ExistingData {
@@ -47,7 +48,56 @@ export function loadImportContext(db: Db): ExistingData {
     const key = dedupeKey(t.dateKey, t.amount, t.title);
     keys.set(key, (keys.get(key) ?? 0) + 1);
   }
+  const categoryRows = db
+    .select({ id: categories.id, name: categories.name, kind: categories.kind })
+    .from(categories)
+    .all();
+  const categoryKeyById = new Map(
+    categoryRows.map((c) => [c.id, categoryKey(c.kind, c.name)]),
+  );
+  const personNameById = new Map(
+    db
+      .select({ id: people.id, name: people.name })
+      .from(people)
+      .all()
+      .map((p) => [p.id, p.name]),
+  );
+  const tagNamesById = new Map<string, string[]>();
+  for (const l of db
+    .select({ transactionId: transactionTags.transactionId, name: tags.name })
+    .from(transactionTags)
+    .innerJoin(tags, eq(tags.id, transactionTags.tagId))
+    .all())
+    tagNamesById.set(l.transactionId, [
+      ...(tagNamesById.get(l.transactionId) ?? []),
+      l.name,
+    ]);
+  const stored = new Map<string, StoredEntry>();
+  for (const t of db
+    .select({
+      id: transactions.id,
+      kind: transactions.kind,
+      title: transactions.title,
+      memo: transactions.memo,
+      categoryId: transactions.categoryId,
+      isSplit: transactions.isSplit,
+      personId: transactions.personId,
+    })
+    .from(transactions)
+    .all())
+    stored.set(t.id, {
+      kind: t.kind,
+      title: t.title,
+      memo: t.memo,
+      categoryKey: t.categoryId
+        ? (categoryKeyById.get(t.categoryId) ?? null)
+        : null,
+      isSplit: t.isSplit,
+      tags: tagNamesById.get(t.id) ?? [],
+      person: t.personId ? (personNameById.get(t.personId) ?? null) : null,
+    });
   return {
+    stored,
     accounts: db
       .select({
         id: accounts.id,
@@ -239,6 +289,28 @@ export function importTransactions(
         tx.insert(transactionSplits).values(lines).run();
       }
     });
+
+    for (const u of plan.updates) {
+      tx.update(transactions)
+        .set({
+          title: u.title,
+          memo: u.memo,
+          ...(u.categoryKey
+            ? { categoryId: need(categoryIds, u.categoryKey) }
+            : {}),
+          ...(u.personName
+            ? { personId: need(personIds, tagKey(u.personName)) }
+            : {}),
+          updatedAt: now,
+        })
+        .where(eq(transactions.id, u.id))
+        .run();
+      replaceTransactionTags(
+        tx,
+        u.id,
+        u.tags.map((name) => need(tagIds, tagKey(name))),
+      );
+    }
 
     return { ...plan.stats, imported: plan.transactions.length };
   });

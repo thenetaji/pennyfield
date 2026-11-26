@@ -52,7 +52,10 @@ export function ImportSection() {
   };
 
   return (
-    <ListGroup header="Import">
+    <ListGroup
+      header="Import"
+      footer="A Pennyfield export brought back in updates the entries it came from: titles, notes, categories and tags. Other rows are added, and exact repeats are skipped."
+    >
       {FORMATS.map(({ format, color }) => (
         <ListRow
           key={format}

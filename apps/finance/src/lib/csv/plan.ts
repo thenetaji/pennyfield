@@ -28,6 +28,19 @@ export interface ExistingData {
   people?: readonly { id: string; name: string }[];
   /** Number of stored transactions per dedupe key; see {@link dedupeKey}. */
   keys: ReadonlyMap<string, number>;
+  /** Stored transactions by id; a file row with one of these ids updates it. Omitted means none. */
+  stored?: ReadonlyMap<string, StoredEntry>;
+}
+/** What a stored transaction holds in the fields an import update may change. */
+export interface StoredEntry {
+  kind: ImportKind;
+  title: string;
+  memo: string;
+  /** {@link categoryKey} of its category; null for transfers, lending and splits. */
+  categoryKey: string | null;
+  isSplit: boolean;
+  tags: readonly string[];
+  person: string | null;
 }
 export interface PlanDefaults {
   displayCurrency: string;
@@ -55,6 +68,19 @@ export interface PlannedTransaction {
   personName: string | null;
 }
 
+/** Edits to a stored transaction; the amount, date, kind, account and transfer fields never change. */
+export interface PlannedUpdate {
+  id: string;
+  title: string;
+  memo: string;
+  /** Null keeps the stored category. */
+  categoryKey: string | null;
+  /** Tag names that replace the stored set. */
+  tags: string[];
+  /** Null keeps the stored person. */
+  personName: string | null;
+}
+
 export interface ImportStats {
   transactions: number;
   categories: number;
@@ -62,11 +88,16 @@ export interface ImportStats {
   accounts: number;
   newAccounts: number;
   duplicates: number;
+  /** Rows that change a stored transaction. */
+  updated: number;
+  /** Rows whose id matches a stored transaction that already holds the same values. */
+  unchanged: number;
   skipped: number;
 }
 
 export interface ImportPlan {
   transactions: PlannedTransaction[];
+  updates: PlannedUpdate[];
   newAccounts: { key: string; name: string; currency: string }[];
   newCategories: { key: string; kind: "expense" | "income"; name: string }[];
   /** Tag names that do not exist yet. */
@@ -159,6 +190,9 @@ export function planImport(
   const usedAccounts = new Set<string>();
   const usedCategories = new Set<string>();
   const out: PlannedTransaction[] = [];
+  const updates: PlannedUpdate[] = [];
+  const updatedIds = new Set<string>();
+  let unchanged = 0;
   let duplicates = 0;
   let skipped = 0;
 
@@ -189,7 +223,86 @@ export function planImport(
   const knownCode = (code: string | null) =>
     code && getCurrency(code) ? code : null;
 
+  const cleanTags = (raw: readonly string[] | undefined) => {
+    const list: string[] = [];
+    for (const item of raw ?? []) {
+      const name = item.trim().replace(/\s+/g, " ");
+      if (name !== "" && !list.some((t) => norm(t) === norm(name)))
+        list.push(name);
+    }
+    return list;
+  };
+
   for (const row of rows) {
+    // Split rows stay on the create/skip path: they would need the split lines rewritten.
+    const known = row.id ? existing.stored?.get(row.id) : undefined;
+    if (
+      row.id &&
+      known &&
+      row.splits.length === 0 &&
+      !known.isSplit &&
+      !updatedIds.has(row.id)
+    ) {
+      updatedIds.add(row.id);
+      seenIds.add(row.id);
+      const lending = isLendingKind(known.kind);
+      const hasCategory = known.kind === "expense" || known.kind === "income";
+      const lineKind = known.kind === "income" ? "income" : "expense";
+      const catName = hasCategory
+        ? row.category.trim() || fallbackCategory(lineKind)
+        : null;
+      const cKey = catName ? categoryKey(lineKind, catName) : null;
+      const person = lending
+        ? row.person?.trim().replace(/\s+/g, " ") || known.person || ""
+        : "";
+      const title = row.absent?.title
+        ? known.title
+        : row.title.trim() || (hasCategory ? (catName ?? "") : person);
+      const memo = row.absent?.memo ? known.memo : row.memo.trim();
+      const rowTags = cleanTags(row.tags);
+      const tagsSame =
+        row.tags === undefined ||
+        (rowTags.length === known.tags.length &&
+          rowTags.every((t) => known.tags.some((k) => norm(k) === norm(t))));
+      const personSame = !lending || norm(person) === norm(known.person ?? "");
+      if (
+        title === known.title &&
+        memo === known.memo &&
+        cKey === known.categoryKey &&
+        tagsSame &&
+        personSame
+      ) {
+        unchanged++;
+        continue;
+      }
+      if (cKey && !categories.has(cKey) && !newCategories.has(cKey))
+        newCategories.set(cKey, {
+          key: cKey,
+          kind: lineKind,
+          name: (catName as string).trim(),
+        });
+      if (cKey) usedCategories.add(cKey);
+      const nextTags = row.tags === undefined ? known.tags : rowTags;
+      for (const name of nextTags)
+        if (!knownTags.has(norm(name)) && !newTags.has(norm(name)))
+          newTags.set(norm(name), name);
+      if (
+        lending &&
+        !knownPeople.has(norm(person)) &&
+        !newPeople.has(norm(person))
+      )
+        newPeople.set(norm(person), person);
+      updates.push({
+        id: row.id,
+        title,
+        memo,
+        categoryKey: cKey,
+        tags: [...nextTags],
+        personName: lending ? person : null,
+      });
+      continue;
+    }
+
     const kind = row.kind;
     const accountName =
       row.account?.trim() || defaultAccount?.name || DEFAULT_ACCOUNT_NAME;
@@ -346,6 +459,7 @@ export function planImport(
 
   return {
     transactions: out,
+    updates,
     newAccounts: [...newAccounts.values()],
     newCategories: [...newCategories.values()],
     newTags: [...newTags.values()],
@@ -357,6 +471,8 @@ export function planImport(
       accounts: usedAccounts.size,
       newAccounts: newAccounts.size,
       duplicates,
+      updated: updates.length,
+      unchanged,
       skipped,
     },
   };

@@ -93,7 +93,7 @@ export function ImportPreviewScreen() {
   const locale = moneyLocale(settings.display_currency);
 
   const run = () => {
-    if (busy || stats.transactions === 0) return;
+    if (busy || stats.transactions + stats.updated === 0) return;
     setBusy(true);
     try {
       actions.import.run(source.rows, {
@@ -136,8 +136,17 @@ export function ImportPreviewScreen() {
             />
           ))}
         </ListGroup>
-        {stats.duplicates > 0 || unreadable > 0 ? (
+        {stats.updated > 0 ||
+        stats.unchanged > 0 ||
+        stats.duplicates > 0 ||
+        unreadable > 0 ? (
           <ListGroup>
+            {stats.updated > 0 ? (
+              <ListRow label="Updated" value={String(stats.updated)} />
+            ) : null}
+            {stats.unchanged > 0 ? (
+              <ListRow label="Unchanged" value={String(stats.unchanged)} />
+            ) : null}
             {stats.duplicates > 0 ? (
               <ListRow
                 label="Duplicates skipped"
@@ -157,7 +166,7 @@ export function ImportPreviewScreen() {
         <Button
           size="lg"
           loading={busy}
-          disabled={stats.transactions === 0}
+          disabled={stats.transactions + stats.updated === 0}
           onPress={run}
         >
           Import

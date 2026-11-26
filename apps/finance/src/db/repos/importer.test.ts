@@ -96,6 +96,34 @@ describe("importTransactions", () => {
     ).toBe(true);
   });
 
+  it("updates title, category and tags of a re-imported entry by id without touching amount or date", () => {
+    const db = createTestDb();
+    const { cash } = makeAccounts(db);
+    const made = createTransaction(db, {
+      kind: "expense",
+      title: "AMZN MKTP",
+      amount: 1234,
+      accountId: cash.id,
+      categoryId: categoryId(db, "Groceries"),
+      occurredAt: new Date(2024, 0, 5, 9, 30).getTime(),
+    });
+    const rows = parseNative(buildExportCsv(listForExport(db))).rows.map(
+      (r) => ({ ...r, title: "Amazon", category: "Shopping", tags: ["ai"] }),
+    );
+    const result = importTransactions(db, rows, defaults);
+    expect(result).toMatchObject({ imported: 0, updated: 1, duplicates: 0 });
+    const [after] = db.select().from(transactions).all();
+    expect(after).toMatchObject({
+      id: made.id,
+      title: "Amazon",
+      amount: 1234,
+      occurredAt: made.occurredAt,
+    });
+    expect(after?.categoryId).not.toBe(made.categoryId);
+    const again = importTransactions(db, rows, defaults);
+    expect(again).toMatchObject({ updated: 0, unchanged: 1 });
+  });
+
   it("writes in a single transaction: a failure rolls everything back", () => {
     const db = createTestDb();
     const cats = listCategories(db).length;

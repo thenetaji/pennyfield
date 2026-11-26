@@ -27,6 +27,8 @@ export interface ImportRow {
   tags?: string[];
   /** Person name, required for the lending kinds. */
   person?: string | null;
+  /** Columns the file left out; an update keeps the stored value for these. */
+  absent?: { title?: boolean; memo?: boolean };
 }
 
 export interface ParseResult {
@@ -259,8 +261,9 @@ export function parseNative(text: string): ParseResult {
       transferAccount: first.transfer_account || null,
       transferAmount: first.transfer_amount || null,
       splits: count > 1 ? lines : [],
-      tags: splitTags(first.tags),
+      tags: first.tags === undefined ? undefined : splitTags(first.tags),
       person: first.person || null,
+      absent: { title: first.title === undefined, memo: first.memo === undefined },
     });
   }
   return { rows, skipped };
