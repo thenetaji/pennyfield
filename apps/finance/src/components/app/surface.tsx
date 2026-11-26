@@ -1,4 +1,3 @@
-import { LinearGradient } from "expo-linear-gradient";
 import * as React from "react";
 import { View, type ViewProps } from "react-native";
 
@@ -32,16 +31,23 @@ export function Eyebrow({
   );
 }
 
-/** Soft accent tint that fades into the page background; sits behind a screen's hero. */
+/** The white card that holds a screen's hero, set off from the grey page. */
 export function HeroWash({ children, className }: { children: React.ReactNode; className?: string }) {
-  const { colors } = useTokens();
+  const { isDark } = useTokens();
   return (
-    <View className={cn("overflow-hidden rounded-b-[28px]", className)}>
-      <LinearGradient
-        pointerEvents="none"
-        colors={[colors.accentSoft, colors.bg]}
-        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
-      />
+    <View
+      className={cn("mx-4 mt-2 overflow-hidden rounded-[24px] bg-surface", className)}
+      style={
+        isDark
+          ? null
+          : {
+              shadowColor: "#14120E",
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.06,
+              shadowRadius: 18,
+            }
+      }
+    >
       {children}
     </View>
   );

@@ -28,7 +28,7 @@ import { BusinessCard } from "@/features/home/business-card";
 import { BudgetStatus } from "@/features/home/budget-status";
 import { QuickAdd } from "@/features/home/quick-add";
 import { Pockets } from "@/features/home/pockets";
-import { HomeChapter, HomeSectionHeader } from "@/features/home/section-header";
+import { HomeSectionHeader } from "@/features/home/section-header";
 import { SpendHero } from "@/features/home/spend-hero";
 import { HomeTopBar } from "@/features/home/top-bar";
 import { MaturingCard } from "@/features/investments/maturing-card";
@@ -302,7 +302,7 @@ export default function Home() {
                     {...STAGGER}
                     className={opensChapter ? GAP_BETWEEN : GAP_WITHIN}
                   >
-                    {opensChapter ? <HomeChapter title={chapter} /> : null}
+                    
                     <Reveal>{content}</Reveal>
                   </Stagger>
                 );

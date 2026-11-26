@@ -8,7 +8,9 @@ import {
   barRight,
   HeaderButton,
   EmptyState,
+  Pressable,
   SegmentedControl,
+  Text,
 } from "@studio/ui";
 import { CalendarView } from "@/features/calendar/calendar-view";
 import { monthOf, shiftMonth } from "@/features/calendar/grid";
@@ -48,7 +50,7 @@ import {
   type Period,
 } from "@studio/dates";
 import { convertWithRates, formatMoney, minorDigits } from "@studio/money";
-import { haptic } from "@studio/theme";
+import { haptic, useTokens } from "@studio/theme";
 
 const ALL = "all";
 const ALL_TIME = { from: "0000-01-01", to: "9999-12-31" };
@@ -449,6 +451,7 @@ let lastPage = 0;
 export default function Activity() {
   const router = useRouter();
   const { page: pageParam } = useLocalSearchParams<{ page?: string }>();
+  const { colors } = useTokens();
   const [page, setPage] = React.useState(lastPage);
   const [width, setWidth] = React.useState(0);
   const scroller = React.useRef<ScrollView>(null);
@@ -492,13 +495,27 @@ export default function Activity() {
           }}
         />
       ) : null}
-      <View className="px-4 pb-2 pt-2">
-        <SegmentedControl
-          values={["Activity", "Investments"]}
-          selectedIndex={page}
-          onChange={(i) => go(i, true)}
-          accessibilityLabel="Activity or investments"
-        />
+      <View className="flex-row gap-6 px-5 pb-1 pt-1" accessibilityRole="tablist">
+        {["Activity", "Investments"].map((title, i) => (
+          <Pressable
+            key={title}
+            role="tab"
+            accessibilityState={{ selected: page === i }}
+            scale={0.97}
+            onPress={() => {
+              haptic("selection");
+              go(i, true);
+            }}
+          >
+            <Text variant="title2" tone={page === i ? "default" : "tertiary"} className="font-bold">
+              {title}
+            </Text>
+            <View
+              className="mt-1.5 h-[3px] w-6 rounded-full"
+              style={{ backgroundColor: page === i ? colors.accent : "transparent" }}
+            />
+          </Pressable>
+        ))}
       </View>
       <View className="flex-1" onLayout={onLayout}>
         <ScrollView
