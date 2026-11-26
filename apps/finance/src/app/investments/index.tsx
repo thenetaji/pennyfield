@@ -1,3 +1,5 @@
-import { InvestmentsScreen } from "@/features/investments/investments-screen";
+import { Redirect } from "expo-router";
 
-export default InvestmentsScreen;
+export default function Investments() {
+  return <Redirect href="/activity?page=investments" />;
+}

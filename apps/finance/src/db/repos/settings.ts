@@ -74,6 +74,7 @@ export interface SettingsMap {
   last_kind: "expense" | "income" | "transfer";
   last_account_id: string | null;
   onboarding_done: boolean;
+  guide_seen: boolean;
   schema_seeded: boolean;
   recent_searches: string[];
   icon_style: IconStyle;
@@ -152,6 +153,7 @@ export const DEFAULT_SETTINGS: Readonly<SettingsMap> = {
   last_kind: "expense",
   last_account_id: null,
   onboarding_done: false,
+  guide_seen: false,
   schema_seeded: false,
   recent_searches: [],
   icon_style: "phosphor-fill",

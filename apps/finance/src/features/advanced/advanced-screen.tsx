@@ -1,7 +1,7 @@
 import { useRouter, type Href } from "expo-router";
 import { ScrollView, View } from "react-native";
 
-import { useSettings, useTodayKey } from "@/data/hooks";
+import { useAccounts, useSetting, useSettings, useTodayKey } from "@/data/hooks";
 import { useAskAvailable } from "@/features/explore/ask-available";
 import { monthParam } from "@/features/report/labels";
 import { periodFor, previousPeriod } from "@studio/dates";
@@ -19,18 +19,27 @@ export function AdvancedScreen() {
       periodFor("month", today, { weekStart: settings.week_start, monthStart: settings.month_start }),
     ),
   );
+  const accounts = useAccounts();
+  const [fundingMain] = useSetting("funding_main_account_id");
+  const topUp = accounts.find((a) => a.id === fundingMain)?.name ?? "Off";
   const groups: { header: string; items: Item[] }[] = [
     {
       header: "Plan",
       items: [
         { label: "Budgets", icon: "budgets", subtitle: "Monthly limits", href: "/advanced/budgets" },
         { label: "What if", icon: "salary", subtitle: "Forecast your balance", href: "/explore/what-if" },
-        {
-          label: "Investments",
-          icon: "investments",
-          subtitle: "Deposits, bonds and tax",
-          href: "/investments",
-        },
+      ],
+    },
+    {
+      header: "Data",
+      items: [
+        { label: "Accounts", icon: "building.columns.fill", subtitle: "Banks, cards and cash", href: "/accounts" },
+        { label: "Auto top-up", icon: "arrow.left.arrow.right", subtitle: topUp, href: "/settings/top-up" },
+        { label: "Categories", icon: "square.grid.2x2", subtitle: "Groups for spending", href: "/settings/categories" },
+        { label: "Recurring", icon: "repeat", subtitle: "Bills and salary", href: "/recurring" },
+        { label: "Subscriptions", icon: "creditcard.fill", subtitle: "Memberships", href: "/subscriptions" },
+        { label: "Tags", icon: "tag.fill", subtitle: "Labels", href: "/tags" },
+        { label: "People", icon: "person.2.fill", subtitle: "Lending and borrowing", href: "/people" },
       ],
     },
     {

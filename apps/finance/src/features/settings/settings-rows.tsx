@@ -3,13 +3,11 @@ import * as React from "react";
 import { StyleSheet, TextInput, View } from "react-native";
 
 import { useAccounts, useSetting } from "@/data/hooks";
-import { SETTINGS_STYLES } from "@/db/repos/settings";
 import { minorDigits } from "@studio/money";
 import { haptic, useTokens } from "@studio/theme";
 import {
   OptionPicker,
   Pressable,
-  SegmentedControl,
   SymbolIcon,
   Switch,
   Text,
@@ -18,13 +16,12 @@ import {
 import {
   MONTH_OPTIONS,
   ROW_OPTIONS,
-  STYLE_LABELS,
   WEEK_OPTIONS,
   type PickerId,
   type SettingRow,
 } from "./groups";
 
-/** The colours one style draws with; Glass stays dark in either theme. */
+/** The colours the rows draw with. */
 export type RowSkin = {
   text: string;
   secondary: string;
@@ -35,27 +32,17 @@ export type RowSkin = {
   radius: number;
 };
 
-export function useRowSkin(glass: boolean): RowSkin {
+export function useRowSkin(): RowSkin {
   const { colors } = useTokens();
-  return glass
-    ? {
-        text: "#FFFFFF",
-        secondary: "rgba(255,255,255,0.6)",
-        tertiary: "rgba(255,255,255,0.38)",
-        surface: "rgba(255,255,255,0.08)",
-        separator: "rgba(255,255,255,0.1)",
-        pressed: "rgba(255,255,255,0.08)",
-        radius: 16,
-      }
-    : {
-        text: colors.text,
-        secondary: colors.textSecondary,
-        tertiary: colors.textTertiary,
-        surface: colors.surface,
-        separator: colors.separator,
-        pressed: colors.fill,
-        radius: 18,
-      };
+  return {
+    text: colors.text,
+    secondary: colors.textSecondary,
+    tertiary: colors.textTertiary,
+    surface: colors.surface,
+    separator: colors.separator,
+    pressed: colors.fill,
+    radius: 18,
+  };
 }
 
 export function SectionTitle({ title, skin }: { title: string; skin: RowSkin }) {
@@ -206,23 +193,6 @@ function HourlyPayRow({ skin }: { skin: RowSkin }) {
   );
 }
 
-export function StylePicker({ skin }: { skin: RowSkin }) {
-  const [style, setStyle] = useSetting("settings_style");
-  return (
-    <View className="gap-2 px-4 py-3">
-      <Text variant="body" style={{ color: skin.text }}>
-        Settings style
-      </Text>
-      <SegmentedControl
-        values={SETTINGS_STYLES.map((s) => STYLE_LABELS[s])}
-        selectedIndex={SETTINGS_STYLES.indexOf(style)}
-        onChange={(i) => setStyle(SETTINGS_STYLES[i] ?? "calm")}
-        accessibilityLabel="Settings style"
-      />
-    </View>
-  );
-}
-
 /** One row of a group page, whichever kind it is. */
 export function GroupRow({
   row,
@@ -235,7 +205,6 @@ export function GroupRow({
 }) {
   const router = useRouter();
   if (row.custom === "hourly_pay") return <HourlyPayRow skin={skin} />;
-  if (row.custom === "settings_style") return <StylePicker skin={skin} />;
   if (row.toggle) return <ToggleRow row={row} skin={skin} />;
   return (
     <LinkRow
@@ -345,7 +314,7 @@ export function GroupPickers({
 }
 
 /** Off, the last calendar year, or the last April–March year: entries up to that day stop counting in totals. */
-function archiveChoices(now: Date): { value: string | null; label: string }[] {
+export function archiveChoices(now: Date): { value: string | null; label: string }[] {
   const y = now.getFullYear();
   const fyEnd = now.getMonth() >= 3 ? y : y - 1;
   return [

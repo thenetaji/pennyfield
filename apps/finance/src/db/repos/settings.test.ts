@@ -65,6 +65,7 @@ describe("settings", () => {
         "funding_main_account_id",
         "funded_accounts",
         "funding_mode",
+        "guide_seen",
         "tax_slab_percent",
         "auto_backup_folder",
         "auto_backup_folder_name",

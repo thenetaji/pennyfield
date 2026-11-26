@@ -18,6 +18,7 @@ export default function SettingsLayout() {
     >
       <Stack.Screen name="index" options={{ headerShown: false, title: "Settings" }} />
       <Stack.Screen name="group/[id]" options={{ title: "Settings" }} />
+      <Stack.Screen name="more" options={{ title: "More" }} />
       <Stack.Screen name="appearance" options={{ title: "Appearance" }} />
       <Stack.Screen name="home" options={{ title: "Home" }} />
       <Stack.Screen name="currency" options={{ title: "Display currency" }} />
@@ -25,9 +26,9 @@ export default function SettingsLayout() {
       <Stack.Screen name="privacy" options={{ title: "Privacy" }} />
       <Stack.Screen name="reminders" options={{ title: "Reminders" }} />
       <Stack.Screen name="top-up" options={{ title: "Auto top-up" }} />
-      <Stack.Screen name="backup" options={{ title: "Backup & sync" }} />
+      <Stack.Screen name="backup" options={{ title: "Backup" }} />
       <Stack.Screen name="categories/index" options={{ title: "Categories" }} />
-      <Stack.Screen name="transfer" options={{ title: "Import & export" }} />
+      <Stack.Screen name="transfer" options={{ title: "Spreadsheet (CSV)" }} />
       <Stack.Screen name="import-preview" options={{ title: "Preview" }} />
       <Stack.Screen name="about" options={{ title: "About" }} />
     </Stack>

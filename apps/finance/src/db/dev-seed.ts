@@ -196,6 +196,7 @@ function populate(db: Db, now: number): void {
 
   setSetting(db, "display_currency", "INR");
   setSetting(db, "onboarding_done", true);
+  setSetting(db, "guide_seen", true);
   setSetting(db, "last_account_id", bank.id);
   setSetting(db, "pockets", [
     { accountId: cash.id, amount: 600_000, fromAccountId: bank.id },

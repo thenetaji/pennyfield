@@ -1,7 +1,7 @@
 import { FlashList } from "@shopify/flash-list";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import * as React from "react";
-import { View } from "react-native";
+import { ScrollView, View, type LayoutChangeEvent } from "react-native";
 
 import {
   barLeft,
@@ -13,6 +13,7 @@ import {
 import { CalendarView } from "@/features/calendar/calendar-view";
 import { monthOf, shiftMonth } from "@/features/calendar/grid";
 
+import { InvestmentsPage } from "@/features/investments/investments-screen";
 import { AddFab } from "@/components/app/add-fab";
 import { SelectionBar } from "@/features/transactions/selection-bar";
 import { useSelection } from "@/features/transactions/selection-store";
@@ -58,7 +59,7 @@ function pillLabel(period: Period): string {
   return `${monthShort(end.month)} ${end.year}`;
 }
 
-export default function Activity() {
+function ActivityPage({ active }: { active: boolean }) {
   const selecting = useSelection((st) => st.ids.length > 0);
   const router = useRouter();
   const money = useMoneyContext();
@@ -343,7 +344,7 @@ export default function Activity() {
 
   return (
     <View className="flex-1 bg-bg">
-      <Stack.Screen options={headerOptions} />
+      {active ? <Stack.Screen options={headerOptions} /> : null}
       {calendar ? (
         <CalendarView
           month={shownMonth}
@@ -415,7 +416,7 @@ export default function Activity() {
           contentContainerStyle={{ paddingBottom: 96 }}
         />
       )}
-      {selecting ? null : <AddFab />}
+      {selecting || !active ? null : <AddFab />}
       <SelectionBar />
       <OptionPicker
         visible={picking && !calendar}
@@ -438,6 +439,91 @@ export default function Activity() {
         }}
         onClose={() => setPicking(false)}
       />
+    </View>
+  );
+}
+
+// Survives tab switches; a `page=investments` link overrides it.
+let lastPage = 0;
+
+export default function Activity() {
+  const router = useRouter();
+  const { page: pageParam } = useLocalSearchParams<{ page?: string }>();
+  const [page, setPage] = React.useState(lastPage);
+  const [width, setWidth] = React.useState(0);
+  const scroller = React.useRef<ScrollView>(null);
+
+  const go = React.useCallback((next: number, animated: boolean) => {
+    lastPage = next;
+    setPage(next);
+    scroller.current?.scrollTo({ x: next * width, animated });
+  }, [width]);
+
+  React.useEffect(() => {
+    if (pageParam !== "investments") return;
+    // A deep link arrives after mount, so the page has to move here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    go(1, false);
+    router.setParams({ page: undefined });
+  }, [pageParam, go, router]);
+
+  const onLayout = (e: LayoutChangeEvent) => {
+    const w = e.nativeEvent.layout.width;
+    if (w !== width) setWidth(w);
+  };
+  React.useEffect(() => {
+    if (width > 0) scroller.current?.scrollTo({ x: lastPage * width, animated: false });
+  }, [width]);
+
+  return (
+    <View className="flex-1 bg-bg">
+      {page === 1 ? (
+        <Stack.Screen
+          options={{
+            headerLeft: () => null,
+            unstable_headerLeftItems: () => [],
+            ...barRight(
+              <HeaderButton
+                symbol="plus"
+                label="Add investment"
+                onPress={() => router.push("/investments/new")}
+              />,
+            ),
+          }}
+        />
+      ) : null}
+      <View className="px-4 pb-2 pt-2">
+        <SegmentedControl
+          values={["Activity", "Investments"]}
+          selectedIndex={page}
+          onChange={(i) => go(i, true)}
+          accessibilityLabel="Activity or investments"
+        />
+      </View>
+      <View className="flex-1" onLayout={onLayout}>
+        <ScrollView
+          ref={scroller}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          bounces={false}
+          contentOffset={{ x: lastPage * width, y: 0 }}
+          onMomentumScrollEnd={(e) => {
+            const next = Math.round(e.nativeEvent.contentOffset.x / (width || 1));
+            if (next !== page && (next === 0 || next === 1)) {
+              lastPage = next;
+              setPage(next);
+            }
+          }}
+        >
+          <View style={{ width }}>
+            <ActivityPage active={page === 0} />
+          </View>
+          <View style={{ width }}>
+            <InvestmentsPage />
+          </View>
+        </ScrollView>
+      </View>
     </View>
   );
 }

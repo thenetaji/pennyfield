@@ -1,32 +1,38 @@
 import * as React from "react";
 import { ScrollView, View } from "react-native";
 
-import { ListGroup, ListRow, showToast } from "@studio/ui";
+import { useRouter } from "expo-router";
+
+import { Button, ListGroup, ListRow, showToast, Text } from "@studio/ui";
+import { Eyebrow, HeroWash } from "@/components/app/surface";
+import { confirmErase } from "@/features/data-transfer/erase";
 import { APP_NAME } from "@/constants/app";
 import { useActions } from "@/data/actions";
 import { useSetting, useSyncStatus } from "@/data/hooks";
 import type { BackupSummary } from "@/db/repos/backup";
 import { AppIcon } from "@studio/icons";
 import { getSyncProvider, type SyncProviderId } from "@/lib/sync";
-import { Stagger } from "@studio/motion";
 import { haptic, useTokens } from "@studio/theme";
 
-import { backupTimeLabel, unavailableNote } from "./format";
+import { backupTimeLabel } from "./format";
 import { RestoreSheet } from "./restore-sheet";
 
-const PROVIDERS: readonly {
-  id: SyncProviderId;
-  label: string;
-  icon: string;
-}[] = [
-  { id: "icloud", label: "iCloud", icon: "cloud" },
-  { id: "gdrive", label: "Google Drive", icon: "cloud" },
+const PROVIDERS: readonly { id: SyncProviderId; label: string }[] = [
+  { id: "icloud", label: "iCloud" },
+  { id: "gdrive", label: "Google Drive" },
 ];
 
-/** Manual backup and restore, and the sync providers with their availability. */
+/** Everything about keeping data safe: backup status, daily backup, restore, CSV and erase. */
 export function BackupScreen() {
   const actions = useActions();
+  const router = useRouter();
   const { colors } = useTokens();
+  // Onboarding is the unprotected route once `onboarding_done` resets, so the navigator moves there on its own.
+  const eraseAll = () =>
+    confirmErase(() => {
+      actions.data.eraseAll();
+      haptic("success");
+    });
   const { provider, lastBackupAt } = useSyncStatus();
   const [, setProvider] = useSetting("sync_provider");
   const [pending, setPending] = React.useState<{
@@ -152,110 +158,85 @@ export function BackupScreen() {
     }
   };
 
+  const syncChoices = statuses.filter((p) => p.status?.status === "available");
+  const lastAt = Math.max(lastBackupAt ?? 0, autoAt ?? 0) || null;
+
   return (
     <ScrollView
       className="flex-1 bg-bg"
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerClassName="gap-6 py-4 pb-12"
+      contentContainerClassName="pb-12"
     >
-      <Stagger index={0}>
-        <ListGroup
-          header="Automatic backup"
-          footer={
-            autoError
-              ? autoError
-              : autoFolder
-                ? `Saves a backup once a day and keeps a copy for each of the last 8 weeks. Last: ${autoAt ? backupTimeLabel(autoAt) : "not yet"}`
-                : "Pick a folder in iCloud Drive or Files. A backup is saved there once a day, with a copy for each of the last 8 weeks."
-          }
-        >
+      <HeroWash>
+        <View className="items-center px-5 pb-8 pt-6">
+          <View
+            className="mb-4 h-14 w-14 items-center justify-center rounded-[18px]"
+            style={{ backgroundColor: autoError ? colors.warning : colors.accent }}
+          >
+            <AppIcon name="cloud" size={26} color={colors.onAccent} />
+          </View>
+          <Text variant="title2" className="text-center">
+            {autoError ? "Backup failed" : lastAt ? `Backed up ${backupTimeLabel(lastAt)}` : "Not backed up yet"}
+          </Text>
+          <Text variant="subhead" tone="secondary" className="mt-1 text-center">
+            {autoError ?? (autoFolder ? `Daily to ${autoFolderName ?? "your folder"}` : "Your data lives only on this phone")}
+          </Text>
+          <View className="mt-5 self-stretch">
+            <Button
+              size="lg"
+              loading={autoBusy}
+              onPress={() => void (autoFolder ? autoNow() : backUp())}
+            >
+              Back up now
+            </Button>
+          </View>
+        </View>
+      </HeroWash>
+
+      <Eyebrow>Automatic</Eyebrow>
+      <ListGroup
+        footer={autoFolder ? undefined : "Pick a folder in iCloud Drive or Files. One backup a day, plus a copy for each of the last 8 weeks."}
+      >
+        <ListRow
+          label="Daily backup"
+          switchValue={!!autoFolder}
+          onSwitchChange={(on) => {
+            if (on) void pickFolder();
+            else actions.autoBackup.turnOff();
+          }}
+        />
+        {autoFolder ? (
+          <ListRow label="Folder" value={autoFolderName ?? "Folder"} chevron onPress={() => void pickFolder()} />
+        ) : null}
+        {syncChoices.map(({ id, label }) => (
           <ListRow
-            label="Automatic backup"
-            icon={{ name: "cloud", color: "blue" }}
-            switchValue={!!autoFolder}
-            onSwitchChange={(on) => {
-              if (on) void pickFolder();
-              else actions.autoBackup.turnOff();
-            }}
+            key={id}
+            label={`Sync with ${label}`}
+            switchValue={provider === id}
+            onSwitchChange={(next) => void toggleProvider(id, next)}
           />
-          {autoFolder ? (
-            <ListRow
-              label="Folder"
-              value={autoFolderName ?? "Folder"}
-              chevron
-              onPress={() => void pickFolder()}
-            />
-          ) : null}
-          {autoFolder ? (
-            <ListRow
-              label={autoBusy ? "Backing up" : "Back up to folder now"}
-              icon={{ name: "download", color: "indigo" }}
-              onPress={autoBusy ? undefined : () => void autoNow()}
-            />
-          ) : null}
-        </ListGroup>
-      </Stagger>
-      <Stagger index={0}>
-        <ListGroup
-          header="Backup"
-          footer={`Last backup: ${lastBackupAt ? backupTimeLabel(lastBackupAt) : "never"}`}
-        >
+        ))}
+        {provider !== "none" ? (
           <ListRow
-            label="Back up now"
-            icon={{ name: "share", color: "blue" }}
-            chevron
-            onPress={() => void backUp()}
+            label={syncing ? "Syncing" : "Sync now"}
+            onPress={syncing ? undefined : () => void syncNow()}
           />
-          <ListRow
-            label="Restore from file"
-            icon={{ name: "download", color: "teal" }}
-            chevron
-            onPress={() => void pick()}
-          />
+        ) : null}
+      </ListGroup>
+
+      <Eyebrow>Your data</Eyebrow>
+      <ListGroup>
+        <ListRow label="Restore a backup" chevron onPress={() => void pick()} />
+        <ListRow label="Send a backup file" chevron onPress={() => void backUp()} />
+        <ListRow label="Spreadsheet (CSV)" value="Import, export" chevron onPress={() => router.push("/settings/transfer")} />
+      </ListGroup>
+
+      <View className="mt-8">
+        <ListGroup>
+          <ListRow label="Erase all data" destructive onPress={eraseAll} />
         </ListGroup>
-      </Stagger>
-      <Stagger index={1}>
-        <ListGroup header="Sync">
-          {statuses.map(({ id, label, icon, status }) =>
-            status?.status === "available" ? (
-              <ListRow
-                key={id}
-                label={label}
-                icon={{ name: icon, color: "cyan" }}
-                switchValue={provider === id}
-                onSwitchChange={(next) => void toggleProvider(id, next)}
-              />
-            ) : (
-              <ListRow
-                key={id}
-                label={label}
-                icon={{ name: icon, color: "gray" }}
-                value={
-                  status?.status === "unavailable"
-                    ? unavailableNote(status.reason)
-                    : undefined
-                }
-                trailing={
-                  <View className="ml-2">
-                    <AppIcon
-                      name="lock"
-                      size={14}
-                      color={colors.textTertiary}
-                    />
-                  </View>
-                }
-              />
-            ),
-          )}
-          {provider !== "none" ? (
-            <ListRow
-              label={syncing ? "Syncing" : "Sync now"}
-              icon={{ name: "swap", color: "indigo" }}
-              onPress={syncing ? undefined : () => void syncNow()}
-            />
-          ) : null}
-        </ListGroup>
-      </Stagger>
+      </View>
+
       <RestoreSheet
         summary={pending?.summary ?? null}
         busy={busy}

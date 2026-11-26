@@ -78,6 +78,10 @@ export default function Home() {
   const insights = useInsights(month, "expense");
   const recent = useRecentTransactions(RECENT_COUNT);
   const [layout] = useSetting("home_layout");
+  const [guideSeen] = useSetting("guide_seen");
+  React.useEffect(() => {
+    if (!guideSeen) router.push("/guide");
+  }, [guideSeen, router]);
   const pockets = usePockets();
 
   const { displayCurrency, rates, locale } = money;

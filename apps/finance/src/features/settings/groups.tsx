@@ -2,7 +2,7 @@ import type { Href } from "expo-router";
 
 import type { AccentPresetKey } from "@studio/theme";
 import { useAccounts, useSetting } from "@/data/hooks";
-import type { RowDetail, SettingsStyle } from "@/db/repos/settings";
+import type { RowDetail } from "@/db/repos/settings";
 import { backupTimeLabel } from "@/features/backup/format";
 import { ordinal } from "@/features/budgets/logic";
 import { moneyLocale } from "@/features/transactions/use-money-context";
@@ -11,7 +11,7 @@ import { formatMoney } from "@studio/money";
 import type { Option } from "@studio/ui";
 import Constants from "expo-constants";
 
-export type GroupId = "money" | "entry" | "calendar" | "look" | "privacy" | "data";
+export type GroupId = "general" | "look" | "privacy" | "data" | "about" | "more";
 
 export type SettingRow = {
   key: string;
@@ -23,13 +23,12 @@ export type SettingRow = {
   picker?: PickerId;
   toggle?: { value: boolean; onChange: (next: boolean) => void };
   /** Replaced by a field on the page. */
-  custom?: "hourly_pay" | "settings_style";
+  custom?: "hourly_pay";
 };
 
 export type SettingGroup = {
   id: GroupId;
   title: string;
-  summary: string;
   /** Folded behind an info button. */
   note?: string;
   rows: SettingRow[];
@@ -58,11 +57,6 @@ export const MONTH_OPTIONS: readonly Option<number>[] = Array.from(
   { length: 28 },
   (_, i) => ({ value: i + 1, label: ordinal(i + 1) }),
 );
-export const STYLE_LABELS: Record<SettingsStyle, string> = {
-  calm: "Calm",
-  glass: "Glass",
-  list: "List",
-};
 
 const THEME_LABELS = { system: "Auto", light: "Light", dark: "Dark" };
 const ACCENT_LABELS: Record<AccentPresetKey, string> = {
@@ -73,14 +67,13 @@ const ACCENT_LABELS: Record<AccentPresetKey, string> = {
   ivory: "Ink",
 };
 
-/** Every Settings row, in one place, so each style and the search show the same things. */
+/** Every Settings row, in one place, so the list, More and the search show the same things. */
 export function useSettingGroups(): SettingGroup[] {
   const accounts = useAccounts();
   const [displayCurrency] = useSetting("display_currency");
   const [weekStart] = useSetting("week_start");
   const [monthStart] = useSetting("month_start");
   const [defaultAccountId] = useSetting("default_account_id");
-  const [fundingMain] = useSetting("funding_main_account_id");
   const [archivedThrough] = useSetting("archived_through");
   const [theme] = useSetting("theme");
   const [accent] = useSetting("accent");
@@ -91,7 +84,6 @@ export function useSettingGroups(): SettingGroup[] {
   const [homeLayout] = useSetting("home_layout");
   const [rowDetail] = useSetting("row_detail");
   const [lastBackup] = useSetting("last_backup_at");
-  const [style] = useSetting("settings_style");
 
   const look = `${ACCENT_LABELS[accent]}, ${THEME_LABELS[theme]}`;
   const privacy =
@@ -106,28 +98,8 @@ export function useSettingGroups(): SettingGroup[] {
 
   return [
     {
-      id: "money",
-      title: "Money",
-      summary: "Accounts, categories, recurring",
-      rows: [
-        {
-          key: "accounts",
-          label: "Accounts",
-          words: "bank card cash wallet balance",
-          value: accounts.length > 0 ? String(accounts.length) : undefined,
-          href: "/accounts",
-        },
-        { key: "categories", label: "Categories", words: "groups", href: "/settings/categories" },
-        { key: "recurring", label: "Recurring", words: "bills salary rent repeat", href: "/recurring" },
-        { key: "subscriptions", label: "Subscriptions", words: "membership", href: "/subscriptions" },
-        { key: "tags", label: "Tags", words: "labels", href: "/tags" },
-        { key: "people", label: "People", words: "lending borrow owe family friends", href: "/people" },
-      ],
-    },
-    {
-      id: "entry",
-      title: "Transactions",
-      summary: displayCurrency,
+      id: "general",
+      title: "General",
       rows: [
         {
           key: "currency",
@@ -137,25 +109,73 @@ export function useSettingGroups(): SettingGroup[] {
           href: "/settings/currency",
         },
         {
-          key: "archive",
-          label: "Archive",
-          words: "year close new year financial reset",
-          value: archivedThrough ? `Up to ${archivedThrough}` : "Off",
-          picker: "archive",
-        },
-        {
           key: "default_account",
           label: "Default account",
           value: accounts.find((a) => a.id === defaultAccountId)?.name,
           picker: "account",
         },
         {
-          key: "top_up",
-          label: "Auto top-up",
-          words: "main master bank fund transfer pocket wallet move money",
-          value: accounts.find((a) => a.id === fundingMain)?.name ?? "Off",
-          href: "/settings/top-up",
+          key: "month",
+          label: "Month starts on",
+          words: "payday salary",
+          value: ordinal(monthStart),
+          picker: "month",
         },
+        { key: "more", label: "More", href: "/settings/more" },
+      ],
+    },
+    {
+      id: "look",
+      title: "Appearance",
+      rows: [
+        {
+          key: "appearance",
+          label: "Theme and icons",
+          words: "theme dark light color colour icon accent palette",
+          value: look,
+          href: "/settings/appearance",
+        },
+      ],
+    },
+    {
+      id: "privacy",
+      title: "Security",
+      rows: [
+        {
+          key: "privacy",
+          label: "Face ID and privacy",
+          words: "lock passcode hide amounts",
+          value: privacy,
+          href: "/settings/privacy",
+        },
+      ],
+    },
+    {
+      id: "data",
+      title: "Data",
+      rows: [
+        {
+          key: "backup",
+          label: "Backup",
+          words: "icloud drive restore sync csv spreadsheet import export erase delete",
+          value: backedUp,
+          href: "/settings/backup",
+        },
+      ],
+    },
+    {
+      id: "about",
+      title: "About",
+      rows: [
+        { key: "guide", label: "How it works", words: "help tips guide title category tag", href: "/guide" },
+        { key: "about", label: "About", value: appVersion(), href: "/settings/about" },
+      ],
+    },
+    {
+      id: "more",
+      title: "More",
+      note: "Set the month start to your payday to match your pay cycle. Add hourly pay to see costs in hours of work.",
+      rows: [
         {
           key: "decimals",
           label: "Show decimals",
@@ -165,19 +185,11 @@ export function useSettingGroups(): SettingGroup[] {
         },
         {
           key: "rows",
-          label: "Transaction rows",
-          words: "memo subtitle second line",
+          label: "Under each transaction",
+          words: "transaction rows memo subtitle second line",
           value: ROW_LABELS[rowDetail],
           picker: "rows",
         },
-      ],
-    },
-    {
-      id: "calendar",
-      title: "Date and time",
-      summary: `Month starts on the ${ordinal(monthStart)}`,
-      note: "Set the month start to your payday to match your pay cycle. Add hourly pay to see costs in hours of work.",
-      rows: [
         {
           key: "week",
           label: "Week starts on",
@@ -185,31 +197,16 @@ export function useSettingGroups(): SettingGroup[] {
           picker: "week",
         },
         {
-          key: "month",
-          label: "Month starts on",
-          words: "payday salary",
-          value: ordinal(monthStart),
-          picker: "month",
-        },
-        {
           key: "hourly",
           label: "Hourly pay",
           words: "work hours wage salary time cost",
           custom: "hourly_pay",
         },
-      ],
-    },
-    {
-      id: "look",
-      title: "Appearance",
-      summary: look,
-      rows: [
         {
-          key: "appearance",
-          label: "Theme and icons",
-          words: "theme dark light color colour icon accent palette",
-          value: look,
-          href: "/settings/appearance",
+          key: "haptics",
+          label: "Haptics",
+          words: "vibration buzz",
+          toggle: { value: haptics, onChange: setHaptics },
         },
         {
           key: "home",
@@ -219,58 +216,17 @@ export function useSettingGroups(): SettingGroup[] {
           href: "/settings/home",
         },
         {
-          key: "haptics",
-          label: "Haptics",
-          words: "vibration buzz",
-          toggle: { value: haptics, onChange: setHaptics },
-        },
-        {
-          key: "style",
-          label: "Settings style",
-          words: "calm glass list layout this page",
-          value: STYLE_LABELS[style],
-          custom: "settings_style",
-        },
-      ],
-    },
-    {
-      id: "privacy",
-      title: "Privacy and reminders",
-      summary: privacy,
-      rows: [
-        {
-          key: "privacy",
-          label: "Face ID and privacy",
-          words: "lock passcode hide amounts",
-          value: privacy,
-          href: "/settings/privacy",
-        },
-        {
           key: "reminders",
           label: "Reminders",
           words: "notifications alerts daily",
           href: "/settings/reminders",
         },
-      ],
-    },
-    {
-      id: "data",
-      title: "Data",
-      summary: backedUp ? `Backed up ${backedUp}` : "Not backed up yet",
-      note: "Your data stays on this device unless you back it up or export it. The app goes online only to check for updates.",
-      rows: [
         {
-          key: "backup",
-          label: "Backup and sync",
-          words: "icloud drive restore",
-          value: backedUp,
-          href: "/settings/backup",
-        },
-        {
-          key: "transfer",
-          label: "Import and export",
-          words: "csv spreadsheet erase delete",
-          href: "/settings/transfer",
+          key: "archive",
+          label: "Archive",
+          words: "year close new year financial reset",
+          value: archivedThrough ? `Up to ${archivedThrough}` : "Off",
+          picker: "archive",
         },
       ],
     },

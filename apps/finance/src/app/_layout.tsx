@@ -201,6 +201,10 @@ function Navigator() {
             contentStyle: { backgroundColor: "#000000" },
           }}
         />
+        <Stack.Screen
+          name="guide"
+          options={{ presentation: "fullScreenModal", animation: "fade", headerShown: false }}
+        />
         <Stack.Screen name="people/index" options={push("People")} />
         <Stack.Screen name="people/[id]/index" options={push("Person")} />
         <Stack.Screen
