@@ -319,6 +319,14 @@ export const investments = sqliteTable(
     couponAmount: integer("coupon_amount"),
     /** What comes back at maturity; null is the amount invested. */
     redemptionAmount: integer("redemption_amount"),
+    /** Bonds: units bought. */
+    units: real("units"),
+    /** Bonds: face value of one unit, minor units; what the issuer repays per unit. */
+    faceValue: integer("face_value"),
+    /** Bonds: clean price paid per unit, minor units, without accrued interest. */
+    cleanPrice: integer("clean_price"),
+    /** Bonds: accrued interest settled at purchase, minor units; positive was paid to the seller, negative was received. */
+    accruedAtBuy: integer("accrued_at_buy"),
     note: text("note").notNull().default(""),
     createdAt: integer("created_at").notNull(),
     updatedAt: integer("updated_at").notNull(),

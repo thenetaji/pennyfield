@@ -57,6 +57,13 @@
       "when": 1795449855387,
       "tag": "0007_mushy_jackpot",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1795693391194,
+      "tag": "0008_absent_lily_hollister",
+      "breakpoints": true
     }
   ]
 }

@@ -9,6 +9,7 @@ import m0004 from './0004_fixed_the_fury.sql';
 import m0005 from './0005_lonely_rocket_racer.sql';
 import m0006 from './0006_mature_payback.sql';
 import m0007 from './0007_mushy_jackpot.sql';
+import m0008 from './0008_absent_lily_hollister.sql';
 
   export default {
     journal,
@@ -20,7 +21,8 @@ m0003,
 m0004,
 m0005,
 m0006,
-m0007
+m0007,
+m0008
     }
   }
   
