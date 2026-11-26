@@ -4,7 +4,7 @@ import { StyleSheet, TextInput, View } from "react-native";
 
 import { useAccounts, useSetting } from "@/data/hooks";
 import { minorDigits } from "@studio/money";
-import { haptic, useTokens } from "@studio/theme";
+import { accentPresets, haptic, useTokens, type AccentPresetKey } from "@studio/theme";
 import {
   OptionPicker,
   Pressable,
@@ -211,6 +211,50 @@ function HourlyPayRow({ skin }: { skin: RowSkin }) {
   );
 }
 
+const SWATCHES: readonly AccentPresetKey[] = ["violet", "emerald", "blue", "teal", "plum", "bronze", "ivory"];
+
+/** The theme colour as a row of swatches, so it changes in one tap. */
+function AccentRow({ skin }: { skin: RowSkin }) {
+  const { colors, isDark } = useTokens();
+  const [accent, setAccent] = useSetting("accent");
+  return (
+    <View className="px-4 py-3">
+      <View className="flex-row items-center gap-3.5">
+        <IconTile name="paintbrush.fill" />
+        <Text variant="body" className="flex-1" style={{ color: skin.text }}>
+          Colour
+        </Text>
+      </View>
+      <View className="mt-3 flex-row justify-between pl-[44px]">
+        {SWATCHES.map((key) => {
+          const selected = accent === key;
+          return (
+            <Pressable
+              key={key}
+              role="radio"
+              accessibilityLabel={key === "ivory" ? "Ink" : key}
+              accessibilityState={{ selected }}
+              hitSlop={4}
+              scale={0.9}
+              onPress={() => {
+                haptic("selection");
+                setAccent(key);
+              }}
+              className="h-9 w-9 items-center justify-center rounded-full"
+              style={{ borderWidth: 2, borderColor: selected ? colors.text : "transparent" }}
+            >
+              <View
+                className="h-7 w-7 rounded-full"
+                style={{ backgroundColor: accentPresets[key][isDark ? "dark" : "light"].accent }}
+              />
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 /** One row of a group page, whichever kind it is. */
 export function GroupRow({
   row,
@@ -223,6 +267,7 @@ export function GroupRow({
 }) {
   const router = useRouter();
   if (row.custom === "hourly_pay") return <HourlyPayRow skin={skin} />;
+  if (row.custom === "accent") return <AccentRow skin={skin} />;
   if (row.toggle) return <ToggleRow row={row} skin={skin} />;
   return (
     <LinkRow

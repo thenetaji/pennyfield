@@ -58,8 +58,18 @@ const byDate = (a: ExpectedFlow, b: ExpectedFlow) =>
   a.dateKey.localeCompare(b.dateKey) || a.kind.localeCompare(b.kind);
 
 /** What comes back at maturity: the stated redemption value, else the amount invested. */
-export const redemptionOf = (inv: Pick<Terms, "amount" | "redemptionAmount">) =>
-  inv.redemptionAmount ?? inv.amount;
+export const redemptionOf = (
+  inv: Pick<Terms, "amount" | "redemptionAmount" | "payout" | "couponAmount">,
+) => (quotesMaturityAmount(inv) ? inv.amount : (inv.redemptionAmount ?? inv.amount));
+
+/** A deposit paying at maturity whose stated amount back is above the amount put in: that amount includes the interest. */
+const quotesMaturityAmount = (
+  inv: Pick<Terms, "amount" | "redemptionAmount" | "payout" | "couponAmount">,
+) =>
+  !PERIOD_MONTHS[inv.payout] &&
+  !inv.couponAmount &&
+  inv.redemptionAmount !== null &&
+  inv.redemptionAmount > inv.amount;
 
 /**
  * Interest and principal the terms promise, from purchase to maturity. An entered schedule wins. Otherwise periodic
@@ -90,6 +100,12 @@ export function expectedFlows(inv: Terms): ExpectedFlow[] {
   const coupon =
     inv.couponAmount ??
     (months ? Math.round((inv.amount * rate * months) / 1200) : 0);
+  // Platforms quote a deposit's maturity amount with the interest in it, so the part above the amount put in is interest.
+  if (quotesMaturityAmount(inv))
+    return [
+      { dateKey: maturity, kind: "interest", amount: (inv.redemptionAmount ?? 0) - inv.amount },
+      principal,
+    ];
   if (rate <= 0 && !inv.couponAmount) return [principal];
   const days = diffDays(inv.buyDate, maturity);
   if (!months) {

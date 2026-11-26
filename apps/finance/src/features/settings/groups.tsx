@@ -25,7 +25,7 @@ export type SettingRow = {
   picker?: PickerId;
   toggle?: { value: boolean; onChange: (next: boolean) => void };
   /** Replaced by a field on the page. */
-  custom?: "hourly_pay";
+  custom?: "hourly_pay" | "accent";
 };
 
 export type SettingGroup = {
@@ -135,9 +135,16 @@ export function useSettingGroups(): SettingGroup[] {
       title: "App",
       rows: [
         {
-          key: "appearance",
+          key: "accent",
           icon: "paintbrush.fill",
-          label: "Theme and icons",
+          label: "Colour",
+          words: "theme color colour accent violet emerald blue teal",
+          custom: "accent",
+        },
+        {
+          key: "appearance",
+          icon: "sparkles",
+          label: "Appearance",
           words: "theme dark light color colour icon accent palette",
           value: look,
           href: "/settings/appearance",

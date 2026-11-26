@@ -408,7 +408,7 @@ export function InvestmentForm({
               />
             ) : null}
             <TextRow
-              label="Amount back"
+              label={type === "fd" ? "Maturity amount" : "Amount back"}
               value={redemptionText}
               onChange={setRedemptionText}
               placeholder={`${currencySymbol(currency)}0`}

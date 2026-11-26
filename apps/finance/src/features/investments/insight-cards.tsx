@@ -57,7 +57,7 @@ export function SummaryCard({
     },
   ];
   const bottom: Stat[] = [
-    { label: "Earned, not paid", value: fmt(insights.accrued) },
+    { label: "Interest earned so far", value: fmt(insights.accrued) },
     { label: "Interest to come", value: fmt(insights.interestToCome) },
   ];
   return (
@@ -125,7 +125,7 @@ export function UpcomingCard({
   return (
     <Card className="mx-4 rounded-[20px] px-4 py-3">
       <CardTitle
-        title="Coming up"
+        title="Coming to your bank"
         detail={`${fmt(interest)} interest in 12 months`}
       />
       {shown.map((p) => (
@@ -140,13 +140,12 @@ export function UpcomingCard({
             <Text variant="subhead" numberOfLines={1}>
               {p.name}
             </Text>
+            <Text variant="caption" tone="secondary">
+              {p.kind === "interest" ? "Interest" : "Your money back"}
+            </Text>
           </View>
-          <Text
-            variant="subhead"
-            numeric
-            tone={p.kind === "principal" ? "default" : "income"}
-          >
-            {`${p.kind === "principal" ? "" : "+"}${fmt(p.amount)}`}
+          <Text variant="subhead" numeric tone="income">
+            {`+${fmt(p.amount)}`}
           </Text>
         </View>
       ))}
@@ -241,7 +240,7 @@ export function LadderCard({
         currency={insights.currency}
         locale={locale}
         fmt={fmt}
-        label="Principal coming back per month"
+        label="Money coming back per month"
       />
       {later > 0 ? (
         <Text variant="footnote" tone="secondary" numeric className="pt-1">

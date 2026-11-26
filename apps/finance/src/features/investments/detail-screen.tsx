@@ -124,7 +124,7 @@ export function InvestmentDetailScreen() {
   const returns: Fact[] = r
     ? [
         {
-          label: "Return a year",
+          label: "Actual return a year",
           value:
             r.xirr === null
               ? undefined
@@ -133,23 +133,23 @@ export function InvestmentDetailScreen() {
                 : pct(r.xirr),
         },
         {
-          label: "Interest over the term",
+          label: "Total interest",
           value: r.expectedInterest > 0 ? fmt(r.expectedInterest) : undefined,
         },
         {
-          label: "Still to come",
+          label: "Interest to come",
           value: open && r.interestToCome > 0 ? fmt(r.interestToCome) : undefined,
         },
         {
-          label: "Earned, not paid",
+          label: "Interest earned so far",
           value: open && r.accrued > 0 ? fmt(r.accrued) : undefined,
         },
         {
-          label: "Expected gain",
+          label: "Total gain",
           value: r.expectedGain > 0 ? fmt(r.expectedGain) : undefined,
         },
         {
-          label: "Total at maturity",
+          label: "You get back",
           value: r.expectedInterest > 0 ? fmt(r.totalAtMaturity) : undefined,
         },
         {
@@ -214,10 +214,10 @@ export function InvestmentDetailScreen() {
           <View className="mt-4 flex-row items-center">
             <View className="flex-1">
               <Text variant="caption" tone="secondary" className="uppercase tracking-[1.2px]">
-                Investing
+                You put in
               </Text>
-              <Text variant="title2" numeric className="mt-1">
-                {fmt(inv.amount)}
+              <Text variant="title2" tone="expense" numeric className="mt-1">
+                {`−${fmt(inv.amount)}`}
               </Text>
             </View>
             {tenure ? (
@@ -232,10 +232,10 @@ export function InvestmentDetailScreen() {
             ) : null}
             <View className="flex-1 items-end">
               <Text variant="caption" tone="secondary" className="uppercase tracking-[1.2px]">
-                Return
+                You get back
               </Text>
               <Text variant="title2" tone="income" numeric className="mt-1">
-                {lines.length > 0 ? fmt(totalBack) : "—"}
+                {lines.length > 0 ? `+${fmt(totalBack)}` : "—"}
               </Text>
             </View>
           </View>
@@ -294,15 +294,11 @@ export function InvestmentDetailScreen() {
                     {shortDate(l.dateKey)}
                   </Text>
                   <Text variant="subhead" tone="secondary">
-                    {l.kind === "interest" ? "Interest" : "Money back"}
+                    {l.kind === "interest" ? "Interest" : "Your money back"}
                     {l.received ? " · Received" : ""}
                   </Text>
                 </View>
-                <Text
-                  variant="headline"
-                  numeric
-                  tone={l.kind === "interest" ? "income" : "default"}
-                >
+                <Text variant="headline" numeric tone="income">
                   {`+${fmt(afterTds ? l.net : l.gross)}`}
                 </Text>
               </View>

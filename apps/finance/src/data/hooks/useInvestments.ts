@@ -17,6 +17,7 @@ import {
   type TaxYearSummary,
 } from "@/lib/investments/tax";
 import type { Db } from "@/db/types";
+import type { InvestmentType } from "@/db/schema";
 import {
   afterTax,
   cashFlows,
@@ -117,6 +118,13 @@ export interface PortfolioInsights {
   ladder: { months: { key: DateKey; amount: number }[]; later: number };
   interestMonths: { key: DateKey; amount: number }[];
   tds: TdsWarning[];
+  /** Interest still to come, by calendar year. */
+  interestByYear: { year: number; amount: number }[];
+  /** Everything still to come back (principal and interest) and the last date it arrives. */
+  totalBack: number;
+  lastBackOn: DateKey | null;
+  /** Open money by kind of investment, with its amount-weighted rate. */
+  byType: { type: InvestmentType; invested: number; rate: number | null; count: number }[];
 }
 
 const UPCOMING_DAYS = 365;
@@ -163,7 +171,37 @@ function readInsights(db: Db, today: DateKey): PortfolioInsights {
     accrued += r.accrued;
     interestToCome += r.interestToCome;
   }
+  const years = new Map<number, number>();
+  const types = new Map<InvestmentType, { invested: number; weighted: number; rated: number; count: number }>();
+  let totalBack = 0;
+  let lastBackOn: DateKey | null = null;
+  for (const inv of investments) {
+    if (inv.closedOn) continue;
+    for (const flow of expectedFlows(inv)) {
+      if (flow.dateKey <= today) continue;
+      totalBack += flow.amount;
+      if (!lastBackOn || flow.dateKey > lastBackOn) lastBackOn = flow.dateKey;
+      if (flow.kind === "interest") {
+        const year = Number(flow.dateKey.slice(0, 4));
+        years.set(year, (years.get(year) ?? 0) + flow.amount);
+      }
+    }
+    const t = types.get(inv.type) ?? { invested: 0, weighted: 0, rated: 0, count: 0 };
+    t.invested += inv.amount;
+    t.count += 1;
+    if (inv.rate !== null) {
+      t.weighted += inv.amount * inv.rate;
+      t.rated += inv.amount;
+    }
+    types.set(inv.type, t);
+  }
   return {
+    interestByYear: [...years.entries()].sort((a, b) => a[0] - b[0]).map(([year, amount]) => ({ year, amount })),
+    totalBack,
+    lastBackOn,
+    byType: [...types.entries()]
+      .map(([type, t]) => ({ type, invested: t.invested, rate: t.rated > 0 ? t.weighted / t.rated : null, count: t.count }))
+      .sort((a, b) => b.invested - a.invested),
     currency:
       investments[0]?.currency ?? getSetting(db, "display_currency"),
     invested,

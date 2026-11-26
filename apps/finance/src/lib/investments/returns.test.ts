@@ -76,6 +76,15 @@ describe("expectedFlows", () => {
     expect(interest?.amount).toBe(824_322);
   });
 
+  it("reads a deposit's maturity amount as principal plus interest", () => {
+    const fd = inv({ payout: "cumulative", amount: 2_000_000, rate: 6, redemptionAmount: 2_122_700 });
+    expect(expectedFlows(fd).map((f) => [f.kind, f.amount])).toEqual([
+      ["interest", 122_700],
+      ["principal", 2_000_000],
+    ]);
+    expect(investmentReturns(fd, [], "2026-01-01").totalAtMaturity).toBe(2_122_700);
+  });
+
   it("has only the principal without a rate", () => {
     expect(expectedFlows(inv({ rate: null }))).toHaveLength(1);
     expect(expectedFlows(inv({ maturityDate: null }))).toEqual([]);
