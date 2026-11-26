@@ -75,7 +75,7 @@ const PAGES: readonly Page[] = [
     title: "Investments",
     lines: [
       "Swipe left on Activity to see FDs and bonds.",
-      "Add one with the amount, rate and dates. Payouts and tax are worked out for you.",
+      "Add one with the amount, rate and dates, or import your Stable Bonds reports.",
     ],
   },
 ];

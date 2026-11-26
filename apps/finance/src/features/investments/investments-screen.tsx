@@ -27,7 +27,12 @@ import { DatePicker } from "@/features/transaction-form/date-picker";
 import { useMoneyContext } from "@/features/transactions/use-money-context";
 import { backAfter, TYPE_LABELS, taxYearOf } from "@/lib/investments/tax";
 
+import { useStableImport } from "@/data/hooks/useStableImport";
+import { haptic } from "@studio/theme";
+import { showToast } from "@studio/ui";
+
 import { rateLabel } from "./format";
+import { pickXlsxWorkbooks } from "./pick-xlsx";
 import {
   InterestCard,
   LadderCard,
@@ -50,6 +55,27 @@ const monthYear = (key: string) => {
 /** The Investments page of the Activity tab: what is invested, a row per holding, tax and returns. */
 export function InvestmentsPage() {
   const router = useRouter();
+  const importStable = useStableImport();
+  const runImport = async () => {
+    try {
+      const books = await pickXlsxWorkbooks();
+      if (!books) return;
+      const result = importStable(books);
+      const done = result.create + result.update;
+      if (done === 0) {
+        showToast({ message: "No bonds found. Pick the Investment and Upcoming Cashflow reports.", haptic: "warning" });
+        return;
+      }
+      haptic("success");
+      const parts = [
+        result.create ? `${result.create} added` : "",
+        result.update ? `${result.update} updated` : "",
+      ].filter(Boolean);
+      showToast({ message: parts.join(", "), haptic: false });
+    } catch {
+      showToast({ message: "Could not read those files", haptic: "warning" });
+    }
+  };
   const money = useMoneyContext();
   const today = useTodayKey();
   const list = useInvestments();
@@ -72,6 +98,9 @@ export function InvestmentsPage() {
         </Text>
         <Button size="lg" onPress={add}>
           Add investment
+        </Button>
+        <Button size="lg" variant="ghost" onPress={() => void runImport()}>
+          Import Stable Bonds reports
         </Button>
       </View>
     );
@@ -184,6 +213,11 @@ export function InvestmentsPage() {
 
       <Eyebrow>MORE</Eyebrow>
       <Panel>
+        <ListRow
+          label="Import Stable Bonds reports"
+          chevron
+          onPress={() => void runImport()}
+        />
         <ListRow
           label="Tax by year"
           chevron
