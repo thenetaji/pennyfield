@@ -13,7 +13,7 @@ import {
   Text,
   showToast,
 } from "@studio/ui";
-import { monthShort, parseKey } from "@studio/dates";
+import { monthName, monthShort, parseKey } from "@studio/dates";
 import { formatMoney } from "@studio/money";
 import {
   haptic,
@@ -35,7 +35,6 @@ type AnalyzerSectionProps = {
   showDecimals: boolean;
 };
 
-const MAX_UNUSUAL = 3;
 const MAX_REPEATS = 3;
 
 function useMoney(
@@ -162,91 +161,6 @@ function ForecastCard({
           label={`Everyday ${money(everyday)}`}
         />
       </View>
-    </Card>
-  );
-}
-
-function UnusualCard({
-  analyzer,
-  money,
-}: {
-  analyzer: Analyzer;
-  money: (minor: number) => string;
-}) {
-  const router = useRouter();
-  const { colors } = useTokens();
-  const rows = analyzer.unusual.slice(0, MAX_UNUSUAL);
-  if (rows.length === 0) return null;
-  return (
-    <Card className="mx-4 overflow-hidden p-0">
-      {rows.map((u, i) => {
-        const up = u.percent > 0;
-        const color = up ? colors.warning : colors.income;
-        const name = u.category?.name ?? "Uncategorised";
-        const change = `${up ? "+" : "−"}${Math.abs(u.percent)}%`;
-        return (
-          <Pressable
-            key={u.categoryId ?? "none"}
-            role="button"
-            scale={1}
-            disabled={!u.category}
-            accessibilityLabel={`${name}, ${money(u.amount)} so far, usually ${money(u.usual)} by now, ${up ? "up" : "down"} ${Math.abs(u.percent)} percent`}
-            onPress={() =>
-              u.category &&
-              router.push({
-                pathname: "/category/[id]",
-                params: {
-                  id: u.category.id,
-                  from: analyzer.period.from,
-                  to: analyzer.period.to,
-                  type: "month",
-                  kind: "expense",
-                },
-              })
-            }
-            className="flex-row items-center gap-3 px-4 py-3 active:bg-fill"
-            style={
-              i < rows.length - 1
-                ? {
-                    borderBottomWidth: StyleSheet.hairlineWidth,
-                    borderBottomColor: colors.separator,
-                  }
-                : null
-            }
-          >
-            <IconTile
-              icon={u.category?.icon ?? "tag"}
-              color={(u.category?.color ?? "gray") as CategoryColorKey}
-            />
-            <View className="min-w-0 flex-1">
-              <Text variant="body" numberOfLines={1}>
-                {name}
-              </Text>
-              <Text
-                variant="footnote"
-                tone="secondary"
-                numeric
-                numberOfLines={1}
-              >
-                {money(u.amount)} so far · usually {money(u.usual)}
-              </Text>
-            </View>
-            <View
-              className="rounded-full px-2 py-[3px]"
-              style={{ backgroundColor: withAlpha(color, 0.12) }}
-            >
-              <Text
-                variant="caption"
-                numeric
-                className="font-semibold"
-                style={{ color }}
-              >
-                {change}
-              </Text>
-            </View>
-          </Pressable>
-        );
-      })}
     </Card>
   );
 }
@@ -469,6 +383,128 @@ function RepeatsCard({
   );
 }
 
+/** Payees that took well more than usual, named, with the money above usual. Tap one to see its payments. */
+function LeaksCard({
+  analyzer,
+  money,
+}: {
+  analyzer: Analyzer;
+  money: (minor: number) => string;
+}) {
+  const router = useRouter();
+  const { colors } = useTokens();
+  const rows = analyzer.leaks;
+  if (rows.length === 0) return null;
+  const extra = rows.reduce((t, l) => t + l.amount - l.usual, 0);
+  return (
+    <Card className="mx-4 overflow-hidden p-0">
+      {rows.map((l, i) => (
+        <Pressable
+          key={l.key}
+          role="button"
+          scale={1}
+          accessibilityLabel={`${l.title}, ${money(l.amount)}, usually ${money(l.usual)}, ${money(l.amount - l.usual)} more`}
+          onPress={() =>
+            router.push({
+              pathname: "/payee",
+              params: {
+                from: analyzer.leakPeriod.from,
+                to: analyzer.leakPeriod.to,
+                type: "month",
+                kind: "expense",
+                key: l.key,
+                title: l.title,
+              },
+            })
+          }
+          className="flex-row items-center gap-3 px-4 py-3 active:bg-fill"
+          style={{
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomColor: colors.separator,
+          }}
+        >
+          <IconTile
+            icon={l.category?.icon ?? "tag"}
+            color={(l.category?.color ?? "gray") as CategoryColorKey}
+          />
+          <View className="min-w-0 flex-1">
+            <Text variant="body" numberOfLines={1}>
+              {l.title}
+            </Text>
+            <Text variant="footnote" tone="secondary" numeric numberOfLines={1}>
+              {l.usual > 0
+                ? `${money(l.amount)} · usually ${money(l.usual)}`
+                : `${money(l.amount)} · new this month`}
+              {l.count > 1 ? ` · ${l.count} times` : ""}
+            </Text>
+          </View>
+          <Text variant="callout" numeric className="font-semibold" style={{ color: colors.warning }}>
+            {`+${money(l.amount - l.usual)}`}
+          </Text>
+        </Pressable>
+      ))}
+      <View className="flex-row items-center justify-between px-4 py-3">
+        <Text variant="footnote" tone="secondary">
+          Above your usual
+        </Text>
+        <Text variant="headline" numeric style={{ color: colors.warning }}>
+          {`+${money(extra)}`}
+        </Text>
+      </View>
+    </Card>
+  );
+}
+
+/** "14 payments, ₹7,478 with no category": one tap to go and label them. */
+function UnlabelledRow({
+  analyzer,
+  money,
+}: {
+  analyzer: Analyzer;
+  money: (minor: number) => string;
+}) {
+  const router = useRouter();
+  const { count, amount, categoryId } = analyzer.unlabelled;
+  if (count === 0) return null;
+  return (
+    <Card className="mx-4 mt-3 p-0">
+      <Pressable
+        role="button"
+        scale={1}
+        accessibilityLabel={`${count} payments, ${money(amount)}, with no category this month. Label them`}
+        onPress={() =>
+          categoryId
+            ? router.push({
+                pathname: "/category/[id]",
+                params: {
+                  id: categoryId,
+                  from: analyzer.period.from,
+                  to: analyzer.period.to,
+                  type: "month",
+                  kind: "expense",
+                },
+              })
+            : router.push("/activity?filter=expense" as never)
+        }
+        className="flex-row items-center gap-3 px-4 py-3 active:bg-fill"
+      >
+        <IconTile icon="questionmark.circle.fill" color={"gray" as CategoryColorKey} />
+        <View className="min-w-0 flex-1">
+          <Text variant="body" numberOfLines={1}>
+            Not sure where it went
+          </Text>
+          <Text variant="footnote" tone="secondary" numeric numberOfLines={1}>
+            {`${count} payment${count === 1 ? "" : "s"}, ${money(amount)} with no category`}
+          </Text>
+        </View>
+        <Text variant="callout" tone="accent">
+          Label
+        </Text>
+      </Pressable>
+    </Card>
+  );
+}
+
 function GroupLabel({ children }: { children: string }) {
   return (
     <Text variant="footnote" tone="secondary" className="px-8 pb-1.5 pt-4">
@@ -487,7 +523,11 @@ function AnalyzerSection({
   part,
 }: AnalyzerSectionProps) {
   const money = useMoney(analyzer.currency, locale, showDecimals);
-  const unusual = Math.min(analyzer.unusual.length, MAX_UNUSUAL);
+  const leakCount = analyzer.leaks.length;
+  const unlabelled = analyzer.unlabelled.count;
+  const leakMonth = analyzer.leakPeriod.from === analyzer.period.from
+    ? "this month"
+    : `in ${monthName(parseKey(analyzer.leakPeriod.to).month)}`;
   const repeats = Math.min(analyzer.repeats.length, MAX_REPEATS);
   const hasPatterns = analyzer.patterns.count > 0;
   const rises = analyzer.priceRises.slice(0, MAX_REPEATS);
@@ -510,7 +550,7 @@ function AnalyzerSection({
       </View>
     );
   }
-  if (!analyzer.forecast && unusual === 0 && rises.length === 0) return null;
+  if (!analyzer.forecast && leakCount === 0 && unlabelled === 0 && rises.length === 0) return null;
   return (
     <View>
       {analyzer.forecast ? (
@@ -518,10 +558,11 @@ function AnalyzerSection({
           <ForecastCard analyzer={analyzer} budget={budget} money={money} />
         </View>
       ) : null}
-      {unusual > 0 ? (
+      <UnlabelledRow analyzer={analyzer} money={money} />
+      {leakCount > 0 ? (
         <>
-          <GroupLabel>Unusual this month</GroupLabel>
-          <UnusualCard analyzer={analyzer} money={money} />
+          <GroupLabel>{`Where it leaked ${leakMonth}`}</GroupLabel>
+          <LeaksCard analyzer={analyzer} money={money} />
         </>
       ) : null}
       {rises.length > 0 ? (

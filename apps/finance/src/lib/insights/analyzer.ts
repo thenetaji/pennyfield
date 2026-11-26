@@ -379,3 +379,70 @@ function nextMonthly(from: DateKey, day: number): DateKey {
     Math.min(day, daysInMonth(nextYear, nextMonth)),
   );
 }
+
+export interface Leak {
+  /** Normalised payee title. */
+  key: string;
+  /** The payee as last written. */
+  title: string;
+  categoryId: string | null;
+  amount: number;
+  /** Average of the earlier periods up to the same day. */
+  usual: number;
+  count: number;
+}
+
+/**
+ * Payees taking well more than usual this period so far, ranked by the money above usual. Compared day for day like
+ * `unusualCategories`, but per payee so the card can name the place, not just the category.
+ */
+export function leaks(
+  lines: readonly AnalyzerLine[],
+  period: Range,
+  history: readonly Range[],
+  todayKey: DateKey,
+  { minShare = 0.03, limit = 4 } = {},
+): Leak[] {
+  if (history.length === 0) return [];
+  const offset = Math.min(
+    diffDays(period.from, todayKey),
+    diffDays(period.from, period.to),
+  );
+  const cut = (range: Range): Range => {
+    const end = addDays(range.from, offset);
+    return { from: range.from, to: end < range.to ? end : range.to };
+  };
+  const now = cut(period);
+  const before = history.map(cut);
+  const current = new Map<string, { title: string; categoryId: string | null; amount: number; count: number; last: DateKey }>();
+  const past = new Map<string, number>();
+  let pastTotal = 0;
+  for (const line of lines) {
+    const key = normaliseTitle(line.title);
+    if (key === "") continue;
+    if (within(line.dateKey, now)) {
+      const g = current.get(key) ?? { title: line.title.trim(), categoryId: line.categoryId, amount: 0, count: 0, last: line.dateKey };
+      g.amount += line.amount;
+      g.count += 1;
+      if (line.dateKey >= g.last) {
+        g.last = line.dateKey;
+        g.title = line.title.trim();
+        g.categoryId = line.categoryId;
+      }
+      current.set(key, g);
+    } else if (before.some((r) => within(line.dateKey, r))) {
+      past.set(key, (past.get(key) ?? 0) + line.amount);
+      pastTotal += line.amount;
+    }
+  }
+  const floor = Math.max((pastTotal / history.length) * minShare, 1);
+  const out: Leak[] = [];
+  for (const [key, g] of current) {
+    const usual = Math.round((past.get(key) ?? 0) / history.length);
+    if (g.amount - usual < floor || g.amount < usual * 1.5) continue;
+    out.push({ key, title: g.title, categoryId: g.categoryId, amount: g.amount, usual, count: g.count });
+  }
+  return out
+    .sort((a, b) => b.amount - b.usual - (a.amount - a.usual))
+    .slice(0, limit);
+}
