@@ -67,3 +67,15 @@ export function ReviewEntryCard({ year }: ReviewEntryCardProps) {
     </Pressable>
   );
 }
+
+/** This year's review and last year's, each shown only when it has entries. */
+export function ReviewEntryCards() {
+  const { year, month } = parseKey(useTodayKey());
+  const latest = month === 1 ? year - 1 : year;
+  return (
+    <>
+      <ReviewEntryCard year={latest} />
+      <ReviewEntryCard year={latest - 1} />
+    </>
+  );
+}

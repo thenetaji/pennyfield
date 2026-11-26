@@ -9,7 +9,7 @@ import {
 } from "react-native";
 
 import { ReportEntryRow } from "@/features/report/entry";
-import { ReviewEntryCard } from "@/features/review/entry";
+import { ReviewEntryCards } from "@/features/review/entry";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   FadeIn,
@@ -813,7 +813,7 @@ export default function InsightsScreen() {
           <ChapterLabel title="More" />
           <View className="gap-3 px-4 pt-2">
             <ReportEntryRow />
-            <ReviewEntryCard />
+            <ReviewEntryCards />
           </View>
         </Animated.View>
         </ScrollRevealProvider>

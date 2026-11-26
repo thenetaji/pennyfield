@@ -14,6 +14,7 @@ export function AdvancedScreen() {
   const canAsk = useAskAvailable();
   const settings = useSettings();
   const today = useTodayKey();
+  const lastYear = Number(today.slice(0, 4)) - 1;
   const lastMonth = monthParam(
     previousPeriod(
       periodFor("month", today, { weekStart: settings.week_start, monthStart: settings.month_start }),
@@ -52,6 +53,12 @@ export function AdvancedScreen() {
           icon: "calendar",
           subtitle: "Last month's summary",
           href: { pathname: "/recap/[month]", params: { month: lastMonth } },
+        },
+        {
+          label: "Year in review",
+          icon: "sparkles",
+          subtitle: `Your ${lastYear}`,
+          href: { pathname: "/review/[year]", params: { year: String(lastYear) } },
         },
         ...(canAsk
           ? [{ label: "Ask", icon: "info", subtitle: "Ask about your spending", href: "/explore/ask" as Href }]
