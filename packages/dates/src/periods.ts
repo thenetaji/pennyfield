@@ -23,6 +23,8 @@ export interface PeriodSettings {
   weekStart: number;
   /** Day of month 1-28 on which a month period begins. */
   monthStart: number;
+  /** Month 1-12 on which a year period begins: 4 makes it an April-March financial year. */
+  yearStart?: number;
 }
 
 export const DEFAULT_PERIOD_SETTINGS: PeriodSettings = {
@@ -92,7 +94,7 @@ export function periodFor(
   if (type === "week") return { type, ...weekRange(ref, settings.weekStart) };
   if (type === "month")
     return { type, ...monthRange(ref, settings.monthStart) };
-  return { type, ...yearRange(ref) };
+  return { type, ...yearRange(ref, settings.yearStart ?? 1) };
 }
 
 export function customPeriod(from: DateKey, to: DateKey): Period {
@@ -159,9 +161,10 @@ export function periodLabel(period: Period): string {
         ? `${monthName(start.month)} ${start.year}`
         : `${dayMonth(period.from)} – ${dayMonth(period.to)}`;
     case "year":
-      return start.month === 1
-        ? String(start.year)
-        : `${dayMonth(period.from)} ${start.year} – ${dayMonth(period.to)} ${parseKey(period.to).year}`;
+      if (start.month === 1) return String(start.year);
+      if (start.day === 1)
+        return `FY ${String(start.year).slice(2)}-${String(start.year + 1).slice(2)}`;
+      return `${dayMonth(period.from)} ${start.year} – ${dayMonth(period.to)} ${parseKey(period.to).year}`;
     case "custom": {
       const end = parseKey(period.to);
       return start.year === end.year

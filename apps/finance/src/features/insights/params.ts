@@ -68,7 +68,7 @@ export function parseInsightsParams(
     KEY.test(params.from) &&
     KEY.test(params.to);
   const type: PeriodType =
-    asType === "custom" && !hasRange ? "month" : (asType ?? "month");
+    asType === "custom" && !hasRange ? "month" : (asType ?? "year");
   const kind: InsightsKind =
     params.kind === "income"
       ? "income"

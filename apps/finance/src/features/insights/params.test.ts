@@ -14,8 +14,12 @@ const today = "2026-10-05";
 const settings = DEFAULT_PERIOD_SETTINGS;
 
 describe("parseInsightsParams", () => {
-  it("defaults to this month, both kinds", () => {
-    const { view, select } = parseInsightsParams({}, today, settings);
+  it("defaults to the year", () => {
+    expect(parseInsightsParams({}, today, settings).view.type).toBe("year");
+  });
+
+  it("reads this month, both kinds", () => {
+    const { view, select } = parseInsightsParams({ period: "month" }, today, settings);
     expect(view.type).toBe("month");
     expect(view.kind).toBe("both");
     expect(periodOf(view, settings)).toMatchObject({
@@ -39,12 +43,12 @@ describe("parseInsightsParams", () => {
     });
   });
   it("applies a non-positive offset in whole periods", () => {
-    const { view } = parseInsightsParams({ offset: "-1" }, today, settings);
+    const { view } = parseInsightsParams({ period: "month", offset: "-1" }, today, settings);
     expect(periodOf(view, settings)).toMatchObject({
       from: "2026-09-01",
       to: "2026-09-30",
     });
-    const clamped = parseInsightsParams({ offset: "5" }, today, settings);
+    const clamped = parseInsightsParams({ period: "month", offset: "5" }, today, settings);
     expect(periodOf(clamped.view, settings).from).toBe("2026-10-01");
   });
   it("ignores garbage and requires both dates for custom", () => {
@@ -54,7 +58,7 @@ describe("parseInsightsParams", () => {
         today,
         settings,
       ).view.type,
-    ).toBe("month");
+    ).toBe("year");
     expect(
       parseInsightsParams(
         { period: "custom", from: "2026-10-01" },
@@ -77,7 +81,7 @@ describe("parseInsightsParams", () => {
 
 describe("stepView", () => {
   it("steps months and custom ranges", () => {
-    const { view } = parseInsightsParams({}, today, settings);
+    const { view } = parseInsightsParams({ period: "month" }, today, settings);
     const back = stepView(view, -1, settings);
     expect(periodOf(back, settings).from).toBe("2026-09-01");
     expect(canStepForward(back, today, settings)).toBe(true);

@@ -6,7 +6,6 @@ import type { PeriodType } from "@studio/dates";
 import { haptic, useTokens } from "@studio/theme";
 
 const TYPES: readonly PeriodType[] = ["week", "month", "year", "custom"];
-const VALUES = ["Week", "Month", "Year", "Custom"] as const;
 
 type PeriodControlsProps = {
   type: PeriodType;
@@ -16,6 +15,8 @@ type PeriodControlsProps = {
   onStep: (direction: 1 | -1) => void;
   /** Tapping the label edits a custom range. */
   onEditCustom: () => void;
+  /** "FY" when years follow the financial year. */
+  yearLabel?: string;
   /** Tapping the label of a week, month or year that is not current jumps back to now. */
   onJumpToCurrent: () => void;
 };
@@ -64,6 +65,7 @@ function PeriodControls({
   onStep,
   onEditCustom,
   onJumpToCurrent,
+  yearLabel = "Year",
 }: PeriodControlsProps) {
   const custom = type === "custom";
   const tappable = custom || canForward;
@@ -71,7 +73,7 @@ function PeriodControls({
     <View>
       <View className="px-4 pt-2">
         <SegmentedControl
-          values={VALUES}
+          values={["Week", "Month", yearLabel, "Custom"]}
           selectedIndex={TYPES.indexOf(type)}
           onChange={(index) => onType(TYPES[index] ?? "month")}
           accessibilityLabel="Period"

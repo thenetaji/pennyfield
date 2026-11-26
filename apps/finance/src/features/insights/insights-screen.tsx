@@ -38,6 +38,7 @@ import {
   useInsights,
   useSettings,
   useTodayKey,
+  useTaxContext,
 } from "@/data/hooks";
 import {
   addDays,
@@ -160,12 +161,14 @@ export default function InsightsScreen() {
   const { colors } = useTokens();
   const openRange = useRangeStore((s) => s.open);
 
+  const { startMonth: taxStart } = useTaxContext();
   const periodSettings = React.useMemo<PeriodSettings>(
     () => ({
       weekStart: settings.week_start,
       monthStart: settings.month_start,
+      yearStart: taxStart,
     }),
-    [settings.week_start, settings.month_start],
+    [settings.week_start, settings.month_start, taxStart],
   );
   const [initial] = React.useState(() =>
     parseInsightsParams(params, today, periodSettings),
@@ -473,6 +476,7 @@ export default function InsightsScreen() {
       >
         <ScrollRevealProvider value={reveal.register}>
         <PeriodControls
+          yearLabel={taxStart === 1 ? "Year" : "FY"}
           type={view.type}
           label={periodLabel(period)}
           canForward={forward}

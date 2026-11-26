@@ -50,7 +50,7 @@ export function IncomeScreen() {
   const money = useMoneyContext();
   const { colors, category } = useTokens();
   const items = usePeriodTransactions({ ...ALL_TIME, kinds: INCOME });
-  const [mode, setMode] = React.useState<Mode>("month");
+  const [mode, setMode] = React.useState<Mode>("fy");
   const { startMonth } = useTaxContext();
   const [picked, setPicked] = React.useState<string | null>(null);
   const [showAll, setShowAll] = React.useState(false);
