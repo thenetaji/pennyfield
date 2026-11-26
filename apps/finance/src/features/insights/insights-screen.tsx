@@ -100,7 +100,7 @@ import {
 } from "./params";
 import { PayeesCard } from "./payees-card";
 import { PeriodControls, type PeriodChoice } from "./period-controls";
-import { YearsCard, type YearRow } from "./years-card";
+import { AllTimeSummary, type YearRow } from "./years-card";
 import { useRangeStore } from "./range-store";
 import { ScopeBar } from "./scope-bar";
 import { TopWash } from "@/components/app/surface";
@@ -526,6 +526,19 @@ export default function InsightsScreen() {
         <Animated.View style={fadeStyle}>
           <GestureDetector gesture={swipe}>
             <View collapsable={false}>
+              {view.all ? (
+                <View className="pt-2">
+                  <AllTimeSummary
+                    income={income.total}
+                    spent={spending.total}
+                    years={years}
+                    yearTitle={taxStart === 1 ? "By year" : "By financial year"}
+                    currency={currency}
+                    locale={money.locale}
+                    decimals={decimals}
+                  />
+                </View>
+              ) : (
               <View className="px-4 pb-1 pt-4">
                 {both ? (
                   <BothHero
@@ -583,17 +596,7 @@ export default function InsightsScreen() {
                   ) : null}
                 </View>
               </View>
-              {view.all && years.length > 0 ? (
-                <Stagger index={1}>
-                  <ChapterLabel title={taxStart === 1 ? "Year by year" : "Financial year by year"} />
-                  <YearsCard
-                    years={years}
-                    currency={currency}
-                    locale={money.locale}
-                    decimals={decimals}
-                  />
-                </Stagger>
-              ) : null}
+              )}
               {showAnalyzer ? (
                 <Stagger index={1}>
                   <ChapterLabel title="This month" />
