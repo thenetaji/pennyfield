@@ -18,27 +18,40 @@ export interface MonthTotal {
   earned: number;
 }
 
-/** Calendar year as a range. */
-export function yearPeriod(year: number): { from: DateKey; to: DateKey } {
-  return { from: makeKey(year, 1, 1), to: makeKey(year, 12, 31) };
+/** The year that starts in `year` on the 1st of `startMonth` (1 = calendar year, 4 = April-March financial year). */
+export function yearPeriod(year: number, startMonth = 1): { from: DateKey; to: DateKey } {
+  const next = makeKey(year + 1, startMonth, 1);
+  return { from: makeKey(year, startMonth, 1), to: addDays(next, -1) };
 }
 
-/** Spending and earnings for each calendar month of `year`, January first. */
+/** "2025", or "FY 25-26" for a year that starts after January. */
+export function yearName(year: number, startMonth = 1): string {
+  if (startMonth === 1) return String(year);
+  const yy = (n: number) => String(n % 100).padStart(2, "0");
+  return `FY ${yy(year)}-${yy(year + 1)}`;
+}
+
+/** The start year of the year containing `today`. */
+export function yearOf(today: DateKey, startMonth = 1): number {
+  const y = Number(today.slice(0, 4));
+  return Number(today.slice(5, 7)) >= startMonth ? y : y - 1;
+}
+
+/** Spending and earnings for each month of the year starting in `year`, its first month first. */
 export function monthlyTotals(
   lines: readonly FlatLine[],
   year: number,
   ctx: ConversionContext,
+  startMonth = 1,
 ): MonthTotal[] {
-  const months = Array.from({ length: 12 }, (_, i) => ({
-    key: makeKey(year, i + 1, 1),
-    month: i + 1,
-    spent: 0,
-    earned: 0,
-  }));
-  const prefix = `${String(year).padStart(4, "0")}-`;
+  const months = Array.from({ length: 12 }, (_, i) => {
+    const m = ((startMonth - 1 + i) % 12) + 1;
+    const y = m < startMonth ? year + 1 : year;
+    return { key: makeKey(y, m, 1), month: m, spent: 0, earned: 0 };
+  });
+  const index = new Map(months.map((m, i) => [m.key.slice(0, 7), i]));
   for (const line of lines) {
-    if (!line.dateKey.startsWith(prefix)) continue;
-    const month = months[Number(line.dateKey.slice(5, 7)) - 1];
+    const month = months[index.get(line.dateKey.slice(0, 7)) ?? -1];
     if (!month) continue;
     if (line.kind === "expense") month.spent += convertLine(line, ctx);
     else month.earned += convertLine(line, ctx);
@@ -138,8 +151,9 @@ export function entryCount(
 export function elapsedYear(
   year: number,
   today: DateKey,
+  startMonth = 1,
 ): { from: DateKey; to: DateKey } | null {
-  const { from, to } = yearPeriod(year);
+  const { from, to } = yearPeriod(year, startMonth);
   if (today < from) return null;
   return { from, to: today < to ? today : to };
 }

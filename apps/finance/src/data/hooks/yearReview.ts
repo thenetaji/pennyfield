@@ -23,6 +23,7 @@ import {
   mostFrequentTitle,
   noSpendDays,
   trackedDays,
+  yearName,
   yearPeriod,
   type MonthTotal,
   type Streak,
@@ -32,7 +33,12 @@ import { conversionContext } from "./summary";
 type WithCategory<T> = T & { category: CategoryRow | null };
 
 export interface YearReview {
+  /** The year it starts in. */
   year: number;
+  /** "2025" or "FY 25-26". */
+  label: string;
+  /** First month of the year (4 for an April-March financial year). */
+  startMonth: number;
   currency: string;
   /** The part of the year that has happened, or null for a future year. */
   range: { from: DateKey; to: DateKey } | null;
@@ -64,10 +70,11 @@ export function readYearReview(
   db: Db,
   year: number,
   today: DateKey,
+  startMonth = 1,
 ): YearReview {
   const ctx = conversionContext(db);
-  const whole = yearPeriod(year);
-  const range = elapsedYear(year, today);
+  const whole = yearPeriod(year, startMonth);
+  const range = elapsedYear(year, today, startMonth);
   const lines = detailedLines(db, whole);
   const categories = new Map(
     listCategories(db, undefined, { includeArchived: true }).map((c) => [
@@ -83,7 +90,7 @@ export function readYearReview(
   });
   const spent = sumLines(lines, "expense", whole, ctx);
   const earned = sumLines(lines, "income", whole, ctx);
-  const months = monthlyTotals(lines, year, ctx);
+  const months = monthlyTotals(lines, year, ctx, startMonth);
   const top = topTitles(lines, "expense", whole, ctx, 1)[0];
   const frequent = mostFrequentTitle(lines, "expense", whole, ctx);
   const big = biggest(lines, "expense", whole, ctx);
@@ -93,6 +100,8 @@ export function readYearReview(
   const input = { spendDays: new Set(spendDays), since, today };
   return {
     year,
+    label: yearName(year, startMonth),
+    startMonth,
     currency: ctx.displayCurrency,
     range,
     partial: range !== null && range.to < whole.to,

@@ -16,8 +16,8 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { HeaderButton, Pressable } from "@studio/ui";
-import { useSettings, useTodayKey, useYearReview } from "@/data/hooks";
-import { parseKey } from "@studio/dates";
+import { useSettings, useTodayKey, useYearReview, useYearStart } from "@/data/hooks";
+import { yearOf } from "@/lib/reports";
 import { haptic, useTokens, withAlpha } from "@studio/theme";
 import { useReportMoney } from "@/features/report/money";
 
@@ -60,7 +60,7 @@ export default function ReviewScreen() {
   const params = useLocalSearchParams<{ year?: string; card?: string }>();
   const today = useTodayKey();
   const settings = useSettings();
-  const thisYear = parseKey(today).year;
+  const thisYear = yearOf(today, useYearStart());
   const parsed = Number.parseInt(params.year ?? "", 10);
   const year =
     Number.isFinite(parsed) && parsed > 1900 && parsed <= thisYear

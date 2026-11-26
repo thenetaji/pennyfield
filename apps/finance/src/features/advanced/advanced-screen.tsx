@@ -1,7 +1,8 @@
 import { useRouter, type Href } from "expo-router";
 import { ScrollView, View } from "react-native";
 
-import { useAccounts, useSetting, useSettings, useTodayKey } from "@/data/hooks";
+import { useAccounts, useSetting, useSettings, useTodayKey, useYearStart } from "@/data/hooks";
+import { yearName, yearOf } from "@/lib/reports";
 import { useAskAvailable } from "@/features/explore/ask-available";
 import { monthParam } from "@/features/report/labels";
 import { periodFor, previousPeriod } from "@studio/dates";
@@ -14,7 +15,8 @@ export function AdvancedScreen() {
   const canAsk = useAskAvailable();
   const settings = useSettings();
   const today = useTodayKey();
-  const lastYear = Number(today.slice(0, 4)) - 1;
+  const yearStart = useYearStart();
+  const lastYear = yearOf(today, yearStart) - 1;
   const lastMonth = monthParam(
     previousPeriod(
       periodFor("month", today, { weekStart: settings.week_start, monthStart: settings.month_start }),
@@ -57,7 +59,7 @@ export function AdvancedScreen() {
         {
           label: "Year in review",
           icon: "sparkles",
-          subtitle: `Your ${lastYear}`,
+          subtitle: yearName(lastYear, yearStart),
           href: { pathname: "/review/[year]", params: { year: String(lastYear) } },
         },
         ...(canAsk

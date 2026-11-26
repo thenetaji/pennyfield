@@ -8,6 +8,7 @@ import {
 import { useLiveData } from "@/data/use-live-data";
 import type { NoSpendInput } from "@/lib/reports";
 import { readMonthReport, type MonthReport } from "./monthReport";
+import { useTaxContext } from "./useInvestments";
 import { readYearReview, type YearReview } from "./yearReview";
 
 const REPORT_TABLES = [
@@ -33,11 +34,17 @@ export function useMonthReport(
   );
 }
 
-/** Year in review for a calendar year. */
+/** Year in review for the year starting in `year`; it follows the tax year, so April-March in India. */
 export function useYearReview(year: number, today: DateKey): YearReview {
-  return useLiveData(REPORT_TABLES, `${year}:${today}`, (db) =>
-    readYearReview(db, year, today),
+  const { startMonth } = useTaxContext();
+  return useLiveData(REPORT_TABLES, `${year}:${today}:${startMonth}`, (db) =>
+    readYearReview(db, year, today, startMonth),
   );
+}
+
+/** The start month of the tax year (1 for calendar years). */
+export function useYearStart(): number {
+  return useTaxContext().startMonth;
 }
 
 /**

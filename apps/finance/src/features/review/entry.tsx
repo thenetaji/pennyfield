@@ -3,12 +3,16 @@ import * as React from "react";
 import { View } from "react-native";
 
 import { Card, Pressable, Text } from "@studio/ui";
-import { useTodayKey, useYearReview } from "@/data/hooks";
-import { parseKey } from "@studio/dates";
+import { useTodayKey, useYearReview, useYearStart } from "@/data/hooks";
+import { yearOf } from "@/lib/reports";
 import { useTokens, withAlpha } from "@studio/theme";
 
+/** The running year, or the one just ended during its first month. */
+const latestYear = (today: string, start: number) =>
+  Number(today.slice(5, 7)) === start ? yearOf(today, start) - 1 : yearOf(today, start);
+
 type ReviewEntryCardProps = {
-  /** Defaults to this year, or last year during January. */
+  /** Defaults to the running year, or the one just ended during its first month. */
   year?: number;
 };
 
@@ -20,15 +24,15 @@ export function ReviewEntryCard({ year }: ReviewEntryCardProps) {
   const router = useRouter();
   const { colors } = useTokens();
   const today = useTodayKey();
-  const { year: thisYear, month } = parseKey(today);
-  const value = year ?? (month === 1 ? thisYear - 1 : thisYear);
+  const start = useYearStart();
+  const value = year ?? latestYear(today, start);
   const review = useYearReview(value, today);
   if (review.entries === 0) return null;
   const max = Math.max(1, ...review.months.map((m) => m.spent));
   return (
     <Pressable
       role="button"
-      accessibilityLabel={`${value} in review`}
+      accessibilityLabel={`${review.label} in review`}
       scale={0.98}
       onPress={() =>
         router.push({
@@ -43,7 +47,7 @@ export function ReviewEntryCard({ year }: ReviewEntryCardProps) {
             Year in review
           </Text>
           <Text variant="title2" className="mt-0.5">
-            {review.partial ? `${value} so far` : String(value)}
+            {review.partial ? `${review.label} so far` : review.label}
           </Text>
         </View>
         <View className="flex-row items-end gap-[3px]" style={{ height: 36 }}>
@@ -70,8 +74,7 @@ export function ReviewEntryCard({ year }: ReviewEntryCardProps) {
 
 /** This year's review and last year's, each shown only when it has entries. */
 export function ReviewEntryCards() {
-  const { year, month } = parseKey(useTodayKey());
-  const latest = month === 1 ? year - 1 : year;
+  const latest = latestYear(useTodayKey(), useYearStart());
   return (
     <>
       <ReviewEntryCard year={latest} />

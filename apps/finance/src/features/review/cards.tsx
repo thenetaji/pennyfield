@@ -199,13 +199,13 @@ function Intro({ review, still }: CardProps) {
           numberOfLines={1}
           adjustsFontSizeToFit
         >
-          {String(review.year)}
+          {review.label}
         </Text>
       </Rise>
       <Rise index={2} still={still}>
         <Text variant="title2" tone="secondary" className="mt-2">
           {review.entries === 0
-            ? `Nothing in ${review.year}`
+            ? `Nothing in ${review.label}`
             : `${review.entries.toLocaleString("en-US")} ${review.entries === 1 ? "entry" : "entries"}`}
         </Text>
         {span && review.partial && review.entries > 0 ? (
@@ -341,7 +341,7 @@ function Months({ review, money, still }: CardProps) {
               ? money.compact(review.months[i]?.spent ?? 0)
               : null
           }
-          accessibilityLabel={`Spending by month in ${review.year}; most in ${monthName(top?.month ?? 1)}`}
+          accessibilityLabel={`Spending by month in ${review.label}; most in ${monthName(top?.month ?? 1)}`}
         />
       </Rise>
       <Rise index={3} still={still} style={{ marginTop: 20 }}>
@@ -539,14 +539,15 @@ function YearMonths({
       }}
     >
       {Array.from({ length: 12 }, (_, m) => {
-        const first = `${review.year}-${String(m + 1).padStart(2, "0")}-01`;
+        const first = review.months[m]?.key ?? `${review.year}-01-01`;
+        const monthNo = parseKey(first).month;
         const cells: (DateKey | null)[] = Array.from(
           { length: leadingBlanks(weekday(first), weekStart) },
           () => null,
         );
         for (
           let key = first;
-          parseKey(key).month === m + 1;
+          parseKey(key).month === monthNo;
           key = addDays(key, 1)
         )
           cells.push(key);
@@ -558,7 +559,7 @@ function YearMonths({
               tone="tertiary"
               style={{ fontSize: 10, lineHeight: 13, marginBottom: 3 }}
             >
-              {monthShort(m + 1)}
+              {monthShort(monthNo)}
             </Text>
             <View
               style={{ flexDirection: "row", flexWrap: "wrap", gap: MINI_GAP }}
@@ -649,7 +650,7 @@ function Summary({ review, money, still }: CardProps) {
   const hairline = StyleSheet.hairlineWidth * 2;
   return (
     <Rise index={1} still={still}>
-      <Title>{`${review.year}${review.partial ? " so far" : ""}`}</Title>
+      <Title>{`${review.label}${review.partial ? " so far" : ""}`}</Title>
       <Card className="mt-6 rounded-[20px] p-0">
         {Array.from({ length: stats.length / 2 }, (_, row) => (
           <View

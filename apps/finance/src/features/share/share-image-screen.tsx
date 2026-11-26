@@ -9,8 +9,10 @@ import {
   useSettings,
   useTodayKey,
   useYearReview,
+  useYearStart,
 } from "@/data/hooks";
-import { parseKey, periodLabel, type PeriodSettings } from "@studio/dates";
+import { yearOf } from "@/lib/reports";
+import { periodLabel, type PeriodSettings } from "@studio/dates";
 import { maskLocale } from "@studio/money";
 import { haptic } from "@studio/theme";
 import { useMoneyContext } from "@/features/transactions/use-money-context";
@@ -200,7 +202,7 @@ function YearPreview({
 }) {
   const settings = useSettings();
   const today = useTodayKey();
-  const thisYear = parseKey(today).year;
+  const thisYear = yearOf(today, useYearStart());
   const parsed = Number.parseInt(year ?? "", 10);
   const value =
     Number.isFinite(parsed) && parsed <= thisYear ? parsed : thisYear;
