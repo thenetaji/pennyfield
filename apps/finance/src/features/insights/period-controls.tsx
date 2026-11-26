@@ -5,13 +5,15 @@ import { Pressable, SegmentedControl, Text } from "@studio/ui";
 import type { PeriodType } from "@studio/dates";
 import { haptic, useTokens } from "@studio/theme";
 
-const TYPES: readonly PeriodType[] = ["week", "month", "year", "custom"];
+/** "all" is everything from the first entry to today. */
+export type PeriodChoice = PeriodType | "all";
+const TYPES: readonly PeriodChoice[] = ["week", "month", "year", "all", "custom"];
 
 type PeriodControlsProps = {
-  type: PeriodType;
+  type: PeriodChoice;
   label: string;
   canForward: boolean;
-  onType: (type: PeriodType) => void;
+  onType: (type: PeriodChoice) => void;
   onStep: (direction: 1 | -1) => void;
   /** Tapping the label edits a custom range. */
   onEditCustom: () => void;
@@ -56,7 +58,7 @@ function StepButton({
   );
 }
 
-/** Week | Month | Year | Custom, with a stepper row beneath. */
+/** Week | Month | Year | All | Custom, with a stepper row beneath (just the label for All). */
 function PeriodControls({
   type,
   label,
@@ -68,17 +70,25 @@ function PeriodControls({
   yearLabel = "Year",
 }: PeriodControlsProps) {
   const custom = type === "custom";
+  const all = type === "all";
   const tappable = custom || canForward;
   return (
     <View>
       <View className="px-4 pt-2">
         <SegmentedControl
-          values={["Week", "Month", yearLabel, "Custom"]}
+          values={["Week", "Month", yearLabel, "All", "Custom"]}
           selectedIndex={TYPES.indexOf(type)}
           onChange={(index) => onType(TYPES[index] ?? "month")}
           accessibilityLabel="Period"
         />
       </View>
+      {all ? (
+        <View className="h-11 justify-center pt-1">
+          <Text variant="headline" numberOfLines={1} className="text-center">
+            {label}
+          </Text>
+        </View>
+      ) : (
       <View className="flex-row items-center justify-between px-2 pt-1">
         <StepButton
           symbol="chevron.left"
@@ -107,6 +117,7 @@ function PeriodControls({
           onPress={() => onStep(1)}
         />
       </View>
+      )}
     </View>
   );
 }

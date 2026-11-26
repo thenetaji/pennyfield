@@ -27,6 +27,8 @@ export interface InsightsView {
   anchor: DateKey;
   custom: { from: DateKey; to: DateKey } | null;
   kind: InsightsKind;
+  /** Everything from the first entry to today; `custom` holds that range. */
+  all?: boolean;
 }
 
 export interface InsightsParams {

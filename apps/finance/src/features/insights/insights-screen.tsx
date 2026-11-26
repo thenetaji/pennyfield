@@ -38,13 +38,16 @@ import {
   useInsights,
   useSettings,
   useTodayKey,
+  useFirstEntryDay,
   useTaxContext,
 } from "@/data/hooks";
 import {
   addDays,
   periodLabel,
+  addMonths,
+  periodFor,
+  type Period,
   type PeriodSettings,
-  type PeriodType,
 } from "@studio/dates";
 import { Stagger } from "@studio/motion";
 import { formatMoney, formatMoneyForSpeech } from "@studio/money";
@@ -52,6 +55,7 @@ import { useMoneyContext } from "@/features/transactions/use-money-context";
 import { haptic, useTokens } from "@studio/theme";
 import {
   BREAKDOWN_BYS,
+  monthlyTotals,
   type BreakdownBy,
   type InsightsScope,
 } from "@/lib/insights";
@@ -95,7 +99,8 @@ import {
   type InsightsView,
 } from "./params";
 import { PayeesCard } from "./payees-card";
-import { PeriodControls } from "./period-controls";
+import { PeriodControls, type PeriodChoice } from "./period-controls";
+import { YearsCard, type YearRow } from "./years-card";
 import { useRangeStore } from "./range-store";
 import { ScopeBar } from "./scope-bar";
 import { TopWash } from "@/components/app/surface";
@@ -226,7 +231,13 @@ export default function InsightsScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navKey]);
 
-  const period = periodOf(view, periodSettings);
+  const firstDay = useFirstEntryDay();
+  const allFrom = firstDay && firstDay < today ? firstDay : today;
+  const period = periodOf(
+    view.all ? { ...view, type: "custom", custom: { from: allFrom, to: today } } : view,
+    periodSettings,
+  );
+  const mode: PeriodChoice = view.all ? "all" : view.type;
   const both = view.kind === "both";
   const kind = singleKind(view.kind);
   const spending = useInsights(period, "expense", today, scope);
@@ -273,6 +284,21 @@ export default function InsightsScreen() {
     () => monthlyCashFlow(lines.lines, months, period, today, lines.ctx),
     [lines, months, period, today],
   );
+  const years = React.useMemo<YearRow[]>(() => {
+    if (!view.all) return [];
+    const spans: Period[] = [];
+    let y = periodFor("year", allFrom, periodSettings);
+    while (y.from <= today && spans.length < 60) {
+      spans.push(y);
+      y = periodFor("year", addMonths(y.from, 12), periodSettings);
+    }
+    return monthlyTotals(lines.lines, spans, lines.ctx).map((t, i) => ({
+      key: t.key,
+      label: periodLabel(spans[i]!),
+      income: t.income,
+      spent: t.spent,
+    }));
+  }, [view.all, allFrom, today, periodSettings, lines]);
   const context = React.useMemo<InsightsContext>(
     () => ({ period, kind, scope }),
     [period, kind, scope],
@@ -300,7 +326,7 @@ export default function InsightsScreen() {
     () =>
       listItems(insights, selectedKey).map((item) => {
         const trend = trends.get(categoryKeyOf(item.id));
-        return trend && trend.spark.some((v) => v > 0)
+        return !view.all && trend && trend.spark.some((v) => v > 0)
           ? {
               ...item,
               trend: trendBadge(trend, kind, before, {
@@ -310,7 +336,7 @@ export default function InsightsScreen() {
             }
           : item;
       }),
-    [insights, selectedKey, trends, kind, before, currency, money.locale],
+    [insights, selectedKey, trends, kind, before, currency, money.locale, view.all],
   );
   const visibleRows =
     showAll || selectedKey !== null ? rows : rows.slice(0, LIST_LIMIT);
@@ -327,7 +353,7 @@ export default function InsightsScreen() {
         })
       : null;
   const [deltaAsAmount, setDeltaAsAmount] = React.useState(false);
-  const forward = canStepForward(view, today, periodSettings);
+  const forward = !view.all && canStepForward(view, today, periodSettings);
 
   // Period change crossfades 200 ms; the charts themselves do not replay their intro.
   const reduced = useReducedMotion();
@@ -345,7 +371,7 @@ export default function InsightsScreen() {
     setShowAll(false);
   };
   const step = (direction: 1 | -1) => {
-    if (direction === 1 && !forward) return;
+    if (view.all || (direction === 1 && !forward)) return;
     setView((current) => stepView(current, direction, periodSettings));
     reset();
   };
@@ -359,13 +385,19 @@ export default function InsightsScreen() {
     });
     router.push("/insights-range" as Href);
   };
-  const changeType = (type: PeriodType) => {
-    if (type === view.type) return;
+  const changeType = (type: PeriodChoice) => {
+    if (type === mode) return;
+    if (type === "all") {
+      setView((current) => ({ ...current, all: true, type: "custom", custom: { from: allFrom, to: today } }));
+      reset();
+      return;
+    }
     if (type === "custom") {
       const from = view.custom?.from ?? addDays(today, -29);
       const to = view.custom?.to ?? today;
       setView((current) => ({
         ...current,
+        all: false,
         type: "custom",
         custom: { from, to },
       }));
@@ -380,6 +412,7 @@ export default function InsightsScreen() {
     }
     setView((current) => ({
       ...current,
+      all: false,
       type,
       anchor: current.type === "custom" ? today : current.anchor,
     }));
@@ -477,8 +510,8 @@ export default function InsightsScreen() {
         <ScrollRevealProvider value={reveal.register}>
         <PeriodControls
           yearLabel={taxStart === 1 ? "Year" : "FY"}
-          type={view.type}
-          label={periodLabel(period)}
+          type={mode}
+          label={view.all ? `Since ${periodLabel(periodFor("month", allFrom, periodSettings))}` : periodLabel(period)}
           canForward={forward}
           onType={changeType}
           onStep={step}
@@ -520,7 +553,7 @@ export default function InsightsScreen() {
                   </View>
                 )}
                 <View className="h-5">
-                  {delta && !both ? (
+                  {delta && !both && !view.all ? (
                     <Pressable
                       role="button"
                       accessibilityLabel={deltaAsAmount && delta.alt ? delta.alt : delta.text}
@@ -550,6 +583,17 @@ export default function InsightsScreen() {
                   ) : null}
                 </View>
               </View>
+              {view.all && years.length > 0 ? (
+                <Stagger index={1}>
+                  <ChapterLabel title={taxStart === 1 ? "Year by year" : "Financial year by year"} />
+                  <YearsCard
+                    years={years}
+                    currency={currency}
+                    locale={money.locale}
+                    decimals={decimals}
+                  />
+                </Stagger>
+              ) : null}
               {showAnalyzer ? (
                 <Stagger index={1}>
                   <ChapterLabel title="This month" />
@@ -676,7 +720,7 @@ export default function InsightsScreen() {
               locale={money.locale}
             />
 </Reveal>
-              {comparison.current > 0 || comparison.previous > 0 ? (
+              {!view.all && (comparison.current > 0 || comparison.previous > 0) ? (
                 <Reveal>
 <CompareCard
                 comparison={comparison}

@@ -70,3 +70,8 @@ export type {
 } from "./monthReport";
 export type { YearReview } from "./yearReview";
 export type { BillDue } from "@/db/repos/spend-days";
+
+/** The earliest day with any entry, or null when there are none. */
+export function useFirstEntryDay(): DateKey | null {
+  return useLiveData(["transactions"], "first", (db) => firstEntryDay(db));
+}
