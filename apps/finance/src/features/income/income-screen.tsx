@@ -10,10 +10,20 @@ import { haptic, useTokens, type CategoryColorKey } from "@studio/theme";
 import { Amount, IconTile, Pressable, SegmentedControl, Text } from "@studio/ui";
 
 import { ChangePill, Eyebrow, HeroWash, Panel, TopWash } from "@/components/app/surface";
-import { usePeriodTransactions } from "@/data/hooks";
+import { usePeriodTransactions, useTaxContext } from "@/data/hooks";
 import { useMoneyContext } from "@/features/transactions/use-money-context";
 
 import { GrowthBars, IncomeBars } from "./income-charts";
+
+type Mode = "month" | "year" | "fy";
+const MODES: readonly Mode[] = ["month", "year", "fy"];
+
+/** The calendar year a financial year starts in, for a "YYYY-MM" month. */
+const fyStart = (key: string, startMonth: number) => {
+  const year = Number(key.slice(0, 4));
+  return Number(key.slice(5, 7)) >= startMonth ? year : year - 1;
+};
+const fyLabel = (y: number) => `FY ${String(y).slice(2)}-${String(y + 1).slice(2)}`;
 
 type ChartKind = "bars" | "line" | "growth" | "running";
 const CHARTS: readonly { kind: ChartKind; label: string }[] = [
@@ -40,14 +50,15 @@ export function IncomeScreen() {
   const money = useMoneyContext();
   const { colors, category } = useTokens();
   const items = usePeriodTransactions({ ...ALL_TIME, kinds: INCOME });
-  const [mode, setMode] = React.useState<"month" | "year">("month");
+  const [mode, setMode] = React.useState<Mode>("month");
+  const { startMonth } = useTaxContext();
   const [picked, setPicked] = React.useState<string | null>(null);
   const [showAll, setShowAll] = React.useState(false);
   const [chart, setChart] = React.useState<ChartKind>("bars");
   const [sourceView, setSourceView] = React.useState<"list" | "donut">("list");
   const [sourceKey, setSourceKey] = React.useState<string | null>(null);
 
-  const { months, years, sources } = React.useMemo(() => {
+  const { months, years, fys, sources } = React.useMemo(() => {
     const byMonth = new Map<string, number>();
     const bySource = new Map<string, Source>();
     for (const item of items) {
@@ -80,12 +91,24 @@ export function IncomeScreen() {
       short: `'${y.slice(2)}`,
       amount,
     }));
+    const byFy = new Map<number, number>();
+    for (const m of monthList) {
+      const fy = fyStart(m.key, startMonth);
+      byFy.set(fy, (byFy.get(fy) ?? 0) + m.amount);
+    }
+    const fyList: Bucket[] = [...byFy.entries()].map(([y, amount]) => ({
+      key: `FY${y}`,
+      label: fyLabel(y),
+      short: `${String(y).slice(2)}-${String(y + 1).slice(2)}`,
+      amount,
+    }));
     return {
       months: monthList,
       years: yearList,
+      fys: fyList,
       sources: [...bySource.values()].sort((a, b) => b.amount - a.amount),
     };
-  }, [items, money.displayCurrency, money.rates, money.todayKey]);
+  }, [items, money.displayCurrency, money.rates, money.todayKey, startMonth]);
 
   const fmt = (minor: number) =>
     formatMoney(minor, money.displayCurrency, {
@@ -106,7 +129,7 @@ export function IncomeScreen() {
       </View>
     );
 
-  const list = mode === "month" ? months : years;
+  const list = mode === "month" ? months : mode === "year" ? years : fys;
   const bars = list.slice(-BARS);
   const selected = list.find((b) => b.key === picked) ?? list[list.length - 1];
   const index = selected ? list.indexOf(selected) : -1;
@@ -136,7 +159,7 @@ export function IncomeScreen() {
           return byKey.has(prior) ? (byKey.get(prior) ?? 0) : null;
         })
       : undefined;
-  const running = runningTotals(months, mode, money.todayKey);
+  const running = runningTotals(months, mode, money.todayKey, fys);
   const total = sources.reduce((s, x) => s + x.amount, 0);
   const rows = [...list].reverse();
   const shownRows = showAll ? rows : rows.slice(0, 12);
@@ -147,10 +170,10 @@ export function IncomeScreen() {
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerClassName="pb-24">
         <View className="px-4 pb-3 pt-2">
           <SegmentedControl
-            values={["Months", "Years"]}
-            selectedIndex={mode === "month" ? 0 : 1}
+            values={["Months", "Years", "FY"]}
+            selectedIndex={MODES.indexOf(mode)}
             onChange={(i) => {
-              setMode(i === 0 ? "month" : "year");
+              setMode(MODES[i] ?? "month");
               setPicked(null);
             }}
             accessibilityLabel="Months or years"
@@ -160,7 +183,7 @@ export function IncomeScreen() {
         <HeroWash>
           <View className="px-5 pb-5 pt-4">
             <Text variant="footnote" tone="secondary" className="font-semibold uppercase tracking-[1.4px]">
-              {`Income · ${selected?.label ?? ""}${selected?.key === money.todayKey.slice(0, 7) || selected?.key === money.todayKey.slice(0, 4) ? " so far" : ""}`}
+              {`Income · ${selected?.label ?? ""}${selected?.key === money.todayKey.slice(0, 7) || selected?.key === money.todayKey.slice(0, 4) || selected?.key === `FY${fyStart(money.todayKey.slice(0, 7), startMonth)}` ? " so far" : ""}`}
             </Text>
             <View className="mt-2 flex-row items-end justify-between">
               <Amount value={fmt(selected?.amount ?? 0)} variant="hero" animate="intro" />
@@ -323,7 +346,7 @@ export function IncomeScreen() {
             ) : undefined
           }
         >
-          {mode === "month" ? "Month by month" : "Year by year"}
+          {mode === "month" ? "Month by month" : mode === "year" ? "Year by year" : "Financial year by year"}
         </Eyebrow>
         <Panel>
           {shownRows.map((b, i) => {
@@ -390,7 +413,16 @@ function Legend({ items }: { items: readonly [string, string][] }) {
 }
 
 /** Income added up through the year (against last year), or through the years in year mode. */
-function runningTotals(months: readonly Bucket[], mode: "month" | "year", today: string) {
+function runningTotals(months: readonly Bucket[], mode: Mode, today: string, fys: readonly Bucket[]) {
+  if (mode === "fy") {
+    let sum = 0;
+    return {
+      values: fys.map((f) => (sum += f.amount)),
+      compare: undefined,
+      labels: fys.map((f) => f.short),
+      note: "Everything earned since your first entry, by financial year.",
+    };
+  }
   if (mode === "year") {
     const years = new Map<string, number>();
     for (const m of months) years.set(m.key.slice(0, 4), (years.get(m.key.slice(0, 4)) ?? 0) + m.amount);
