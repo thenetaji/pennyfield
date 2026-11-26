@@ -141,7 +141,7 @@ export type SettingKey = keyof SettingsMap;
 export const DEFAULT_SETTINGS: Readonly<SettingsMap> = {
   display_currency: "USD",
   theme: "system",
-  accent: "ivory",
+  accent: "violet",
   palette: "system",
   haptics: true,
   show_decimals: false,
@@ -157,8 +157,8 @@ export const DEFAULT_SETTINGS: Readonly<SettingsMap> = {
   schema_seeded: false,
   recent_searches: [],
   icon_style: "phosphor-fill",
-  icon_background: "solid",
-  category_colors: "mono",
+  icon_background: "soft",
+  category_colors: "colour",
   home_layout: DEFAULT_HOME_LAYOUT.map((s) => ({ ...s })),
   pockets: [],
   hide_amounts: false,
@@ -192,11 +192,13 @@ export const DEFAULT_SETTINGS: Readonly<SettingsMap> = {
   auto_backup_error: null,
 };
 
-const LOOK_VERSION = 2;
+const LOOK_VERSION = 3;
 
 /** The defaults each look replaced; a setting still on its old default moves to the new one. Values no longer offered fall back to their defaults when read. */
 const PREVIOUS_LOOK: Partial<SettingsMap> = {
-  category_colors: "colour",
+  accent: "ivory",
+  icon_background: "solid",
+  category_colors: "mono",
 };
 
 const ENUMS: Partial<Record<SettingKey, readonly unknown[]>> = {

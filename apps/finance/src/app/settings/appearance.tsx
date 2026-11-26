@@ -19,11 +19,13 @@ const MODES = [
 ] as const;
 
 const ACCENTS: readonly { key: AccentPresetKey; label: string }[] = [
-  { key: "ivory", label: "Ink" },
+  { key: "violet", label: "Violet" },
+  { key: "emerald", label: "Emerald" },
   { key: "blue", label: "Blue" },
   { key: "teal", label: "Teal" },
   { key: "plum", label: "Plum" },
   { key: "bronze", label: "Bronze" },
+  { key: "ivory", label: "Ink" },
 ];
 
 const CATEGORY_MODES = [
@@ -37,7 +39,8 @@ const ICON_LOOKS: readonly {
   style: IconStyle;
   background: IconBackground;
 }[] = [
-  { label: "Solid", subtitle: "White on your theme colour", style: "phosphor-fill", background: "solid" },
+  { label: "Soft", subtitle: "Coloured icon on a light tile", style: "phosphor-fill", background: "soft" },
+  { label: "Solid", subtitle: "White on a coloured tile", style: "phosphor-fill", background: "solid" },
   { label: "Line", subtitle: "Thin, with no background", style: "lucide", background: "glyph-only" },
 ];
 

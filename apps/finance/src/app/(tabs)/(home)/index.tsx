@@ -1,5 +1,5 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { useTokens } from "@studio/theme";
+import { useTokens, washTop } from "@studio/theme";
 import { useRouter } from "expo-router";
 import * as React from "react";
 
@@ -229,7 +229,7 @@ export default function Home() {
     <View className="flex-1 bg-bg">
       <LinearGradient
         pointerEvents="none"
-        colors={[colors.accentSoft, colors.bg]}
+        colors={[washTop(colors), colors.bg]}
         style={{ position: "absolute", top: 0, left: 0, right: 0, height: 420 }}
       />
       <HomeTopBar />

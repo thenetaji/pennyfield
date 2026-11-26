@@ -1,7 +1,8 @@
 import * as React from "react";
+import { LinearGradient } from "expo-linear-gradient";
 import { View, type ViewProps } from "react-native";
 
-import { useTokens } from "@studio/theme";
+import { useTokens, washTop } from "@studio/theme";
 import { Amount, Pressable, Text, cn } from "@studio/ui";
 
 /** Small letter-spaced caps label that names a block ("YOUR PORTFOLIO"). */
@@ -128,5 +129,17 @@ export function Panel({ className, style, onPress, ...props }: ViewProps & { onP
     </Pressable>
   ) : (
     body
+  );
+}
+
+/** Light wash of the theme colour behind the top of a tab, fading into the page. Put it first in the screen. */
+export function TopWash() {
+  const { colors } = useTokens();
+  return (
+    <LinearGradient
+      pointerEvents="none"
+      colors={[washTop(colors), colors.bg]}
+      style={{ position: "absolute", top: 0, left: 0, right: 0, height: 420 }}
+    />
   );
 }

@@ -1,6 +1,6 @@
 import type { NativeStackNavigationOptions } from "expo-router";
 
-import { useTokens } from "@studio/theme";
+import { useTokens, washTop } from "@studio/theme";
 
 /**
  * Header chrome shared by every stack: a solid `bg` header (true black in dark, paper in light),
@@ -22,10 +22,11 @@ export function headerChrome(colors: {
   };
 }
 
-export function useTabStackOptions(): NativeStackNavigationOptions {
+/** `tinted` matches the header bar to a screen whose top carries the soft accent wash. */
+export function useTabStackOptions({ tinted = false }: { tinted?: boolean } = {}): NativeStackNavigationOptions {
   const { colors } = useTokens();
   return {
-    ...headerChrome(colors),
+    ...headerChrome(tinted ? { ...colors, bg: washTop(colors) } : colors),
     headerLargeTitleEnabled: false,
     contentStyle: { backgroundColor: colors.bg },
   };

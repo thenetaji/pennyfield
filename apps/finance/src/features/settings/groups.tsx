@@ -62,6 +62,8 @@ export const MONTH_OPTIONS: readonly Option<number>[] = Array.from(
 
 const THEME_LABELS = { system: "Auto", light: "Light", dark: "Dark" };
 const ACCENT_LABELS: Record<AccentPresetKey, string> = {
+  violet: "Violet",
+  emerald: "Emerald",
   blue: "Blue",
   teal: "Teal",
   plum: "Plum",

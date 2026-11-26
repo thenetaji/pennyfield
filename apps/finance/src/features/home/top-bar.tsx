@@ -5,7 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useSetting } from "@/data/hooks";
 import { SymbolIcon, Pressable, Text } from "@studio/ui";
-import { useTokens } from "@studio/theme";
+import { useTokens, washTop } from "@studio/theme";
 
 import { greetingFor } from "./curve";
 
@@ -60,10 +60,11 @@ function CircleButton({
 /** Greeting on the left; hide-amounts eye, Customize Home and settings circles on the right. */
 function HomeTopBar() {
   const router = useRouter();
+  const { colors } = useTokens();
   const greeting = useGreeting();
   const [hidden, setHidden] = useSetting("hide_amounts");
   return (
-    <SafeAreaView edges={["top"]} className="bg-bg">
+    <SafeAreaView edges={["top"]} style={{ backgroundColor: washTop(colors) }}>
       <View className="h-11 flex-row items-center justify-between px-4">
         <Text
           variant="subhead"

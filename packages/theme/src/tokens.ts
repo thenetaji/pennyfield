@@ -39,7 +39,14 @@ export type SemanticColors = {
   overlayText: string;
 };
 
-export type AccentPresetKey = "blue" | "teal" | "plum" | "bronze" | "ivory";
+export type AccentPresetKey =
+  | "violet"
+  | "emerald"
+  | "blue"
+  | "teal"
+  | "plum"
+  | "bronze"
+  | "ivory";
 
 /** The accent is one token group: fill, link text, soft tint, text on the fill, pressed fill. */
 export type AccentColors = Pick<
@@ -51,6 +58,38 @@ export const accentPresets: Record<
   AccentPresetKey,
   Record<Scheme, AccentColors>
 > = {
+  violet: {
+    light: {
+      accent: "#6E56CF",
+      accentText: "#5B45B8",
+      accentSoft: "rgba(110,86,207,0.12)",
+      onAccent: "#FFFFFF",
+      accentDeep: "#4A3A9A",
+    },
+    dark: {
+      accent: "#A594F9",
+      accentText: "#B9ABFF",
+      accentSoft: "rgba(165,148,249,0.16)",
+      onAccent: "#170F3A",
+      accentDeep: "#8B78F0",
+    },
+  },
+  emerald: {
+    light: {
+      accent: "#0F8A5F",
+      accentText: "#0B7350",
+      accentSoft: "rgba(15,138,95,0.12)",
+      onAccent: "#FFFFFF",
+      accentDeep: "#08573C",
+    },
+    dark: {
+      accent: "#4CC38A",
+      accentText: "#5FD49A",
+      accentSoft: "rgba(76,195,138,0.16)",
+      onAccent: "#04241A",
+      accentDeep: "#36A872",
+    },
+  },
   blue: {
     light: {
       accent: "#2F5FD0",
@@ -135,7 +174,7 @@ export const accentPresets: Record<
 };
 
 /** Default accent; `setAccent` re-skins at runtime. global.css `--tint*` mirror this default. */
-export const accentPreset: AccentPresetKey = "ivory";
+export const accentPreset: AccentPresetKey = "violet";
 
 /** The surface family: every non-accent token. `setPalette` switches it at runtime. */
 export type PaletteKey = "system";
@@ -185,6 +224,8 @@ export const palettes: Record<PaletteKey, Record<Scheme, PaletteColors>> = {
 
 /** Each accent's hue, the source of its shades. */
 const CHART_TINTS: Record<AccentPresetKey, { hue: number; saturation: number }> = {
+  violet: { hue: 252, saturation: 55 },
+  emerald: { hue: 158, saturation: 80 },
   blue: { hue: 222, saturation: 64 },
   teal: { hue: 177, saturation: 73 },
   plum: { hue: 282, saturation: 43 },
@@ -479,4 +520,17 @@ export function withAlpha(hex: string, alpha: number): string {
   const g = parseInt(h.slice(2, 4), 16);
   const b = parseInt(h.slice(4, 6), 16);
   return `rgba(${r},${g},${b},${alpha})`;
+}
+
+/** The soft accent laid over the page, as one solid colour: where a tinted top meets a header bar. */
+export function washTop(colors: { accentSoft: string; bg: string }): string {
+  const soft = /rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/.exec(colors.accentSoft);
+  const base = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(colors.bg);
+  if (!soft || !base) return colors.bg;
+  const a = Number(soft[4]);
+  const mix = (i: number) =>
+    Math.round(Number(soft[i]) * a + parseInt(base[i] as string, 16) * (1 - a))
+      .toString(16)
+      .padStart(2, "0");
+  return `#${mix(1)}${mix(2)}${mix(3)}`;
 }

@@ -97,6 +97,8 @@ import { PayeesCard } from "./payees-card";
 import { PeriodControls } from "./period-controls";
 import { useRangeStore } from "./range-store";
 import { ScopeBar } from "./scope-bar";
+import { TopWash } from "@/components/app/surface";
+
 import { InvestmentsChapter } from "./investments-chapter";
 import { TrendSection } from "./trend-section";
 import {
@@ -457,6 +459,7 @@ export default function InsightsScreen() {
 
   return (
     <View className="flex-1 bg-bg">
+      <TopWash />
       <ScrollView
         ref={scrollRef}
         contentInsetAdjustmentBehavior="automatic"

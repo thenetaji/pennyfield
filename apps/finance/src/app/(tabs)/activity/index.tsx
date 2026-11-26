@@ -17,6 +17,7 @@ import { monthOf, shiftMonth } from "@/features/calendar/grid";
 
 import { InvestmentsPage } from "@/features/investments/investments-screen";
 import { AddFab } from "@/components/app/add-fab";
+import { TopWash } from "@/components/app/surface";
 import { SelectionBar } from "@/features/transactions/selection-bar";
 import { useSelection } from "@/features/transactions/selection-store";
 import { OptionPicker, type Option } from "@studio/ui";
@@ -345,7 +346,7 @@ function ActivityPage({ active }: { active: boolean }) {
   );
 
   return (
-    <View className="flex-1 bg-bg">
+    <View className="flex-1">
       {active ? <Stack.Screen options={headerOptions} /> : null}
       {calendar ? (
         <CalendarView
@@ -480,6 +481,7 @@ export default function Activity() {
 
   return (
     <View className="flex-1 bg-bg">
+      <TopWash />
       {page === 1 ? (
         <Stack.Screen
           options={{

@@ -65,7 +65,7 @@ describe("eraseAllData", () => {
       ...DEFAULT_SETTINGS,
       theme: "dark",
       schema_seeded: true,
-      look_version: 2,
+      look_version: 3,
       categories_version: 1,
     });
   });

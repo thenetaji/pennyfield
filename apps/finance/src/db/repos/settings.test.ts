@@ -189,7 +189,7 @@ describe("feature settings", () => {
     const db = createTestDb();
     expect(getAllSettings(db)).toMatchObject({
       icon_style: "phosphor-fill",
-      icon_background: "solid",
+      icon_background: "soft",
       hide_amounts: false,
       reminder_daily_enabled: false,
       reminder_daily_time: "21:00",
@@ -233,10 +233,10 @@ describe("feature settings", () => {
         { key: "icon_background", value: '"graphite-accent"' },
       ])
       .run();
-    expect(getSetting(db, "accent")).toBe("ivory");
+    expect(getSetting(db, "accent")).toBe("violet");
     expect(getSetting(db, "palette")).toBe("system");
     expect(getSetting(db, "icon_style")).toBe("phosphor-fill");
-    expect(getSetting(db, "icon_background")).toBe("solid");
+    expect(getSetting(db, "icon_background")).toBe("soft");
   });
 
   it("falls back to the default for stored values that are no longer valid", () => {
@@ -250,20 +250,24 @@ describe("feature settings", () => {
       ])
       .run();
     expect(getSetting(db, "icon_style")).toBe("phosphor-fill");
-    expect(getSetting(db, "icon_background")).toBe("solid");
+    expect(getSetting(db, "icon_background")).toBe("soft");
     expect(getSetting(db, "sync_provider")).toBe("none");
     expect(getSetting(db, "reminder_daily_time")).toBe("21:00");
   });
 });
 
 describe("applyLookDefaults", () => {
-  it("moves colourful categories to the new default once", () => {
+  it("moves an untouched Ink look to the colour defaults once", () => {
     const db = createTestDb({ seed: false });
-    setSetting(db, "category_colors", "colour");
+    setSetting(db, "accent", "ivory");
+    setSetting(db, "icon_background", "solid");
+    setSetting(db, "category_colors", "mono");
     applyLookDefaults(db);
-    expect(getSetting(db, "category_colors")).toBe("mono");
-    setSetting(db, "category_colors", "colour");
-    applyLookDefaults(db);
+    expect(getSetting(db, "accent")).toBe("violet");
+    expect(getSetting(db, "icon_background")).toBe("soft");
     expect(getSetting(db, "category_colors")).toBe("colour");
+    setSetting(db, "accent", "ivory");
+    applyLookDefaults(db);
+    expect(getSetting(db, "accent")).toBe("ivory");
   });
 });

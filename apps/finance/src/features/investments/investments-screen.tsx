@@ -156,6 +156,16 @@ export function InvestmentsPage() {
         <View
           className={`min-h-[56px] flex-row items-center justify-between gap-3 px-4 py-3 ${last ? "" : "border-b border-border"}`}
         >
+          <View
+            className="h-10 w-10 items-center justify-center rounded-[12px]"
+            style={{ backgroundColor: colors.accentSoft }}
+          >
+            <AppIcon
+              name={inv.type === "fd" ? "building.columns.fill" : "doc.text.fill"}
+              size={20}
+              color={colors.accent}
+            />
+          </View>
           <View className="flex-1">
             <Text variant="headline" numberOfLines={1}>
               {inv.name}
