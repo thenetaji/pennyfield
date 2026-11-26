@@ -1,5 +1,8 @@
 import * as React from "react";
 import { ScrollView, View } from "react-native";
+import Animated, { FadeInDown, ZoomIn } from "react-native-reanimated";
+
+import { Donut, TrendLine } from "@studio/charts/components";
 
 import { addMonths, monthShort, parseKey } from "@studio/dates";
 import { convertWithRates, formatMoney } from "@studio/money";
@@ -9,6 +12,16 @@ import { Amount, IconTile, Pressable, SegmentedControl, Text } from "@studio/ui"
 import { ChangePill, Eyebrow, HeroWash, Panel, TopWash } from "@/components/app/surface";
 import { usePeriodTransactions } from "@/data/hooks";
 import { useMoneyContext } from "@/features/transactions/use-money-context";
+
+import { GrowthBars, IncomeBars } from "./income-charts";
+
+type ChartKind = "bars" | "line" | "growth" | "running";
+const CHARTS: readonly { kind: ChartKind; label: string }[] = [
+  { kind: "bars", label: "Bars" },
+  { kind: "line", label: "Line" },
+  { kind: "growth", label: "Growth" },
+  { kind: "running", label: "Running total" },
+];
 
 const ALL_TIME = { from: "0000-01-01", to: "9999-12-31" };
 const INCOME = ["income"] as const;
@@ -25,11 +38,14 @@ const monthLabel = (key: string) => {
 /** Income month by month and year by year: how it has grown, and where it comes from. */
 export function IncomeScreen() {
   const money = useMoneyContext();
-  const { colors } = useTokens();
+  const { colors, category } = useTokens();
   const items = usePeriodTransactions({ ...ALL_TIME, kinds: INCOME });
   const [mode, setMode] = React.useState<"month" | "year">("month");
   const [picked, setPicked] = React.useState<string | null>(null);
   const [showAll, setShowAll] = React.useState(false);
+  const [chart, setChart] = React.useState<ChartKind>("bars");
+  const [sourceView, setSourceView] = React.useState<"list" | "donut">("list");
+  const [sourceKey, setSourceKey] = React.useState<string | null>(null);
 
   const { months, years, sources } = React.useMemo(() => {
     const byMonth = new Map<string, number>();
@@ -102,7 +118,25 @@ export function IncomeScreen() {
   const recent = months.slice(-12).filter((m) => m.amount > 0);
   const average = recent.length > 0 ? recent.reduce((s, m) => s + m.amount, 0) / recent.length : 0;
   const best = months.reduce<Bucket | undefined>((b, m) => (!b || m.amount > b.amount ? m : b), undefined);
-  const max = Math.max(1, ...bars.map((b) => b.amount));
+  const barIndex = selected ? Math.max(0, bars.findIndex((b) => b.key === selected.key)) : bars.length - 1;
+  const selectBar = (i: number) => {
+    const b = bars[i];
+    if (b) setPicked(b.key);
+  };
+  const isBest =
+    !!selected &&
+    selected.amount > 0 &&
+    list.filter((b) => b !== selected).every((b) => b.amount < selected.amount) &&
+    list.length > 1;
+  const byKey = new Map(months.map((m) => [m.key, m.amount]));
+  const lastYear =
+    mode === "month"
+      ? bars.map((b) => {
+          const prior = `${Number(b.key.slice(0, 4)) - 1}${b.key.slice(4)}`;
+          return byKey.has(prior) ? (byKey.get(prior) ?? 0) : null;
+        })
+      : undefined;
+  const running = runningTotals(months, mode, money.todayKey);
   const total = sources.reduce((s, x) => s + x.amount, 0);
   const rows = [...list].reverse();
   const shownRows = showAll ? rows : rows.slice(0, 12);
@@ -129,53 +163,83 @@ export function IncomeScreen() {
               {`Income · ${selected?.label ?? ""}${selected?.key === money.todayKey.slice(0, 7) || selected?.key === money.todayKey.slice(0, 4) ? " so far" : ""}`}
             </Text>
             <View className="mt-2 flex-row items-end justify-between">
-              <Amount value={fmt(selected?.amount ?? 0)} variant="hero" />
+              <Amount value={fmt(selected?.amount ?? 0)} variant="hero" animate="intro" />
               {change !== null ? (
                 <ChangePill text={`${change >= 0 ? "+" : ""}${change}%`} positive={change >= 0} />
               ) : null}
             </View>
-            <Text variant="subhead" tone="secondary" className="mt-1">
-              {before ? `${fmt(before.amount)} in ${before.label}` : "First on record"}
-            </Text>
+            <View className="mt-1 flex-row items-center gap-2">
+              <Text variant="subhead" tone="secondary">
+                {before ? `${fmt(before.amount)} in ${before.label}` : "First on record"}
+              </Text>
+              {isBest ? (
+                <Animated.View key={selected?.key} entering={ZoomIn.springify().damping(12)}>
+                  <View className="rounded-full px-2 py-0.5" style={{ backgroundColor: colors.accentSoft }}>
+                    <Text variant="caption" tone="accent" className="font-semibold">
+                      {mode === "month" ? "Best month yet" : "Best year yet"}
+                    </Text>
+                  </View>
+                </Animated.View>
+              ) : null}
+            </View>
 
-            <View className="mt-5 h-[140px] flex-row items-end gap-1.5">
-              {bars.map((b) => {
-                const on = b.key === selected?.key;
+            <Animated.View key={chart} entering={FadeInDown.duration(320)} className="mt-5">
+              {chart === "bars" ? (
+                <IncomeBars bars={bars} selected={barIndex} onSelect={selectBar} replay={`${mode}`} />
+              ) : chart === "growth" ? (
+                <GrowthBars bars={bars} selected={barIndex} onSelect={selectBar} replay={`${mode}`} />
+              ) : (
+                <TrendLine
+                  values={chart === "line" ? bars.map((b) => b.amount) : running.values}
+                  compare={chart === "line" ? lastYear : running.compare}
+                  currency={money.displayCurrency}
+                  locale={money.locale}
+                  selectedIndex={chart === "line" ? barIndex : null}
+                  onSelect={(i) => {
+                    if (i !== null) selectBar(i);
+                  }}
+                  formatLabel={(i) =>
+                    chart === "line"
+                      ? `${bars[i]?.label ?? ""} · ${fmt(bars[i]?.amount ?? 0)}`
+                      : `${running.labels[i] ?? ""} · ${fmt(running.values[i] ?? 0)}`
+                  }
+                  labels={(chart === "line" ? bars.map((b) => b.short) : running.labels)
+                    .map((text, index) => ({ index, text }))
+                    .filter((_, i, all) => all.length <= 6 || i % 2 === (all.length - 1) % 2)}
+                  accessibilityLabel={chart === "line" ? "Income over time" : "Running total"}
+                  height={170}
+                />
+              )}
+            </Animated.View>
+            {chart === "line" && lastYear ? (
+              <Legend items={[["This year", colors.accent], ["Last year", colors.textTertiary]]} />
+            ) : chart === "running" ? (
+              <Text variant="caption" tone="secondary" className="mt-2">
+                {running.note}
+              </Text>
+            ) : null}
+            <View className="mt-4 flex-row flex-wrap gap-2">
+              {CHARTS.map((c) => {
+                const on = c.kind === chart;
                 return (
                   <Pressable
-                    key={b.key}
+                    key={c.kind}
                     role="button"
-                    accessibilityLabel={`${b.label}, ${fmt(b.amount)}`}
-                    scale={0.96}
-                    className="h-full flex-1 justify-end"
+                    accessibilityState={{ selected: on }}
+                    scale={0.95}
                     onPress={() => {
                       haptic("selection");
-                      setPicked(b.key);
+                      setChart(c.kind);
                     }}
+                    className="rounded-full px-3.5 py-1.5"
+                    style={{ backgroundColor: on ? colors.accent : colors.fill }}
                   >
-                    <View
-                      className="w-full rounded-t-[6px] rounded-b-[3px]"
-                      style={{
-                        height: `${Math.max(2, (b.amount / max) * 100)}%`,
-                        backgroundColor: on ? colors.accent : colors.accentSoft,
-                      }}
-                    />
+                    <Text variant="footnote" className="font-semibold" style={{ color: on ? colors.onAccent : colors.textSecondary }}>
+                      {c.label}
+                    </Text>
                   </Pressable>
                 );
               })}
-            </View>
-            <View className="mt-1.5 flex-row gap-1.5">
-              {bars.map((b) => (
-                <Text
-                  key={b.key}
-                  variant="caption"
-                  tone={b.key === selected?.key ? "default" : "tertiary"}
-                  className="flex-1 text-center"
-                  numberOfLines={1}
-                >
-                  {b.short}
-                </Text>
-              ))}
             </View>
           </View>
         </HeroWash>
@@ -187,7 +251,34 @@ export function IncomeScreen() {
 
         {sources.length > 0 ? (
           <>
-            <Eyebrow>Where it comes from</Eyebrow>
+            <Eyebrow
+              trailing={
+                <Pressable role="button" hitSlop={10} onPress={() => setSourceView((v) => (v === "list" ? "donut" : "list"))}>
+                  <Text variant="footnote" tone="accent" className="font-semibold">
+                    {sourceView === "list" ? "Ring" : "List"}
+                  </Text>
+                </Pressable>
+              }
+            >
+              Where it comes from
+            </Eyebrow>
+            {sourceView === "donut" ? (
+              <Panel className="items-center py-5">
+                <Donut
+                  data={sources.slice(0, 6).map((x) => ({
+                    key: x.id,
+                    name: x.name,
+                    value: x.amount,
+                    amountLabel: fmt(x.amount),
+                    percentLabel: `${Math.round((x.amount / Math.max(1, total)) * 100)}%`,
+                    color: category[x.color] ?? colors.accent,
+                  }))}
+                  selectedKey={sourceKey}
+                  onSelect={setSourceKey}
+                  accessibilityLabel="Income by source"
+                />
+              </Panel>
+            ) : (
             <Panel>
               {sources.slice(0, 6).map((s, i) => (
                 <View
@@ -217,6 +308,7 @@ export function IncomeScreen() {
                 </View>
               ))}
             </Panel>
+            )}
           </>
         ) : null}
 
@@ -238,8 +330,8 @@ export function IncomeScreen() {
             const prev = list[list.indexOf(b) - 1];
             const pct = prev && prev.amount > 0 ? Math.round(((b.amount - prev.amount) / prev.amount) * 100) : null;
             return (
+              <Animated.View key={`${mode}${b.key}`} entering={FadeInDown.delay(Math.min(i, 12) * 30).springify().damping(18)}>
               <Pressable
-                key={b.key}
                 role="button"
                 scale={1}
                 onPress={() => setPicked(b.key)}
@@ -257,6 +349,7 @@ export function IncomeScreen() {
                   </Text>
                 </View>
               </Pressable>
+              </Animated.View>
             );
           })}
         </Panel>
@@ -280,3 +373,58 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub: st
     </View>
   );
 }
+
+function Legend({ items }: { items: readonly [string, string][] }) {
+  return (
+    <View className="mt-2 flex-row gap-4">
+      {items.map(([label, color]) => (
+        <View key={label} className="flex-row items-center gap-1.5">
+          <View className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
+          <Text variant="caption" tone="secondary">
+            {label}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/** Income added up through the year (against last year), or through the years in year mode. */
+function runningTotals(months: readonly Bucket[], mode: "month" | "year", today: string) {
+  if (mode === "year") {
+    const years = new Map<string, number>();
+    for (const m of months) years.set(m.key.slice(0, 4), (years.get(m.key.slice(0, 4)) ?? 0) + m.amount);
+    let sum = 0;
+    const entries = [...years.entries()];
+    return {
+      values: entries.map(([, v]) => (sum += v)),
+      compare: undefined,
+      labels: entries.map(([y]) => `'${y.slice(2)}`),
+      note: "Everything earned since your first entry.",
+    };
+  }
+  const year = today.slice(0, 4);
+  const prior = String(Number(year) - 1);
+  const byKey = new Map(months.map((m) => [m.key, m.amount]));
+  const current = Number(today.slice(5, 7));
+  let a = 0;
+  let b = 0;
+  const values: (number | null)[] = [];
+  const compare: (number | null)[] = [];
+  const hasPrior = months.some((m) => m.key.startsWith(prior));
+  for (let m = 1; m <= 12; m++) {
+    const mm = String(m).padStart(2, "0");
+    a += byKey.get(`${year}-${mm}`) ?? 0;
+    b += byKey.get(`${prior}-${mm}`) ?? 0;
+    values.push(m <= current ? a : null);
+    compare.push(hasPrior ? b : null);
+  }
+  return {
+    values,
+    compare: hasPrior ? compare : undefined,
+    labels: ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"],
+    note: hasPrior ? `${year} so far against ${prior} (dashed).` : `${year} so far.`,
+  };
+}
+
+export default IncomeScreen;

@@ -1,3 +1,3 @@
-import { IncomeScreen } from "@/features/income/income-screen";
+import { withSkia } from "@studio/charts";
 
-export default IncomeScreen;
+export default withSkia(() => import("@/features/income/income-screen"));
