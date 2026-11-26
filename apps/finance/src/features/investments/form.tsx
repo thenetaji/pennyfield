@@ -46,6 +46,12 @@ const PERIODIC = ["monthly", "quarterly", "half_yearly", "yearly"];
 const minorText = (minor: number | null | undefined, digits: number) =>
   minor == null ? "" : String(minor / 10 ** digits);
 
+/** Like parseMinor but allows a leading minus; 0 when empty, NaN when invalid. */
+function parseSignedMinor(text: string, digits: number): number {
+  const t = text.trim();
+  return t.startsWith("-") ? -parseMinor(t.slice(1), digits) : parseMinor(t, digits);
+}
+
 const noon = (key: DateKey) => keyToLocalMs(key, 12);
 const NONE = "none";
 
@@ -145,11 +151,24 @@ export function InvestmentForm({
   const [redemptionText, setRedemptionText] = React.useState(
     minorText(source?.redemptionAmount, digits),
   );
+  const [unitsText, setUnitsText] = React.useState(
+    source?.units != null ? String(source.units) : "",
+  );
+  const [faceText, setFaceText] = React.useState(
+    minorText(source?.faceValue, digits),
+  );
+  const [priceText, setPriceText] = React.useState(
+    minorText(source?.cleanPrice, digits),
+  );
+  const [accruedText, setAccruedText] = React.useState(
+    minorText(source?.accruedAtBuy, digits),
+  );
   const [more, setMore] = React.useState(
     mode === "edit" &&
       !!(source?.name && source.name !== source.issuer) ||
       !!(source?.platform || source?.reference || source?.rating || source?.note ||
-        source?.firstPayoutDate || source?.couponAmount || source?.redemptionAmount),
+        source?.firstPayoutDate || source?.couponAmount || source?.redemptionAmount ||
+        source?.units || source?.faceValue || source?.cleanPrice || source?.accruedAtBuy),
   );
   const [keypadOpen, setKeypadOpen] = React.useState(mode === "new");
   const [textFocused, setTextFocused] = React.useState(false);
@@ -159,12 +178,22 @@ export function InvestmentForm({
   const periodic = PERIODIC.includes(payout);
   const coupon = periodic ? parseMinor(couponText, digits) : 0;
   const redemption = parseMinor(redemptionText, digits);
+  const bondFields = type !== "fd";
+  const units = bondFields ? parseRate(unitsText) : null;
+  const faceValue = bondFields ? parseMinor(faceText, digits) : 0;
+  const cleanPrice = bondFields ? parseMinor(priceText, digits) : 0;
+  const accruedAtBuy = bondFields ? parseSignedMinor(accruedText, digits) : 0;
   const fallbackName = issuer.trim() || TYPE_LABELS[type];
   const disabled =
     amount <= 0 ||
     Number.isNaN(rate) ||
     Number.isNaN(coupon) ||
     Number.isNaN(redemption) ||
+    Number.isNaN(units) ||
+    (units !== null && units <= 0) ||
+    Number.isNaN(faceValue) ||
+    Number.isNaN(cleanPrice) ||
+    Number.isNaN(accruedAtBuy) ||
     maturityDate < buyDate ||
     (periodic && firstPayout !== null && firstPayout <= buyDate);
 
@@ -197,6 +226,10 @@ export function InvestmentForm({
       firstPayoutDate: periodic ? firstPayout : null,
       couponAmount: coupon > 0 ? coupon : null,
       redemptionAmount: redemption > 0 ? redemption : null,
+      units: units !== null && units > 0 ? units : null,
+      faceValue: faceValue > 0 ? faceValue : null,
+      cleanPrice: cleanPrice > 0 ? cleanPrice : null,
+      accruedAtBuy: accruedText.trim() === "" || !bondFields ? null : accruedAtBuy,
       note,
     };
     try {
@@ -415,6 +448,41 @@ export function InvestmentForm({
               keyboardType="decimal-pad"
               focus={focus}
             />
+            {bondFields ? (
+              <>
+                <TextRow
+                  label="Units"
+                  value={unitsText}
+                  onChange={setUnitsText}
+                  keyboardType="decimal-pad"
+                  focus={focus}
+                />
+                <TextRow
+                  label="Face value per unit"
+                  value={faceText}
+                  onChange={setFaceText}
+                  placeholder={`${currencySymbol(currency)}0`}
+                  keyboardType="decimal-pad"
+                  focus={focus}
+                />
+                <TextRow
+                  label="Price paid per unit"
+                  value={priceText}
+                  onChange={setPriceText}
+                  placeholder={`${currencySymbol(currency)}0`}
+                  keyboardType="decimal-pad"
+                  focus={focus}
+                />
+                <TextRow
+                  label="Accrued interest at purchase"
+                  value={accruedText}
+                  onChange={setAccruedText}
+                  placeholder={`${currencySymbol(currency)}0`}
+                  keyboardType="default"
+                  focus={focus}
+                />
+              </>
+            ) : null}
             <TextRow label="Note" value={note} onChange={setNote} focus={focus} />
           </ListGroup>
         ) : (

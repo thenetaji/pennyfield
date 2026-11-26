@@ -21,6 +21,10 @@ export interface StableBond {
   /** Major units. */
   invested?: number;
   faceValue?: number;
+  /** Major units per unit, clean price; unit-weighted over buys. */
+  price?: number;
+  /** Major units; signed, positive was paid to the seller. */
+  accrued?: number;
   maturityDate?: DateKey;
   sellDate?: DateKey;
   payouts: StablePayout[];
@@ -105,6 +109,7 @@ export function parseStableReports(sheets: string[][][][]): StableBond[] {
     return bond;
   };
   const named = new Set<string>();
+  const priced = new Map<string, { units: number; cost: number }>();
 
   for (const workbook of sheets) {
     for (const rows of workbook) {
@@ -129,6 +134,15 @@ export function parseStableReports(sheets: string[][][][]): StableBond[] {
           const invested = num(cellAt(row, t.cols, "invested amount (inr)"));
           if (units !== undefined) bond.units = (bond.units ?? 0) + units;
           if (invested !== undefined) bond.invested = (bond.invested ?? 0) + invested;
+          const price = num(cellAt(row, t.cols, "price / unit (inr)"));
+          const accrued = num(cellAt(row, t.cols, "accrued at buy (inr)"));
+          if (price !== undefined && units !== undefined && units > 0) {
+            const before = priced.get(isin) ?? { units: 0, cost: 0 };
+            const next = { units: before.units + units, cost: before.cost + price * units };
+            priced.set(isin, next);
+            bond.price = next.cost / next.units;
+          }
+          if (accrued !== undefined) bond.accrued = (bond.accrued ?? 0) + accrued;
           bond.ytm = num(cellAt(row, t.cols, "ytm (%)")) ?? bond.ytm;
           bond.faceValue = num(cellAt(row, t.cols, "face value (inr)")) ?? bond.faceValue;
         }
@@ -233,6 +247,10 @@ export function toInvestmentPlan(
     firstPayoutDate: interestDates[0] ?? null,
     couponAmount: null,
     redemptionAmount: redemption ? minor(redemption.gross) : null,
+    units: bond.units ?? null,
+    faceValue: bond.faceValue != null ? minor(bond.faceValue) : null,
+    cleanPrice: bond.price != null ? minor(bond.price) : null,
+    accruedAtBuy: bond.accrued != null ? minor(bond.accrued) : null,
     ...(early ? { note: `Matures ${bond.maturityDate}` } : {}),
   };
   return { input, schedule };

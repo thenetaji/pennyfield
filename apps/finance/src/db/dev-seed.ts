@@ -702,6 +702,10 @@ export function seedDemoExtras(db: Db, now = Date.now()): void {
         buyDate: addDays(today, -40),
         maturityDate: addMonths(today, 5),
         fromAccountId: bank.id,
+        units: 3,
+        faceValue: 1_000_000,
+        cleanPrice: 1_000_973,
+        accruedAtBuy: -904,
       },
       now,
     );

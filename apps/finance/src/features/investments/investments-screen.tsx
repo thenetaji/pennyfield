@@ -26,13 +26,15 @@ import { DatePicker } from "@/features/transaction-form/date-picker";
 import { useMoneyContext } from "@/features/transactions/use-money-context";
 import { backAfter, taxYearOf } from "@/lib/investments/tax";
 import type { UpcomingPayout } from "@/lib/investments/returns";
+import { investmentTips, type Tip } from "@/lib/investments/tips";
 import type { InvestmentType } from "@/db/schema";
 
 import { useStableImport } from "@/data/hooks/useStableImport";
 import { AppIcon } from "@studio/icons";
 import { haptic, useTokens } from "@studio/theme";
 
-import { rateLabel } from "./format";
+import { dateLabel, rateLabel } from "./format";
+import { InfoTip, type GlossaryKey } from "./info-tip";
 import { pickXlsxWorkbooks } from "./pick-xlsx";
 import { TdsCard } from "./insight-cards";
 
@@ -78,6 +80,7 @@ export function InvestmentsPage() {
   const [needBy, setNeedBy] = useSetting("cash_need_date");
   const [showClosed, setShowClosed] = React.useState(false);
   const [showAllUpcoming, setShowAllUpcoming] = React.useState(false);
+  const [showAllTips, setShowAllTips] = React.useState(false);
   const insights = useInvestmentInsights();
   const [slab, setSlab] = useSetting("tax_slab_percent");
   const [slabOpen, setSlabOpen] = React.useState(false);
@@ -141,6 +144,18 @@ export function InvestmentsPage() {
       ? rated.reduce((sum, s) => sum + s.investment.amount * (s.investment.rate ?? 0), 0) / ratedAmount
       : null;
   const months = upcomingByMonth(insights.upcoming).slice(0, showAllUpcoming ? 12 : 4);
+  const tips = investmentTips({
+    investments: open.map((s) => s.investment),
+    today,
+    taxRate: insights.taxRate,
+    fmt,
+    dateLabel,
+  });
+  const openTip = (tip: Tip) => {
+    if (tip.action === "slab") setSlabOpen(true);
+    else if (tip.investmentId)
+      router.push({ pathname: "/investments/[id]", params: { id: tip.investmentId } });
+  };
   const maxYear = Math.max(1, ...insights.interestByYear.map((y) => y.amount));
 
   const row = (s: InvestmentSummary, last: boolean) => {
@@ -209,7 +224,7 @@ export function InvestmentsPage() {
             ) : null}
           </View>
           <View className="mt-4 flex-row">
-            <Stat label="Interest to come" value={`+${fmt(insights.interestToCome)}`} tone="income" />
+            <Stat label="Interest to come" value={`+${fmt(insights.interestToCome)}`} tone="income" tip="interestToCome" />
             <Stat label="Average rate" value={avgRate !== null ? `${Number(avgRate.toFixed(2))}%` : "—"} />
             <Stat
               label="All back by"
@@ -228,6 +243,29 @@ export function InvestmentsPage() {
           ) : null}
         </View>
       </HeroWash>
+
+      {tips.length > 0 ? (
+        <>
+          <Eyebrow
+            trailing={
+              tips.length > 3 ? (
+                <Pressable role="button" hitSlop={10} onPress={() => setShowAllTips((v) => !v)}>
+                  <Text variant="footnote" tone="accent" className="font-semibold">
+                    {showAllTips ? "Less" : `All ${tips.length}`}
+                  </Text>
+                </Pressable>
+              ) : undefined
+            }
+          >
+            For you
+          </Eyebrow>
+          <Panel>
+            {(showAllTips ? tips : tips.slice(0, 3)).map((tip, i) => (
+              <TipRow key={tip.id} tip={tip} first={i === 0} onPress={() => openTip(tip)} />
+            ))}
+          </Panel>
+        </>
+      ) : null}
 
       {insights.byType.length > 1 ? (
         <>
@@ -476,12 +514,25 @@ function TypeTile({ type }: { type: InvestmentType }) {
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: string; tone?: "income" }) {
+function Stat({
+  label,
+  value,
+  tone,
+  tip,
+}: {
+  label: string;
+  value: string;
+  tone?: "income";
+  tip?: GlossaryKey;
+}) {
   return (
     <View className="flex-1">
-      <Text variant="caption" tone="secondary">
-        {label}
-      </Text>
+      <View className="flex-row items-center gap-1">
+        <Text variant="caption" tone="secondary">
+          {label}
+        </Text>
+        {tip ? <InfoTip term={tip} size={13} /> : null}
+      </View>
       <Text variant="headline" tone={tone} numeric className="mt-0.5">
         {value}
       </Text>
@@ -509,4 +560,38 @@ function upcomingByMonth(upcoming: readonly UpcomingPayout[]) {
     group.items.push(p);
   }
   return out;
+}
+
+const TIP_ICONS = { warning: "shield.fill", info: "lightbulb.fill", good: "checkmark.circle.fill" } as const;
+
+function TipRow({ tip, first, onPress }: { tip: Tip; first: boolean; onPress: () => void }) {
+  const { colors } = useTokens();
+  const color =
+    tip.tone === "warning" ? colors.warning : tip.tone === "good" ? colors.income : colors.accent;
+  const tappable = tip.action !== undefined || tip.investmentId !== undefined;
+  const body = (
+    <View className={`flex-row gap-3 px-4 py-3.5 ${first ? "" : "border-t border-border"}`}>
+      <View
+        className="h-9 w-9 items-center justify-center rounded-[11px]"
+        style={{ backgroundColor: `${color}22` }}
+      >
+        <AppIcon name={TIP_ICONS[tip.tone]} size={18} color={color} />
+      </View>
+      <View className="flex-1">
+        <Text variant="body" className="font-semibold">
+          {tip.title}
+        </Text>
+        <Text variant="subhead" tone="secondary" className="mt-0.5">
+          {tip.body}
+        </Text>
+      </View>
+    </View>
+  );
+  return tappable ? (
+    <Pressable role="button" scale={0.99} onPress={onPress}>
+      {body}
+    </Pressable>
+  ) : (
+    body
+  );
 }

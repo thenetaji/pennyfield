@@ -56,6 +56,14 @@ export interface InvestmentInput {
   couponAmount?: number | null;
   /** What comes back at maturity, minor units. */
   redemptionAmount?: number | null;
+  /** Bonds: units bought. */
+  units?: number | null;
+  /** Bonds: face value per unit, minor units. */
+  faceValue?: number | null;
+  /** Bonds: price paid per unit without accrued interest, minor units. */
+  cleanPrice?: number | null;
+  /** Bonds: accrued interest at purchase, minor units; positive was paid, negative was received. */
+  accruedAtBuy?: number | null;
   note?: string;
 }
 
@@ -126,6 +134,13 @@ function validateInvestment(input: InvestmentInput): void {
   for (const value of [input.couponAmount, input.redemptionAmount])
     if (value != null && (!Number.isInteger(value) || value <= 0))
       throw new ValidationError("amount_not_positive");
+  if (input.units != null && !(Number.isFinite(input.units) && input.units > 0))
+    throw new ValidationError("invalid_input", "units must be more than zero");
+  for (const value of [input.faceValue, input.cleanPrice])
+    if (value != null && (!Number.isInteger(value) || value <= 0))
+      throw new ValidationError("amount_not_positive");
+  if (input.accruedAtBuy != null && !Number.isInteger(input.accruedAtBuy))
+    throw new ValidationError("amount_not_integer");
 }
 
 function validatePayout(input: PayoutInput): void {
@@ -379,6 +394,10 @@ function toRow(input: InvestmentInput) {
     firstPayoutDate: input.firstPayoutDate ?? null,
     couponAmount: input.couponAmount ?? null,
     redemptionAmount: input.redemptionAmount ?? null,
+    units: input.units ?? null,
+    faceValue: input.faceValue ?? null,
+    cleanPrice: input.cleanPrice ?? null,
+    accruedAtBuy: input.accruedAtBuy ?? null,
     note: clean(input.note),
   };
 }

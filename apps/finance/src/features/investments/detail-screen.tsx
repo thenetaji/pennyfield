@@ -15,6 +15,9 @@ import {
 } from "@studio/ui";
 
 import { Eyebrow, HeroWash, Panel } from "@/components/app/surface";
+import { bondPricing } from "@/lib/investments/bond-price";
+
+import { InfoTip, type GlossaryKey } from "./info-tip";
 
 import {
   useAccounts,
@@ -41,7 +44,7 @@ import {
   SCHEDULE_LABELS,
 } from "./format";
 
-type Fact = { label: string; value: string | undefined };
+type Fact = { label: string; value: string | undefined; tip?: GlossaryKey; tone?: "income" | "expense" };
 
 /** One investment: what went in, what came back, how it is taxed, and every payout. */
 export function InvestmentDetailScreen() {
@@ -84,7 +87,11 @@ export function InvestmentDetailScreen() {
       value: inv.reference || undefined,
     },
     { label: "Rating", value: inv.rating || undefined },
-    { label: "Rate", value: rateLabel(inv.rate) },
+    {
+      label: inv.type === "fd" ? "Rate" : "Yield (YTM)",
+      value: rateLabel(inv.rate),
+      tip: inv.type === "fd" ? undefined : "ytm",
+    },
     { label: "Interest paid", value: SCHEDULE_LABELS[inv.payout] },
     { label: "Bought", value: dateLabel(inv.buyDate) },
     {
@@ -124,7 +131,8 @@ export function InvestmentDetailScreen() {
   const returns: Fact[] = r
     ? [
         {
-          label: "Actual return a year",
+          label: "Actual return",
+          tip: "xirr",
           value:
             r.xirr === null
               ? undefined
@@ -138,6 +146,7 @@ export function InvestmentDetailScreen() {
         },
         {
           label: "Interest to come",
+          tip: "interestToCome",
           value: open && r.interestToCome > 0 ? fmt(r.interestToCome) : undefined,
         },
         {
@@ -164,7 +173,37 @@ export function InvestmentDetailScreen() {
   const facts = (list: Fact[]) =>
     list
       .filter((f) => f.value !== undefined)
-      .map((f) => <ListRow key={f.label} label={f.label} value={f.value} />);
+      .map((f, i) => <FactRow key={f.label} fact={f} first={i === 0} />);
+
+  const price = bondPricing(inv);
+  const perUnit = (minor: number) => `${fmt(minor)} each`;
+  const pricing: Fact[] = price
+    ? [
+        { label: "Units", value: String(price.units) },
+        { label: "Face value", value: perUnit(price.faceValue), tip: "faceValue" },
+        { label: "Clean price", value: perUnit(price.cleanPrice), tip: "cleanPrice" },
+        {
+          label: "Accrued interest",
+          value:
+            price.accrued === 0
+              ? undefined
+              : price.accrued > 0
+                ? `${fmt(price.accrued)} paid`
+                : `${fmt(-price.accrued)} received`,
+          tip: "accrued",
+        },
+        { label: "Dirty price", value: perUnit(price.dirtyPrice), tip: "dirtyPrice" },
+        {
+          label: price.premium >= 0 ? "Premium paid" : "Discount",
+          value:
+            Math.abs(price.premium) < 100
+              ? "None"
+              : `${price.premium > 0 ? "−" : "+"}${fmt(Math.abs(price.premium))}`,
+          tip: "premium",
+          tone: Math.abs(price.premium) < 100 ? undefined : price.premium > 0 ? "expense" : "income",
+        },
+      ]
+    : [];
 
   const addPayout = () =>
     router.push({
@@ -313,6 +352,20 @@ export function InvestmentDetailScreen() {
         </Button>
       </View>
 
+      {price ? (
+        <>
+          <Eyebrow>Bond price</Eyebrow>
+          <Panel>{facts(pricing)}</Panel>
+          <Text variant="footnote" tone="secondary" className="px-8 pt-2">
+            {Math.abs(price.premium) < 100
+              ? "You paid face value, so nothing is lost or gained on the price."
+              : price.premium > 0
+                ? `At the end you get ${fmt(price.faceTotal)} back, ${fmt(price.premium)} less than the ${fmt(price.cleanTotal)} you paid for the bonds. Your yield already counts this.`
+                : `At the end you get ${fmt(price.faceTotal)} back, ${fmt(-price.premium)} more than the ${fmt(price.cleanTotal)} you paid for the bonds.`}
+          </Text>
+        </>
+      ) : null}
+
       {returns.some((f) => f.value !== undefined) ? (
         <>
           <Eyebrow>Returns</Eyebrow>
@@ -424,4 +477,19 @@ function tenureLabel(from: string, to: string): string {
   const y = Math.floor(months / 12);
   const m = months % 12;
   return [y ? `${y}Y` : "", m ? `${m}M` : "", days ? `${days}D` : ""].filter(Boolean).join(" ") || "0D";
+}
+
+/** Label (with its explanation, when there is one) on the left, value on the right. */
+function FactRow({ fact, first }: { fact: Fact; first: boolean }) {
+  return (
+    <View className={`min-h-[50px] flex-row items-center gap-3 px-4 py-3 ${first ? "" : "border-t border-border"}`}>
+      <View className="flex-1 flex-row items-center gap-1.5">
+        <Text variant="body">{fact.label}</Text>
+        {fact.tip ? <InfoTip term={fact.tip} /> : null}
+      </View>
+      <Text variant="body" tone={fact.tone ?? "secondary"} numeric className="max-w-[60%] text-right">
+        {fact.value}
+      </Text>
+    </View>
+  );
 }

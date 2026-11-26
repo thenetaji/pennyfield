@@ -46,8 +46,23 @@ describe("parseStableReports", () => {
       maturityDate: "2027-05-06",
       firstPayoutDate: "2026-12-26",
       redemptionAmount: 3002026,
+      units: 3,
+      faceValue: 1000000,
+      cleanPrice: 1000973,
+      accruedAtBuy: -904,
       note: "Matures 2029-04-29",
     });
+  });
+
+  it("averages the price over several buys and sums accrued interest", () => {
+    const second = [...investment[3]];
+    second[0] = "Nov 26, 2026";
+    second[5] = "1.0";
+    second[8] = "-1.0";
+    second[10] = "10013.73";
+    const [b] = parseStableReports([[[...investment, second], holdings, cashflow]]);
+    expect(b.price).toBeCloseTo(10010.73);
+    expect(b.accrued).toBeCloseTo(-10.04);
   });
 
   it("skips a bond known only from the cashflow report", () => {
