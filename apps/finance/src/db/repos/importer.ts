@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, lte, or } from "drizzle-orm";
 import { toDateKey, type DateKey } from "@studio/dates";
 import {
   IMPORT_CATEGORY_ICON,
@@ -247,7 +247,7 @@ export function importTransactions(
 export interface ExportFilter {
   from?: DateKey;
   to?: DateKey;
-  /** Source accounts to include; every account when omitted. */
+  /** Accounts to include, on either side of a transfer; every account when omitted. */
   accountIds?: readonly string[];
 }
 
@@ -260,7 +260,10 @@ export function listForExport(
     filter.from ? gte(transactions.dateKey, filter.from) : undefined,
     filter.to ? lte(transactions.dateKey, filter.to) : undefined,
     filter.accountIds
-      ? inArray(transactions.accountId, [...filter.accountIds])
+      ? or(
+          inArray(transactions.accountId, [...filter.accountIds]),
+          inArray(transactions.transferAccountId, [...filter.accountIds]),
+        )
       : undefined,
   ];
   const rows: TransactionRow[] = db
