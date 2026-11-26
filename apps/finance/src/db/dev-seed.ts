@@ -10,6 +10,7 @@ import {
   type DateKey,
 } from "@studio/dates";
 import { createAccount, type AccountInput } from "./repos/accounts";
+import { createInvestment, listAllInvestments, setSchedule } from "./repos/investments";
 import { listCategories } from "./repos/categories";
 import { setRate } from "./repos/fx";
 import { createRule, postDue, setRulePaused } from "./repos/recurring";
@@ -685,6 +686,50 @@ export function seedDemoExtras(db: Db, now = Date.now()): void {
     .get();
   if (!bank) return;
   const today = toDateKey(now);
+  if (listAllInvestments(db).length === 0) {
+    const bond = createInvestment(
+      db,
+      {
+        name: "Finnable Credit",
+        type: "bond",
+        issuer: "Finnable Credit",
+        platform: "Stable Bonds",
+        rating: "BBB+",
+        listed: true,
+        amount: 3_002_015,
+        rate: 10.75,
+        payout: "monthly",
+        buyDate: addDays(today, -40),
+        maturityDate: addMonths(today, 5),
+        fromAccountId: bank.id,
+      },
+      now,
+    );
+    setSchedule(db, bond.id, [
+      ...[0, 1, 2, 3, 4].map((m) => ({
+        dateKey: addMonths(addDays(today, -10), m),
+        kind: "interest" as const,
+        amount: 27_123,
+      })),
+      { dateKey: addMonths(today, 5), kind: "principal" as const, amount: 3_002_026 },
+    ]);
+    createInvestment(
+      db,
+      {
+        name: "Shivalik SFB",
+        type: "fd",
+        issuer: "Shivalik Small Finance Bank",
+        platform: "Stable Money",
+        amount: 2_000_000,
+        rate: 6,
+        payout: "cumulative",
+        buyDate: addDays(today, -1),
+        maturityDate: addMonths(addDays(today, -1), 12),
+        fromAccountId: bank.id,
+      },
+      now,
+    );
+  }
   const at = (daysAgo: number, hour: number) =>
     keyToLocalMs(addDays(today, -daysAgo), hour, 15);
 

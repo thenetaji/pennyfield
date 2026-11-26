@@ -28,7 +28,8 @@ import { useMoneyContext } from "@/features/transactions/use-money-context";
 import { backAfter, TYPE_LABELS, taxYearOf } from "@/lib/investments/tax";
 
 import { useStableImport } from "@/data/hooks/useStableImport";
-import { haptic } from "@studio/theme";
+import { AppIcon } from "@studio/icons";
+import { haptic, useTokens } from "@studio/theme";
 import { showToast } from "@studio/ui";
 
 import { rateLabel } from "./format";
@@ -88,20 +89,32 @@ export function InvestmentsPage() {
   const [slab, setSlab] = useSetting("tax_slab_percent");
   const [slabOpen, setSlabOpen] = React.useState(false);
 
+  const { colors } = useTokens();
   const add = () => router.push("/investments/new");
 
   if (list.length === 0) {
     return (
-      <View className="flex-1 items-center justify-center gap-4 px-8 pb-24">
-        <Text variant="body" tone="secondary" className="text-center">
-          No investments yet.
+      <View className="items-center px-6 pt-24">
+        <View
+          className="mb-5 h-16 w-16 items-center justify-center rounded-[20px]"
+          style={{ backgroundColor: colors.accent }}
+        >
+          <AppIcon name="chart.line.uptrend.xyaxis" size={30} color={colors.onAccent} />
+        </View>
+        <Text variant="title2" className="text-center">
+          No investments yet
         </Text>
-        <Button size="lg" onPress={add}>
-          Add investment
-        </Button>
-        <Button size="lg" variant="ghost" onPress={() => void runImport()}>
-          Import Stable Bonds reports
-        </Button>
+        <Text variant="subhead" tone="secondary" className="mt-1 text-center">
+          FDs and bonds, with every payout and tax.
+        </Text>
+        <View className="mt-8 gap-3 self-stretch">
+          <Button size="lg" onPress={add}>
+            Add investment
+          </Button>
+          <Button size="lg" variant="secondary" onPress={() => void runImport()}>
+            Import Stable Bonds reports
+          </Button>
+        </View>
       </View>
     );
   }

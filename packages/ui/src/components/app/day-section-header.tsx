@@ -26,7 +26,7 @@ function DaySectionHeader({
       className={`bg-bg pb-2 pt-5 ${inset ? "px-8" : "px-4"}`}
     >
       <View className="flex-row items-baseline justify-between">
-      <Text variant="footnote" tone="secondary" className="font-semibold">
+      <Text variant="footnote" tone="secondary" className="font-semibold uppercase tracking-[1.2px]">
         {label}
       </Text>
       {total ? (
