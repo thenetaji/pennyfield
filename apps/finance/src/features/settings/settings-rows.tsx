@@ -41,7 +41,7 @@ export function useRowSkin(): RowSkin {
     surface: colors.surface,
     separator: colors.separator,
     pressed: colors.fill,
-    radius: 18,
+    radius: 22,
   };
 }
 
@@ -50,7 +50,7 @@ export function SectionTitle({ title, skin }: { title: string; skin: RowSkin }) 
     <Text
       variant="footnote"
       accessibilityRole="header"
-      className="mb-2 px-1 font-bold uppercase tracking-[0.6px]"
+      className="mb-2 px-1 font-semibold uppercase tracking-[1.4px]"
       style={{ color: skin.secondary }}
     >
       {title}
@@ -76,7 +76,7 @@ export function RowCard({ skin, children }: { skin: RowSkin; children: React.Rea
               style={{
                 height: StyleSheet.hairlineWidth,
                 backgroundColor: skin.separator,
-                marginLeft: 16,
+                marginLeft: 60,
               }}
             />
           ) : null}
@@ -87,18 +87,33 @@ export function RowCard({ skin, children }: { skin: RowSkin; children: React.Rea
   );
 }
 
+/** White symbol on a solid theme-colour tile, the leading mark of every row. */
+export function IconTile({ name }: { name: string }) {
+  const { colors } = useTokens();
+  return (
+    <View
+      className="h-[30px] w-[30px] items-center justify-center rounded-[9px]"
+      style={{ backgroundColor: colors.accent }}
+    >
+      <SymbolIcon name={name} size={16} color={colors.onAccent} />
+    </View>
+  );
+}
+
 function Chevron({ skin }: { skin: RowSkin }) {
   return <SymbolIcon name="chevron.right" size={13} color={skin.tertiary} weight="bold" />;
 }
 
 /** A row that opens something, with its value on the right. */
 export function LinkRow({
+  icon,
   label,
   value,
   caption,
   skin,
   onPress,
 }: {
+  icon?: string;
   label: string;
   value?: string;
   caption?: string;
@@ -114,9 +129,10 @@ export function LinkRow({
       onPress={onPress}
       onPressIn={() => setPressed(true)}
       onPressOut={() => setPressed(false)}
-      className="min-h-[52px] flex-row items-center gap-3 px-4 py-2.5"
+      className="min-h-[56px] flex-row items-center gap-3.5 px-4 py-2.5"
       style={{ backgroundColor: pressed ? skin.pressed : "transparent" }}
     >
+      {icon ? <IconTile name={icon} /> : null}
       <View className="flex-1">
         <Text variant="body" numberOfLines={1} style={{ color: skin.text }}>
           {label}
@@ -145,7 +161,8 @@ export function LinkRow({
 
 function ToggleRow({ row, skin }: { row: SettingRow; skin: RowSkin }) {
   return (
-    <View className="min-h-[52px] flex-row items-center gap-3 px-4 py-2">
+    <View className="min-h-[56px] flex-row items-center gap-3.5 px-4 py-2">
+      <IconTile name={row.icon} />
       <Text variant="body" numberOfLines={1} className="flex-1" style={{ color: skin.text }}>
         {row.label}
       </Text>
@@ -174,7 +191,8 @@ function HourlyPayRow({ skin }: { skin: RowSkin }) {
     setPay(Number.isFinite(value) && value > 0 ? Math.round(value * scale) : null);
   };
   return (
-    <View className="min-h-[52px] flex-row items-center gap-3 px-4 py-2">
+    <View className="min-h-[56px] flex-row items-center gap-3.5 px-4 py-2">
+      <IconTile name="clock" />
       <Text variant="body" className="flex-1" style={{ color: skin.text }}>
         {`Hourly pay (${currency})`}
       </Text>
@@ -208,6 +226,7 @@ export function GroupRow({
   if (row.toggle) return <ToggleRow row={row} skin={skin} />;
   return (
     <LinkRow
+      icon={row.icon}
       label={row.label}
       value={row.value}
       skin={skin}

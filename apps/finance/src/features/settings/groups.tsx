@@ -11,11 +11,13 @@ import { formatMoney } from "@studio/money";
 import type { Option } from "@studio/ui";
 import Constants from "expo-constants";
 
-export type GroupId = "general" | "look" | "privacy" | "data" | "about" | "more";
+export type GroupId = "general" | "app" | "help" | "more";
 
 export type SettingRow = {
   key: string;
   label: string;
+  /** Symbol drawn on the row's tile. */
+  icon: string;
   /** Other words people search for it by. */
   words?: string;
   value?: string;
@@ -103,6 +105,7 @@ export function useSettingGroups(): SettingGroup[] {
       rows: [
         {
           key: "currency",
+          icon: "banknote.fill",
           label: "Currency",
           words: "exchange rate display fx",
           value: displayCurrency,
@@ -110,52 +113,44 @@ export function useSettingGroups(): SettingGroup[] {
         },
         {
           key: "default_account",
+          icon: "creditcard.fill",
           label: "Default account",
           value: accounts.find((a) => a.id === defaultAccountId)?.name,
           picker: "account",
         },
         {
           key: "month",
+          icon: "calendar",
           label: "Month starts on",
           words: "payday salary",
           value: ordinal(monthStart),
           picker: "month",
         },
-        { key: "more", label: "More", href: "/settings/more" },
       ],
     },
     {
-      id: "look",
-      title: "Appearance",
+      id: "app",
+      title: "App",
       rows: [
         {
           key: "appearance",
+          icon: "paintbrush.fill",
           label: "Theme and icons",
           words: "theme dark light color colour icon accent palette",
           value: look,
           href: "/settings/appearance",
         },
-      ],
-    },
-    {
-      id: "privacy",
-      title: "Security",
-      rows: [
         {
           key: "privacy",
+          icon: "faceid",
           label: "Face ID and privacy",
           words: "lock passcode hide amounts",
           value: privacy,
           href: "/settings/privacy",
         },
-      ],
-    },
-    {
-      id: "data",
-      title: "Data",
-      rows: [
         {
           key: "backup",
+          icon: "square.and.arrow.down",
           label: "Backup",
           words: "icloud drive restore sync csv spreadsheet import export erase delete",
           value: backedUp,
@@ -164,11 +159,12 @@ export function useSettingGroups(): SettingGroup[] {
       ],
     },
     {
-      id: "about",
-      title: "About",
+      id: "help",
+      title: "Help",
       rows: [
-        { key: "guide", label: "How it works", words: "help tips guide title category tag", href: "/guide" },
-        { key: "about", label: "About", value: appVersion(), href: "/settings/about" },
+        { key: "more", icon: "ellipsis.circle.fill", label: "More settings", words: "decimals week haptics hourly reminders archive", href: "/settings/more" },
+        { key: "guide", icon: "questionmark.circle.fill", label: "How it works", words: "help tips guide title category tag", href: "/guide" },
+        { key: "about", icon: "info.circle", label: "About", value: appVersion(), href: "/settings/about" },
       ],
     },
     {
@@ -178,6 +174,7 @@ export function useSettingGroups(): SettingGroup[] {
       rows: [
         {
           key: "decimals",
+          icon: "percent",
           label: "Show decimals",
           words: "cents paise rounding",
           value: sample,
@@ -185,6 +182,7 @@ export function useSettingGroups(): SettingGroup[] {
         },
         {
           key: "rows",
+          icon: "list.bullet.rectangle.fill",
           label: "Under each transaction",
           words: "transaction rows memo subtitle second line",
           value: ROW_LABELS[rowDetail],
@@ -192,24 +190,28 @@ export function useSettingGroups(): SettingGroup[] {
         },
         {
           key: "week",
+          icon: "calendar",
           label: "Week starts on",
           value: weekStart === 7 ? "Sunday" : "Monday",
           picker: "week",
         },
         {
           key: "hourly",
+          icon: "clock",
           label: "Hourly pay",
           words: "work hours wage salary time cost",
           custom: "hourly_pay",
         },
         {
           key: "haptics",
+          icon: "iphone",
           label: "Haptics",
           words: "vibration buzz",
           toggle: { value: haptics, onChange: setHaptics },
         },
         {
           key: "home",
+          icon: "house.fill",
           label: "Home screen",
           words: "reorder sections layout",
           value: isDefaultHomeLayout(homeLayout) ? "Default" : "Custom",
@@ -217,12 +219,14 @@ export function useSettingGroups(): SettingGroup[] {
         },
         {
           key: "reminders",
+          icon: "bell.fill",
           label: "Reminders",
           words: "notifications alerts daily",
           href: "/settings/reminders",
         },
         {
           key: "archive",
+          icon: "tray",
           label: "Archive",
           words: "year close new year financial reset",
           value: archivedThrough ? `Up to ${archivedThrough}` : "Off",

@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import * as React from "react";
-import { Platform, ScrollView, TextInput, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { ScrollView, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTokens } from "@studio/theme";
@@ -17,12 +18,6 @@ import {
   useRowSkin,
   type RowSkin,
 } from "./settings-rows";
-
-/** The native module only exists on iOS, so it is loaded there only. */
-function NativeList({ groups, titled }: { groups: readonly SettingGroup[]; titled?: boolean }) {
-  const { IosSettingsList } = require("./settings-ios") as typeof import("./settings-ios");
-  return <IosSettingsList groups={groups} titled={titled} />;
-}
 
 function SearchField({
   query,
@@ -59,7 +54,7 @@ function SearchField({
 function GroupList({ groups, skin }: { groups: readonly SettingGroup[]; skin: RowSkin }) {
   const [picker, setPicker] = React.useState<PickerId | null>(null);
   return (
-    <View className="gap-6 px-4">
+    <View className="gap-7 px-4">
       {groups.map((group) => (
         <View key={group.id}>
           <SectionTitle title={group.title} skin={skin} />
@@ -86,7 +81,6 @@ export function SettingsScreen() {
   const skin = useRowSkin();
   const hits = searchRows(all, query);
   const searching = query.trim().length > 0;
-  const ios = Platform.OS === "ios";
 
   const header = (
     <>
@@ -111,6 +105,7 @@ export function SettingsScreen() {
           {hits.map(({ group, row }) => (
             <LinkRow
               key={`${group.id}-${row.key}`}
+              icon={row.icon}
               label={row.label}
               caption={group.title}
               skin={skin}
@@ -134,19 +129,13 @@ export function SettingsScreen() {
     </View>
   );
 
-  if (ios && !searching) {
-    return (
-      <View className="flex-1" style={{ backgroundColor: colors.bg }}>
-        <View className="gap-4" style={{ paddingTop: insets.top + 14 }}>
-          {header}
-        </View>
-        <NativeList groups={groups} />
-      </View>
-    );
-  }
-
   return (
     <View className="flex-1" style={{ backgroundColor: colors.bg }}>
+      <LinearGradient
+        pointerEvents="none"
+        colors={[colors.accentSoft, colors.bg]}
+        style={{ position: "absolute", top: 0, left: 0, right: 0, height: 360 }}
+      />
       <ScrollView
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
@@ -166,13 +155,6 @@ export function SettingsMoreScreen() {
   const skin = useRowSkin();
   const group = useSettingGroups().find((g) => g.id === "more");
   if (!group) return null;
-  if (Platform.OS === "ios") {
-    return (
-      <View className="flex-1" style={{ backgroundColor: colors.bg }}>
-        <NativeList groups={[group]} titled={false} />
-      </View>
-    );
-  }
   return (
     <View className="flex-1" style={{ backgroundColor: colors.bg }}>
       <ScrollView
