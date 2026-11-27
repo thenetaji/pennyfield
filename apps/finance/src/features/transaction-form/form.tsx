@@ -36,6 +36,8 @@ import {
   useRecurringRule,
   useSettings,
   useTags,
+  usePayeeAmounts,
+  useTitleMemory,
   useTitleSuggestions,
   useTodayKey,
   useTransaction,
@@ -44,6 +46,7 @@ import { ValidationError } from "@/db/errors";
 import { normalizeTitle } from "@/db/repos/titleMemory";
 import type { TitleMemoryRow } from "@/db/schema";
 import { CategoryRowView } from "@/features/transaction-form/category-row";
+import { guessCategories } from "@/lib/quick-line/guess";
 import { FormChip, Hairline } from "@/features/transaction-form/chips";
 import { ShakeView } from "@/features/transaction-form/shake-view";
 import { useKeyboardInset } from "@/features/entry/use-keyboard-inset";
@@ -122,6 +125,9 @@ export type FormParams = {
   ruleId?: string;
   /** Day the transaction happened, when it wasn't today. */
   date?: string;
+  /** Quick-add prefill for lending and split bills. */
+  personId?: string;
+  memo?: string;
   dev?: string;
 };
 
@@ -233,6 +239,8 @@ function TransactionForm({
     }
     if (!source && !rule && params.date)
       draft.occurredAt = keyToLocalMs(params.date);
+    if (!source && !rule && params.personId) draft.personId = params.personId;
+    if (!source && !rule && params.memo) draft.memo = params.memo;
     if (devEnabled)
       draft = applyDevPreset(draft, params.dev, accountsAll, categoriesAll, {
         personId:
@@ -688,6 +696,37 @@ function TransactionForm({
     !isLend &&
     suggestions.length > 0 &&
     titleNorm !== draft.appliedTitleNorm;
+  // Categories this title usually gets (or obviously is: "zomato" is food) lead the row while typing.
+  const memory = useTitleMemory();
+  const guessIds = React.useMemo(
+    () =>
+      isTransfer || isLend || draft.title.trim().length < 3
+        ? []
+        : guessCategories(draft.title, recentKind, {
+            categories: kindCategories,
+            memory,
+          }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [draft.title, recentKind, memory, isTransfer, isLend, categoriesAll],
+  );
+  const rowCategories = [
+    ...guessIds
+      .map((id) => kindCategories.find((c) => c.id === id))
+      .filter((c): c is (typeof kindCategories)[number] => !!c),
+    ...recents.filter((c) => !guessIds.includes(c.id)),
+  ];
+  const payeeAmounts = usePayeeAmounts(
+    isTransfer || isLend ? "" : draft.title,
+    recentKind,
+    fromCurrency,
+  );
+  const showAmountChips =
+    mode === "new" && draft.amount === 0 && !draft.splits && payeeAmounts.length > 0;
+  const pickAmount = (minor: number) => {
+    haptic("selection");
+    get().patch({ amount: minor });
+    if (get().focus === "amount") setEntry(createKeypadState(fromDigits, minor));
+  };
   const selectedCategory = kindCategories.find(
     (c) => c.id === draft.categoryId,
   );
@@ -842,7 +881,19 @@ function TransactionForm({
                 accessibilityLabel={`Amount, ${formatMoneyForSpeech(draft.amount, fromCurrency, { sign: "none" })}`}
               />
             </View>
-            {hint && !inputFocus ? (
+            {showAmountChips ? (
+              <View className="mt-2 flex-row justify-center gap-2 px-6">
+                {payeeAmounts.map((minor) => (
+                  <FormChip
+                    key={minor}
+                    label={staticDisplay(minor, fromDigits)}
+                    icon="clock.arrow.circlepath"
+                    onPress={() => pickAmount(minor)}
+                    accessibilityLabel={`Use ${formatMoneyForSpeech(minor, fromCurrency, { sign: "none" })}`}
+                  />
+                ))}
+              </View>
+            ) : hint && !inputFocus ? (
               <Text
                 variant="footnote"
                 tone={hint.after < 0 ? "warning" : "secondary"}
@@ -1024,7 +1075,7 @@ function TransactionForm({
                 />
               ) : (
                 <CategoryRowView
-                  recents={recents}
+                  recents={rowCategories}
                   selected={selectedCategory}
                   shakeTrigger={catShake}
                   onSelect={(id) => get().patch({ categoryId: id })}

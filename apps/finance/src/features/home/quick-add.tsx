@@ -1,64 +1,164 @@
 import { HomeSectionHeader } from "./section-header";
 import { useRouter } from "expo-router";
 import * as React from "react";
-import { ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, TextInput, View } from "react-native";
 
 import { IconTile, Pressable, SymbolIcon, Text } from "@studio/ui";
 import {
   useAccounts,
   useCategories,
+  usePeople,
   useQuickAdd,
   useSetting,
+  useTitleMemory,
   useTodayKey,
 } from "@/data/hooks";
+import { aiReadLine } from "@/lib/quick-line/ai";
+import { guessCategories } from "@/lib/quick-line/guess";
 import { parseQuickLine } from "@/lib/quick-line/parse";
-import { addDays } from "@studio/dates";
+import { addDays, dayLabel } from "@studio/dates";
 import { formatMoney, minorDigits } from "@studio/money";
 import { useTokens } from "@studio/theme";
 import type { CategoryColorKey } from "@studio/theme";
 
 const LIMIT = 8;
 
-/** Type "uber 250 card yesterday" and the Add sheet opens filled in, ready to check and save. */
+function LineChip({
+  label,
+  tone,
+  onPress,
+}: {
+  label: string;
+  tone?: "accent" | "soft";
+  onPress?: () => void;
+}) {
+  const { colors } = useTokens();
+  const body = (
+    <View
+      className="h-7 flex-row items-center gap-1 rounded-full px-2.5"
+      style={{ backgroundColor: tone === "accent" ? colors.accentSoft : colors.fill }}
+    >
+      <Text
+        variant="footnote"
+        numeric
+        numberOfLines={1}
+        style={{ color: tone === "accent" ? colors.accentText : colors.text }}
+      >
+        {label}
+      </Text>
+      {onPress ? <SymbolIcon name="arrow.triangle.2.circlepath" size={10} color={colors.textSecondary} /> : null}
+    </View>
+  );
+  return onPress ? (
+    <Pressable role="button" accessibilityLabel={`${label}, tap for another`} scale={0.95} onPress={onPress}>
+      {body}
+    </Pressable>
+  ) : (
+    body
+  );
+}
+
+/** Type or dictate "spent 250 on uber yesterday" and the Add sheet opens filled in, ready to check and save. */
 function QuickLineField() {
   const router = useRouter();
   const { colors } = useTokens();
   const accounts = useAccounts();
   const categories = useCategories();
+  const people = usePeople();
+  const memory = useTitleMemory();
   const today = useTodayKey();
   const [currency] = useSetting("display_currency");
   const [text, setText] = React.useState("");
-  const line = parseQuickLine(text, {
-    accounts,
-    categories,
-    digits: minorDigits(currency),
-  });
+  const [pick, setPick] = React.useState(0);
+  const [busy, setBusy] = React.useState(false);
+  const digits = minorDigits(currency);
+  const line = parseQuickLine(text, { accounts, categories, people, memory, digits, today });
+  const lending = line.kind === "lent" || line.kind === "borrowed";
+  const options = lending
+    ? []
+    : [
+        ...new Set(
+          [
+            line.categoryId,
+            ...guessCategories(line.title, line.kind as "expense" | "income", { categories, memory }),
+          ].filter((id): id is string => !!id),
+        ),
+      ];
+  const categoryId = options.length > 0 ? options[pick % options.length]! : null;
   const ready = line.amount !== null || line.title !== "";
-  const preview = [
-    line.amount !== null ? formatMoney(line.amount, currency, { sign: "none" }) : null,
-    line.title || null,
-    categories.find((c) => c.id === line.categoryId)?.name,
-    accounts.find((a) => a.id === line.accountId)?.name,
-    line.daysAgo === 1 ? "yesterday" : null,
-    line.kind === "income" ? "income" : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
-  const submit = () => {
-    if (!ready) return;
+  const date = line.daysAgo > 0 ? addDays(today, -line.daysAgo) : null;
+  const person = line.personId ? people.find((p) => p.id === line.personId)?.name : line.personName;
+
+  const open = (l: typeof line, cat: string | null) => {
     const params: Record<string, string> = {};
-    if (line.title) params.title = line.title;
-    if (line.amount !== null) {
-      params.amount = String(line.amount);
+    if (l.title) params.title = l.title;
+    if (l.amount !== null) {
+      params.amount = String(l.amount);
       params.currency = currency;
     }
-    if (line.accountId) params.accountId = line.accountId;
-    if (line.categoryId) params.categoryId = line.categoryId;
-    if (line.kind === "income") params.kind = "income";
-    if (line.daysAgo > 0) params.date = addDays(today, -line.daysAgo);
+    if (l.accountId) params.accountId = l.accountId;
+    if (cat && !(l.kind === "lent" || l.kind === "borrowed")) params.categoryId = cat;
+    if (l.kind !== "expense") params.kind = l.kind;
+    if (l.daysAgo > 0) params.date = addDays(today, -l.daysAgo);
+    if (l.personId) params.personId = l.personId;
+    if (l.memo) params.memo = l.memo;
     setText("");
+    setPick(0);
     router.push({ pathname: "/transaction/new", params });
   };
+
+  const submit = async () => {
+    if (busy || text.trim() === "") return;
+    // The rules read most lines; the on-device model only fills what they missed.
+    if (line.amount === null || (!lending && line.title === "")) {
+      setBusy(true);
+      const ai = await aiReadLine(text, {
+        categories: categories.map((c) => c.name),
+        accounts: accounts.map((a) => a.name),
+      });
+      setBusy(false);
+      if (ai) {
+        const byName = <T extends { name: string }>(list: readonly T[], name?: string) =>
+          name ? list.find((x) => x.name.toLowerCase() === name.toLowerCase()) : undefined;
+        const merged = {
+          ...line,
+          title: line.title || ai.title || "",
+          amount: line.amount ?? (ai.amount !== undefined ? Math.round(ai.amount * 10 ** digits) : null),
+          kind: line.kind === "expense" && ai.kind ? ai.kind : line.kind,
+          accountId: line.accountId ?? byName(accounts, ai.account)?.id ?? null,
+          daysAgo: line.daysAgo || ai.daysAgo || 0,
+          personId: line.personId ?? byName(people, ai.person)?.id ?? null,
+        };
+        open(merged, categoryId ?? byName(categories, ai.category)?.id ?? null);
+        return;
+      }
+    }
+    if (ready) open(line, categoryId);
+  };
+
+  const chips: React.ReactNode[] = [];
+  if (line.amount !== null)
+    chips.push(<LineChip key="amt" tone="accent" label={formatMoney(line.amount, currency, { sign: "none" })} />);
+  if (line.kind === "income") chips.push(<LineChip key="kind" label="Income" />);
+  if (lending) chips.push(<LineChip key="kind" label={line.kind === "lent" ? "Lent" : "Borrowed"} />);
+  if (person) chips.push(<LineChip key="person" label={person} />);
+  if (line.title) chips.push(<LineChip key="title" label={line.title} />);
+  if (categoryId) {
+    const name = categories.find((c) => c.id === categoryId)?.name ?? "";
+    chips.push(
+      <LineChip
+        key="cat"
+        label={name}
+        tone="accent"
+        onPress={options.length > 1 ? () => setPick((n) => n + 1) : undefined}
+      />,
+    );
+  }
+  if (line.accountId)
+    chips.push(<LineChip key="acc" label={accounts.find((a) => a.id === line.accountId)?.name ?? ""} />);
+  if (date) chips.push(<LineChip key="date" label={dayLabel(date, today)} />);
+  if (line.splitCount > 1) chips.push(<LineChip key="split" label={`Your share of ${line.splitCount}`} />);
+
   return (
     <View>
       <View
@@ -67,21 +167,26 @@ function QuickLineField() {
       >
         <TextInput
           value={text}
-          onChangeText={setText}
-          onSubmitEditing={submit}
-          placeholder="uber 250 card yesterday"
+          onChangeText={(next) => {
+            setText(next);
+            setPick(0);
+          }}
+          onSubmitEditing={() => void submit()}
+          placeholder="Type or say: zomato 349 yesterday"
           placeholderTextColor={colors.textTertiary}
           returnKeyType="go"
           autoCorrect={false}
-          accessibilityLabel="Add by typing"
+          accessibilityLabel="Add by typing or dictating"
           style={{ flex: 1, color: colors.text, fontSize: 16, padding: 0 }}
         />
-        {ready ? (
+        {busy ? (
+          <ActivityIndicator size="small" color={colors.accent} style={{ marginRight: 8 }} />
+        ) : ready || text.trim() !== "" ? (
           <Pressable
             role="button"
             accessibilityLabel="Open in Add"
             scale={0.9}
-            onPress={submit}
+            onPress={() => void submit()}
             className="h-8 w-8 items-center justify-center rounded-full"
             style={{ backgroundColor: colors.accent }}
           >
@@ -89,10 +194,16 @@ function QuickLineField() {
           </Pressable>
         ) : null}
       </View>
-      {preview ? (
-        <Text variant="footnote" tone="secondary" numeric numberOfLines={1} className="px-4 pt-1.5">
-          {preview}
-        </Text>
+      {chips.length > 0 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          className="-mx-4 mt-2"
+          contentContainerClassName="gap-1.5 px-4"
+        >
+          {chips}
+        </ScrollView>
       ) : null}
     </View>
   );
