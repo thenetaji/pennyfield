@@ -4,12 +4,13 @@ import { ScrollView } from "react-native";
 import { ListGroup, ListRow } from "@studio/ui";
 import { useSetting } from "@/data/hooks";
 import { Stagger } from "@studio/motion";
+import { useAmountsHidden } from "@/features/privacy/use-amounts-hidden";
 
 /** Face ID lock and the Hide amounts switch. */
 export function PrivacyScreen() {
   const router = useRouter();
   const [lockEnabled] = useSetting("lock_enabled");
-  const [hideAmounts, setHideAmounts] = useSetting("hide_amounts");
+  const [hideAmounts, setHideAmounts] = useAmountsHidden();
   return (
     <ScrollView
       className="flex-1 bg-bg"

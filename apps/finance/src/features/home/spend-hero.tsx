@@ -13,7 +13,7 @@ import {
   type TextTone,
 } from "@studio/ui";
 import { evenPace, foldOlder, withSkia } from "@studio/charts";
-import { useSetting, type AllTimeSpend, type HomeSpend } from "@/data/hooks";
+import { type AllTimeSpend, type HomeSpend } from "@/data/hooks";
 import { addDays, monthShort, parseKey } from "@studio/dates";
 import { formatMoney, formatMoneyForSpeech } from "@studio/money";
 import { haptic, useTokens, withAlpha } from "@studio/theme";
@@ -24,6 +24,7 @@ import type { SpendCurveProps, TideBarsProps } from "@studio/charts/components";
 
 import { useHeroPeriod, type HeroPeriod } from "./period-store";
 import { paceDelta } from "./curve";
+import { useAmountsHidden } from "@/features/privacy/use-amounts-hidden";
 
 /** Skia loads lazily (CanvasKit first on web), keeping chart code out of the initial graph. */
 const SpendCurve = withSkia<SpendCurveProps>(() =>
@@ -170,7 +171,7 @@ function SpendHero({
   showDecimals,
 }: SpendHeroProps) {
   const { colors } = useTokens();
-  const [hidden, setHidden] = useSetting("hide_amounts");
+  const [hidden, setHidden] = useAmountsHidden();
   const toggleHidden = () => {
     haptic("medium");
     setHidden(!hidden);

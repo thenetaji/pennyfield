@@ -1,5 +1,11 @@
 import * as React from "react";
-import { AppState, Modal, Platform, View } from "react-native";
+import { AppState, Modal, Platform } from "react-native";
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 
 import { useSetting } from "@/data/hooks";
 
@@ -25,6 +31,15 @@ export function LockGate() {
   const [forced] = React.useState(devForced);
   const [locked, setLocked] = React.useState(enabled || forced);
   const [obscured, setObscured] = React.useState(false);
+  // The Unlock button only appears once Face ID has failed or been cancelled, so nothing flashes behind the prompt.
+  const [needsTap, setNeedsTap] = React.useState(false);
+  const opacity = useSharedValue(1);
+  const fade = useAnimatedStyle(() => ({ opacity: opacity.get() }));
+  const unlock = React.useCallback(() => {
+    setLocked(false);
+    setNeedsTap(false);
+    opacity.set(1);
+  }, [opacity]);
   const backgroundedAt = React.useRef<number | null>(null);
   const authenticating = React.useRef(false);
 
@@ -37,13 +52,19 @@ export function LockGate() {
 
   const finish = React.useCallback((result: AuthResult | null) => {
     if (result === null) return;
-    if (result !== "failed") setLocked(false);
+    if (result === "failed") setNeedsTap(true);
+    else
+      opacity.set(
+        withTiming(0, { duration: 220 }, (done) => {
+          if (done) runOnJS(unlock)();
+        }),
+      );
     setObscured(AppState.currentState !== "active");
     // The system prompt toggles AppState (inactive, active) around itself; ignore those events.
     setTimeout(() => {
       authenticating.current = false;
     }, 400);
-  }, []);
+  }, [opacity, unlock]);
 
   React.useEffect(() => {
     const subscription = AppState.addEventListener("change", (next) => {
@@ -80,13 +101,19 @@ export function LockGate() {
       statusBarTranslucent
       onRequestClose={() => undefined}
     >
-      <View className="flex-1">
+      <Animated.View className="flex-1" style={fade}>
         {locked ? (
-          <LockScreen onUnlock={() => void attempt().then(finish)} />
+          <LockScreen
+            showButton={needsTap}
+            onUnlock={() => {
+              setNeedsTap(false);
+              void attempt().then(finish);
+            }}
+          />
         ) : (
           <PrivacyCover />
         )}
-      </View>
+      </Animated.View>
     </Modal>
   );
 }

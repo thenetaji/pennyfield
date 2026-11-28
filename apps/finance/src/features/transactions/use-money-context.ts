@@ -6,6 +6,7 @@ import { useRateLookup, useSetting, useTodayKey } from "@/data/hooks";
 
 import type { DayGroupContext } from "./day-groups";
 import type { RowModelContext } from "./row-model";
+import { useAmountsHidden } from "@/features/privacy/use-amounts-hidden";
 
 /** Rupee users expect lakh grouping even when the device region is not India. */
 export function moneyLocale(displayCurrency: string): string | undefined {
@@ -22,7 +23,7 @@ export function useMoneyContext(
 ): MoneyContext {
   const [displayCurrency] = useSetting("display_currency");
   const [showDecimals] = useSetting("show_decimals");
-  const [hidden] = useSetting("hide_amounts");
+  const [hidden] = useAmountsHidden();
   const [rowDetail] = useSetting("row_detail");
   const rates = useRateLookup();
   const todayKey = useTodayKey();

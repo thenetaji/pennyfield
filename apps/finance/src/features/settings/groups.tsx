@@ -10,6 +10,7 @@ import { isDefaultHomeLayout } from "@/lib/home/layout";
 import { formatMoney } from "@studio/money";
 import type { Option } from "@studio/ui";
 import Constants from "expo-constants";
+import { useAmountsHidden } from "@/features/privacy/use-amounts-hidden";
 
 export type GroupId = "general" | "app" | "help" | "more";
 
@@ -84,7 +85,7 @@ export function useSettingGroups(): SettingGroup[] {
   const [haptics, setHaptics] = useSetting("haptics");
   const [showDecimals, setShowDecimals] = useSetting("show_decimals");
   const [lockEnabled] = useSetting("lock_enabled");
-  const [hideAmounts] = useSetting("hide_amounts");
+  const [hideAmounts] = useAmountsHidden();
   const [homeLayout] = useSetting("home_layout");
   const [rowDetail] = useSetting("row_detail");
   const [lastBackup] = useSetting("last_backup_at");

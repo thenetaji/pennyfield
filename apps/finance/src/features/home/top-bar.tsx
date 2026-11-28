@@ -3,11 +3,11 @@ import * as React from "react";
 import { AppState, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useSetting } from "@/data/hooks";
 import { SymbolIcon, Pressable, Text } from "@studio/ui";
 import { useTokens, washTop } from "@studio/theme";
 
 import { greetingFor } from "./curve";
+import { useAmountsHidden } from "@/features/privacy/use-amounts-hidden";
 
 /** Time-aware greeting; recomputed whenever the app returns to the foreground. */
 function useGreeting(): string {
@@ -62,7 +62,7 @@ function HomeTopBar() {
   const router = useRouter();
   const { colors } = useTokens();
   const greeting = useGreeting();
-  const [hidden, setHidden] = useSetting("hide_amounts");
+  const [hidden, setHidden] = useAmountsHidden();
   return (
     <SafeAreaView edges={["top"]} style={{ backgroundColor: washTop(colors) }}>
       <View className="h-11 flex-row items-center justify-between px-4">

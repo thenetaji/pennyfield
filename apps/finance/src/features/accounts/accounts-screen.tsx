@@ -28,6 +28,7 @@ import { AccountRow, ACCOUNT_ROW_HEIGHT } from "./account-row";
 import { withSkia } from "@studio/charts";
 import { toAccountView, totalInDisplay } from "./model";
 import { ReorderList } from "./reorder-list";
+import { useAmountsHidden } from "@/features/privacy/use-amounts-hidden";
 
 const NetWorthCard = withSkia(() => import("./net-worth-card"));
 
@@ -48,7 +49,7 @@ export function AccountsScreen() {
 
   const active = React.useMemo(() => all.filter((a) => !a.archivedAt), [all]);
   const archived = React.useMemo(() => all.filter((a) => a.archivedAt), [all]);
-  const [hidden] = useSetting("hide_amounts");
+  const [hidden] = useAmountsHidden();
   const locale = maskLocale(moneyLocale(displayCurrency), hidden);
   const fmt = React.useMemo(
     () => ({ displayCurrency, rates, locale, showDecimals }),
