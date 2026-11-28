@@ -36,7 +36,47 @@ Always get numbers from the tools; never add up or guess yourself. Call as many 
 Answer in one to three short plain sentences with the exact numbers and dates. No advice unless asked.`;
 
 export type AskStep = { name: string; args: Record<string, unknown>; result: unknown };
-export type AskAnswer = { text: string; steps: AskStep[] };
+/** What happened and when, in ms since the question was sent: shown under "Details". */
+export type AskLogEntry = { ms: number; text: string };
+export type AskAnswer = { text: string; steps: AskStep[]; log: AskLogEntry[] };
+
+/** Carries the log out with the failure so the screen can show what went wrong where. */
+export class AskError extends Error {
+  constructor(
+    message: string,
+    readonly log: AskLogEntry[],
+    readonly detail: string,
+  ) {
+    super(message);
+  }
+}
+
+const TIMEOUT_MS = 40_000;
+
+type Call = { status: number; body: string };
+
+/** One request, with a timeout and one quiet retry when a mobile connection drops mid-request. */
+async function post(url: string, key: string, body: string, note: (t: string) => void): Promise<Call> {
+  for (let attempt = 1; ; attempt++) {
+    const abort = new AbortController();
+    const timer = setTimeout(() => abort.abort(), TIMEOUT_MS);
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-goog-api-key": key },
+        body,
+        signal: abort.signal,
+      });
+      return { status: res.status, body: await res.text() };
+    } catch (e) {
+      const why = abort.signal.aborted ? `no reply in ${TIMEOUT_MS / 1000}s` : String(e instanceof Error ? e.message : e);
+      if (attempt >= 2) throw new Error(why);
+      note(`Connection problem (${why}), trying again`);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+}
 
 /** One question, answered by Gemini calling the local tools; earlier turns give it the thread. */
 export async function askGemini(
@@ -46,8 +86,17 @@ export async function askGemini(
   lines: readonly AskLine[],
   ctx: AskContext,
   onStep?: (step: AskStep) => void,
+  onStatus?: (text: string) => void,
 ): Promise<AskAnswer> {
   const steps: AskStep[] = [];
+  const log: AskLogEntry[] = [];
+  const started = Date.now();
+  const note = (text: string) => {
+    log.push({ ms: Date.now() - started, text });
+    onStatus?.(text);
+  };
+  // Thinking makes Flash several times slower; these lookups don't need it. Dropped if the model refuses the setting.
+  let thinking = true;
   const contents: Content[] = [
     ...history.flatMap((t): Content[] => [
       { role: "user", parts: [{ text: t.question }] },
@@ -56,29 +105,49 @@ export async function askGemini(
     { role: "user", parts: [{ text: question }] },
   ];
   for (let round = 0; round < MAX_ROUNDS; round++) {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
-      {
-        method: "POST",
-        headers: { "content-type": "application/json", "x-goog-api-key": key },
-        body: JSON.stringify({
+    note(round === 0 ? "Asking Gemini" : `Sending ${steps.length} lookup result${steps.length === 1 ? "" : "s"} back to Gemini`);
+    let res: Call;
+    try {
+      res = await post(
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
+        key,
+        JSON.stringify({
           systemInstruction: { parts: [{ text: instructions(ctx) }] },
           tools: [{ functionDeclarations: TOOL_DECLARATIONS }],
           contents,
+          ...(thinking ? { generationConfig: { thinkingConfig: { thinkingBudget: 0 } } } : {}),
         }),
-      },
-    );
-    if (!res.ok) {
-      const detail = await res.text().catch(() => "");
-      if (res.status === 400 && /API key/i.test(detail)) throw new Error("That Gemini key was not accepted.");
-      if (res.status === 429) throw new Error("Gemini's free limit is used up for now. Try again later.");
-      throw new Error(`Gemini answered ${res.status}.`);
+        note,
+      );
+    } catch (e) {
+      const why = e instanceof Error ? e.message : String(e);
+      note(`Failed: ${why}`);
+      throw new AskError("Couldn't reach Gemini. Check the internet connection and try again.", log, why);
     }
-    const data = (await res.json()) as { candidates?: { content?: Content }[] };
+    if (res.status === 400 && thinking && /thinking/i.test(res.body)) {
+      thinking = false;
+      round--;
+      note("Model doesn't take the thinking setting, asking again without it");
+      continue;
+    }
+    if (res.status !== 200) {
+      note(`Gemini answered ${res.status}`);
+      const message =
+        res.status === 400 && /API key/i.test(res.body)
+          ? "That Gemini key was not accepted."
+          : res.status === 429
+            ? "Gemini's free limit is used up for now. Try again in a minute."
+            : res.status >= 500
+              ? "Gemini is having trouble right now. Try again shortly."
+              : `Gemini answered ${res.status}.`;
+      throw new AskError(message, log, res.body.slice(0, 600));
+    }
+    note("Gemini replied");
+    const data = JSON.parse(res.body) as { candidates?: { content?: Content }[] };
     const parts = data.candidates?.[0]?.content?.parts ?? [];
     const calls = parts.filter((p) => p.functionCall);
     if (calls.length === 0)
-      return { text: parts.map((p) => p.text ?? "").join("").trim() || "No answer came back.", steps };
+      return { text: parts.map((p) => p.text ?? "").join("").trim() || "No answer came back.", steps, log };
     contents.push({ role: "model", parts });
     contents.push({
       role: "user",
@@ -89,10 +158,11 @@ export async function askGemini(
           result: runTool(p.functionCall!.name, p.functionCall!.args ?? {}, lines, ctx),
         };
         steps.push(step);
+        note(`Looked up: ${step.name}`);
         onStep?.(step);
         return { functionResponse: { name: step.name, response: { result: step.result } } };
       }),
     });
   }
-  return { text: "That needed too many steps. Try asking it more simply.", steps };
+  return { text: "That needed too many steps. Try asking it more simply.", steps, log };
 }

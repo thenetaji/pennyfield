@@ -17,7 +17,7 @@ export function headerChrome(colors: {
     headerBlurEffect: "none",
     headerShadowVisible: false,
     headerStyle: { backgroundColor: colors.bg },
-    headerTintColor: colors.accent,
+    headerTintColor: colors.text,
     headerTitleStyle: { color: colors.text },
   };
 }

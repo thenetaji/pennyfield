@@ -140,7 +140,7 @@ function ChapterLabel({ title }: { title: string }) {
       variant="caption"
       tone="tertiary"
       accessibilityRole="header"
-      className="px-4 pt-10 uppercase tracking-[0.7px]"
+      className="px-4 pt-7 uppercase tracking-[0.7px]"
     >
       {title}
     </Text>
@@ -565,7 +565,7 @@ export default function InsightsScreen() {
                     />
                   </View>
                 )}
-                <View className="h-5">
+                <View className={both ? "" : "h-5"}>
                   {delta && !both && !view.all ? (
                     <Pressable
                       role="button"

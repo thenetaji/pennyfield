@@ -29,7 +29,7 @@ function Chip({
   accessibilityLabel,
 }: ChipProps) {
   const { colors } = useTokens();
-  const iconColor = selected ? colors.onAccent : colors.textSecondary;
+  const iconColor = selected ? colors.bg : colors.textSecondary;
   return (
     <Pressable
       role="button"
@@ -41,14 +41,15 @@ function Chip({
       onPress={onPress}
       className={cn(
         "h-10 flex-row items-center gap-1.5 self-start rounded-full px-4",
-        selected ? "bg-accent" : "bg-fill",
+        selected ? "" : "bg-fill",
       )}
+      style={selected ? { backgroundColor: colors.text } : undefined}
     >
       {icon ? <AppIcon name={icon} size={16} color={iconColor} /> : null}
       <Text
         variant="subhead"
         className="font-medium"
-        style={selected ? { color: colors.onAccent } : undefined}
+        style={selected ? { color: colors.bg } : undefined}
         numberOfLines={1}
       >
         {label}
@@ -57,7 +58,7 @@ function Chip({
         <Text
           variant="subhead"
           tone={selected ? "default" : "secondary"}
-          style={selected ? { color: colors.onAccent, opacity: 0.8 } : undefined}
+          style={selected ? { color: colors.bg, opacity: 0.7 } : undefined}
           numeric
           numberOfLines={1}
         >
@@ -98,12 +99,13 @@ function CategoryChip({
       onPress={onPress}
       className={cn(
         "h-10 flex-row items-center gap-2 self-start rounded-full pl-2 pr-4",
-        selected ? "bg-accent" : "bg-fill",
+        selected ? "" : "bg-fill",
       )}
+      style={selected ? { backgroundColor: colors.text } : undefined}
     >
       {selected ? (
         <View className="h-[26px] w-[26px] items-center justify-center">
-          <AppIcon name={icon} size={18} color={colors.onAccent} />
+          <AppIcon name={icon} size={18} color={colors.bg} />
         </View>
       ) : (
         <IconTile icon={icon} color={color} size={26} />
@@ -112,7 +114,7 @@ function CategoryChip({
         variant="subhead"
         className="font-medium"
         numberOfLines={1}
-        style={selected ? { color: colors.onAccent } : { color: colors.text }}
+        style={selected ? { color: colors.bg } : { color: colors.text }}
       >
         {name}
       </Text>

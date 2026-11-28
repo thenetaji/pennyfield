@@ -20,7 +20,7 @@ import {
   useYearStart,
 } from "@/data/hooks";
 import { useExploreLines } from "@/data/hooks/useExploreLines";
-import { askGemini, type AskStep } from "@/lib/ask/gemini";
+import { AskError, askGemini, type AskLogEntry, type AskStep } from "@/lib/ask/gemini";
 import { clearGeminiKey, readGeminiKey, saveGeminiKey } from "@/lib/ask/key-store";
 import { ASK_INSTRUCTIONS, askDigest } from "@/lib/explore/ask-digest";
 import { minorDigits } from "@studio/money";
@@ -37,7 +37,73 @@ const SUGGESTIONS = [
   "How much on Zomato and Swiggy this FY?",
 ];
 
-type Turn = { question: string; answer: string | null; steps: AskStep[]; failed?: boolean };
+type Turn = {
+  question: string;
+  answer: string | null;
+  steps: AskStep[];
+  failed?: boolean;
+  status?: string;
+  log?: AskLogEntry[];
+  detail?: string;
+};
+
+/** Seconds since `since`, ticking while the answer is on its way. */
+function useElapsed(since: number | null): number {
+  const [now, setNow] = React.useState(() => Date.now());
+  React.useEffect(() => {
+    if (since === null) return;
+    const id = setInterval(() => setNow(Date.now()), 500);
+    return () => clearInterval(id);
+  }, [since]);
+  return since === null ? 0 : Math.max(0, Math.floor((now - since) / 1000));
+}
+
+function Pending({ turn, since }: { turn: Turn; since: number | null }) {
+  const { colors } = useTokens();
+  const seconds = useElapsed(since);
+  const last = turn.steps[turn.steps.length - 1];
+  return (
+    <View className="flex-row items-center gap-2">
+      <ActivityIndicator size="small" color={colors.textSecondary} />
+      <Text variant="subhead" tone="secondary" numberOfLines={1} className="flex-1">
+        {last && turn.status?.startsWith("Looked up") ? `${stepLabel(last)}…` : `${turn.status ?? "Starting"}…`}
+      </Text>
+      <Text variant="footnote" tone="tertiary" numeric>
+        {`${seconds}s`}
+      </Text>
+    </View>
+  );
+}
+
+function Details({ turn }: { turn: Turn }) {
+  const { colors } = useTokens();
+  const [open, setOpen] = React.useState(false);
+  if (!turn.log?.length) return null;
+  return (
+    <View className="gap-2">
+      <Pressable role="button" scale={1} dimTo={0.6} onPress={() => setOpen((v) => !v)} className="flex-row items-center gap-1.5 self-start">
+        <SymbolIcon name="info.circle" size={12} color={colors.textTertiary} />
+        <Text variant="footnote" tone="tertiary">
+          {open ? "Hide details" : "Details"}
+        </Text>
+      </Pressable>
+      {open ? (
+        <Card className="gap-1 px-4 py-3">
+          {turn.log.map((entry, i) => (
+            <Text key={i} variant="caption" tone="secondary" numeric>
+              {`${(entry.ms / 1000).toFixed(1)}s  ${entry.text}`}
+            </Text>
+          ))}
+          {turn.detail ? (
+            <Text variant="caption" tone="tertiary" selectable className="pt-1">
+              {turn.detail}
+            </Text>
+          ) : null}
+        </Card>
+      ) : null}
+    </View>
+  );
+}
 
 const TOOL_ICONS: Record<string, string> = {
   total: "sum",
@@ -212,6 +278,7 @@ export default function AskScreen() {
   const [text, setText] = React.useState("");
   const [turns, setTurns] = React.useState<Turn[]>([]);
   const [busy, setBusy] = React.useState(false);
+  const [since, setSince] = React.useState<number | null>(null);
   const scroll = React.useRef<ScrollView>(null);
 
   const updateLast = (patch: (t: Turn) => Turn) =>
@@ -222,6 +289,7 @@ export default function AskScreen() {
     if (!asked || busy) return;
     setText("");
     setBusy(true);
+    setSince(Date.now());
     setTurns((all) => [...all, { question: asked, answer: null, steps: [] }]);
     if (key) {
       try {
@@ -241,13 +309,16 @@ export default function AskScreen() {
             firstEntry,
           },
           (step) => updateLast((t) => ({ ...t, steps: [...t.steps, step] })),
+          (status) => updateLast((t) => ({ ...t, status })),
         );
-        updateLast((t) => ({ ...t, answer: result.text }));
+        updateLast((t) => ({ ...t, answer: result.text, log: result.log }));
       } catch (e) {
         updateLast((t) => ({
           ...t,
           answer: e instanceof Error ? e.message : "Gemini could not be reached.",
           failed: true,
+          log: e instanceof AskError ? e.log : t.log,
+          detail: e instanceof AskError ? e.detail : String(e),
         }));
       }
     } else {
@@ -259,6 +330,14 @@ export default function AskScreen() {
       }));
     }
     setBusy(false);
+    setSince(null);
+  };
+
+  const retry = (index: number) => {
+    const question = turns[index]?.question;
+    if (!question || busy) return;
+    setTurns((all) => all.filter((_, i) => i !== index));
+    void ask(question);
   };
 
   const keyMenu = () =>
@@ -291,7 +370,7 @@ export default function AskScreen() {
                   scale={0.9}
                   onPress={keyMenu}
                 >
-                  <SymbolIcon name="key" size={18} color={colors.accent} />
+                  <SymbolIcon name="key" size={17} color={colors.text} />
                 </Pressable>
               )
             : undefined,
@@ -344,28 +423,39 @@ export default function AskScreen() {
           <Animated.View key={i} entering={FadeInDown.duration(220)} className="gap-3">
             <View
               className="max-w-[85%] self-end rounded-[20px] rounded-br-[6px] px-4 py-2.5"
-              style={{ backgroundColor: colors.accentSoft }}
+              style={{ backgroundColor: colors.elevated }}
             >
-              <Text variant="body" style={{ color: colors.accentText }}>
+              <Text variant="body">
                 {turn.question}
               </Text>
             </View>
             <View className="gap-2.5 pr-6">
               {turn.answer === null ? (
-                <View className="flex-row items-center gap-2">
-                  <ActivityIndicator size="small" color={colors.accent} />
-                  <Text variant="subhead" tone="secondary" numberOfLines={1} className="flex-1">
-                    {turn.steps.length > 0
-                      ? `${stepLabel(turn.steps[turn.steps.length - 1]!)}…`
-                      : "Thinking…"}
-                  </Text>
-                </View>
+                <Pending turn={turn} since={since} />
               ) : (
                 <Text variant="body" tone={turn.failed ? "secondary" : "default"} selectable>
                   {turn.answer}
                 </Text>
               )}
-              {turn.answer !== null ? <Steps steps={turn.steps} /> : null}
+              {turn.failed && i === turns.length - 1 ? (
+                <Pressable
+                  role="button"
+                  scale={0.96}
+                  onPress={() => retry(i)}
+                  className="h-9 flex-row items-center gap-1.5 self-start rounded-full bg-fill px-3.5"
+                >
+                  <SymbolIcon name="arrow.clockwise" size={12} color={colors.text} />
+                  <Text variant="footnote" className="font-semibold">
+                    Try again
+                  </Text>
+                </Pressable>
+              ) : null}
+              {turn.answer !== null ? (
+                <View className="flex-row flex-wrap gap-x-4 gap-y-2">
+                  <Steps steps={turn.steps} />
+                  <Details turn={turn} />
+                </View>
+              ) : null}
             </View>
           </Animated.View>
         ))}

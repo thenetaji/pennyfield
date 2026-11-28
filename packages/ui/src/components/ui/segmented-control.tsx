@@ -25,9 +25,10 @@ function SegmentedControl({
   disabledIndexes,
   tintColor,
 }: SegmentedControlProps) {
-  const { colors } = useTokens();
+  const { colors, isDark } = useTokens();
   const reduced = useReducedMotion();
-  const fill = useTweenedColor(tintColor ?? colors.accent);
+  // Neutral like iOS unless a caller tints it (the add form colours by kind).
+  const fill = useTweenedColor(tintColor ?? (isDark ? "#636366" : "#FFFFFF"));
   const [width, setWidth] = React.useState(0);
   const slot = values.length > 0 ? width / values.length : 0;
   const x = useSharedValue(selectedIndex * slot);
