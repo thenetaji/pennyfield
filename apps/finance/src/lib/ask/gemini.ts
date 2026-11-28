@@ -35,6 +35,9 @@ Entries start on ${c.firstEntry ?? "no date yet"}. Categories: ${c.categories.jo
 Always get numbers from the tools; never add up or guess yourself. Call as many tools as you need.
 Answer in one to three short plain sentences with the exact numbers and dates. No advice unless asked.`;
 
+export type AskStep = { name: string; args: Record<string, unknown>; result: unknown };
+export type AskAnswer = { text: string; steps: AskStep[] };
+
 /** One question, answered by Gemini calling the local tools; earlier turns give it the thread. */
 export async function askGemini(
   key: string,
@@ -42,7 +45,9 @@ export async function askGemini(
   history: readonly { question: string; answer: string }[],
   lines: readonly AskLine[],
   ctx: AskContext,
-): Promise<string> {
+  onStep?: (step: AskStep) => void,
+): Promise<AskAnswer> {
+  const steps: AskStep[] = [];
   const contents: Content[] = [
     ...history.flatMap((t): Content[] => [
       { role: "user", parts: [{ text: t.question }] },
@@ -73,17 +78,21 @@ export async function askGemini(
     const parts = data.candidates?.[0]?.content?.parts ?? [];
     const calls = parts.filter((p) => p.functionCall);
     if (calls.length === 0)
-      return parts.map((p) => p.text ?? "").join("").trim() || "No answer came back.";
+      return { text: parts.map((p) => p.text ?? "").join("").trim() || "No answer came back.", steps };
     contents.push({ role: "model", parts });
     contents.push({
       role: "user",
-      parts: calls.map((p) => ({
-        functionResponse: {
+      parts: calls.map((p) => {
+        const step = {
           name: p.functionCall!.name,
-          response: { result: runTool(p.functionCall!.name, p.functionCall!.args ?? {}, lines, ctx) },
-        },
-      })),
+          args: p.functionCall!.args ?? {},
+          result: runTool(p.functionCall!.name, p.functionCall!.args ?? {}, lines, ctx),
+        };
+        steps.push(step);
+        onStep?.(step);
+        return { functionResponse: { name: step.name, response: { result: step.result } } };
+      }),
     });
   }
-  return "That needed too many steps. Try asking it more simply.";
+  return { text: "That needed too many steps. Try asking it more simply.", steps };
 }
