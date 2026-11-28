@@ -3,7 +3,6 @@ import { ScrollView, View } from "react-native";
 
 import { useAccounts, useSetting, useSettings, useTodayKey, useYearStart } from "@/data/hooks";
 import { yearName, yearOf } from "@/lib/reports";
-import { useAskAvailable } from "@/features/explore/ask-available";
 import { monthParam } from "@/features/report/labels";
 import { periodFor, previousPeriod } from "@studio/dates";
 import { ListGroup, ListRow } from "@studio/ui";
@@ -12,7 +11,6 @@ type Item = { label: string; subtitle: string; icon: string; href: Href };
 
 export function AdvancedScreen() {
   const router = useRouter();
-  const canAsk = useAskAvailable();
   const settings = useSettings();
   const today = useTodayKey();
   const yearStart = useYearStart();
@@ -62,9 +60,7 @@ export function AdvancedScreen() {
           subtitle: yearName(lastYear, yearStart),
           href: { pathname: "/review/[year]", params: { year: String(lastYear) } },
         },
-        ...(canAsk
-          ? [{ label: "Ask", icon: "info", subtitle: "Ask about your spending", href: "/explore/ask" as Href }]
-          : []),
+        { label: "Ask", icon: "info", subtitle: "Ask about your money", href: "/explore/ask" as Href },
       ],
     },
   ];
